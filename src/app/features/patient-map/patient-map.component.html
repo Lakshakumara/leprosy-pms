@@ -1,0 +1,45 @@
+<h1>Patient map</h1>
+<p class="page-head__sub">{{ mappable().length }} of {{ patientService.patients().length }} patients have recorded coordinates.</p>
+
+@if (!hasApiKey) {
+  <div class="card notice">
+    <strong>Google Maps API key not configured.</strong>
+    <p>Add your key to <code>src/environments/environment.ts</code> under <code>googleMapsApiKey</code> to enable the map.
+    Get a key at the Google Cloud Console (Maps JavaScript API).</p>
+  </div>
+} @else {
+  <div class="card map-card">
+    <google-map
+      height="560px"
+      width="100%"
+      [center]="center()"
+      [zoom]="zoom()"
+      [options]="{ streetViewControl: false, mapTypeControl: false }"
+    >
+      @for (p of mappable(); track p.id) {
+        <map-marker
+          [position]="{ lat: p.latitude!, lng: p.longitude! }"
+          [options]="{ icon: markerIcon(p) }"
+          (mapClick)="select(p)"
+        ></map-marker>
+      }
+    </google-map>
+  </div>
+
+  @if (selected(); as p) {
+    <div class="card selected-info">
+      <div>
+        <strong>{{ p.firstName }} {{ p.lastName }}</strong>
+        <span class="badge" [class.badge--mb]="p.classification === 'MB'" [class.badge--pb]="p.classification === 'PB'">
+          {{ p.classification }}
+        </span>
+      </div>
+      <div class="muted">Onset {{ p.onsetYear }} · Grade {{ p.disabilityGrade }} · {{ p.address || 'No address on file' }}</div>
+    </div>
+  }
+
+  <div class="legend">
+    <span><i class="dot dot--mb"></i> MB — Multibacillary</span>
+    <span><i class="dot dot--pb"></i> PB — Paucibacillary</span>
+  </div>
+}

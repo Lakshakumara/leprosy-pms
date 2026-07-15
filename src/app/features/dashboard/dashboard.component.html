@@ -1,0 +1,37 @@
+<h1>Dashboard</h1>
+
+<div class="stats">
+  <div class="card stat">
+    <div class="stat__value">{{ total() }}</div>
+    <div class="stat__label">Total patients</div>
+  </div>
+  <div class="card stat">
+    <div class="stat__value" style="color: var(--color-mb)">{{ mbCount() }}</div>
+    <div class="stat__label">MB — multibacillary</div>
+  </div>
+  <div class="card stat">
+    <div class="stat__value" style="color: var(--color-pb)">{{ pbCount() }}</div>
+    <div class="stat__label">PB — paucibacillary</div>
+  </div>
+  <div class="card stat">
+    <div class="stat__value">{{ grade2Count() }}</div>
+    <div class="stat__label">Grade 2 disability</div>
+  </div>
+</div>
+
+<div class="card chart">
+  <h3>Cases by year of onset</h3>
+  @if (byYear().length === 0) {
+    <p class="muted">No patient data yet. <a routerLink="/patients/new">Register your first patient</a>.</p>
+  } @else {
+    <div class="bars">
+      @for (entry of byYear(); track entry[0]) {
+        <div class="bar-col">
+          <div class="bar" [style.height.%]="(entry[1] / maxYearCount()) * 100"></div>
+          <div class="bar-label">{{ entry[0] }}</div>
+          <div class="bar-count">{{ entry[1] }}</div>
+        </div>
+      }
+    </div>
+  }
+</div>

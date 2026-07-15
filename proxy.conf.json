@@ -1,0 +1,8 @@
+{
+  "/dhis2-api": {
+    "target": "https://phsmis.health.gov.lk",
+    "changeOrigin": true,
+    "secure": true,
+    "pathRewrite": { "^/dhis2-api": "/api" }
+  }
+}

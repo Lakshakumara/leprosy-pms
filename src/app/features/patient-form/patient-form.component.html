@@ -1,0 +1,66 @@
+<h1>{{ isEdit() ? 'Edit patient' : 'Register patient' }}</h1>
+
+<form [formGroup]="form" (ngSubmit)="save()" class="card form">
+  <div class="grid">
+    <label class="field">
+      <span>First name *</span>
+      <input pInputText formControlName="firstName" />
+    </label>
+    <label class="field">
+      <span>Last name *</span>
+      <input pInputText formControlName="lastName" />
+    </label>
+    <label class="field">
+      <span>Gender</span>
+      <p-select [options]="genderOptions" optionLabel="label" optionValue="value" formControlName="gender"></p-select>
+    </label>
+    <label class="field">
+      <span>Phone number</span>
+      <input pInputText formControlName="phoneNumber" placeholder="+94 7X XXX XXXX" />
+    </label>
+
+    <label class="field">
+      <span>Year of onset *</span>
+      <p-inputNumber formControlName="onsetYear" [useGrouping]="false" [min]="1950" [max]="2100"></p-inputNumber>
+    </label>
+    <label class="field">
+      <span>Classification (MB/PB) *</span>
+      <p-select [options]="classificationOptions" optionLabel="label" optionValue="value" formControlName="classification"></p-select>
+    </label>
+    <label class="field">
+      <span>WHO disability grade *</span>
+      <p-select [options]="gradeOptions" optionLabel="label" optionValue="value" formControlName="disabilityGrade"></p-select>
+    </label>
+    <label class="field">
+      <span>Org unit ID (DHIS2)</span>
+      <input pInputText formControlName="orgUnitId" placeholder="Facility org unit UID" />
+    </label>
+  </div>
+
+  <label class="field">
+    <span>Address</span>
+    <input pInputText formControlName="address" placeholder="Village / GN division / district" />
+  </label>
+
+  <div class="grid grid--geo">
+    <label class="field">
+      <span>Latitude</span>
+      <p-inputNumber formControlName="latitude" [minFractionDigits]="4" [maxFractionDigits]="6"></p-inputNumber>
+    </label>
+    <label class="field">
+      <span>Longitude</span>
+      <p-inputNumber formControlName="longitude" [minFractionDigits]="4" [maxFractionDigits]="6"></p-inputNumber>
+    </label>
+    <button pButton type="button" label="Use current location" icon="pi pi-map-marker"
+            class="p-button-outlined" (click)="useCurrentLocation()"></button>
+  </div>
+
+  <label class="field">
+    <span>Notes</span>
+    <textarea pTextarea formControlName="notes" rows="3"></textarea>
+  </label>
+
+  <div class="form__actions">
+    <button pButton type="submit" [label]="saving() ? 'Saving…' : 'Save patient'" [disabled]="saving()"></button>
+  </div>
+</form>

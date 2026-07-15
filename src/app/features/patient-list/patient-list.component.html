@@ -1,0 +1,95 @@
+<div class="page-head">
+  <div>
+    <h1>Patients</h1>
+    <p class="page-head__sub">{{ rows().length }} of {{ patientService.patients().length }} records shown</p>
+  </div>
+  <a routerLink="/patients/new"><button pButton label="+ Register patient" class="p-button-primary"></button></a>
+</div>
+
+@if (patientService.lastPullError(); as err) {
+  <div class="card sync-error">
+    <strong>Could not load patients from DHIS2:</strong> {{ err }}
+    <div class="muted">Showing locally stored data only. Check the browser console (F12 → Console/Network) for the full request/response.</div>
+  </div>
+}
+
+<div class="card filters">
+  <span class="p-input-icon-left search">
+    <input
+      pInputText
+      type="text"
+      placeholder="Search by name or phone"
+      [ngModel]="filter().search"
+      (ngModelChange)="updateFilter('search', $event)"
+    />
+  </span>
+
+  <div class="filter-field">
+    <label>Onset year from</label>
+    <p-inputNumber [ngModel]="filter().onsetYearFrom" (ngModelChange)="updateFilter('onsetYearFrom', $event)"
+                    [useGrouping]="false" placeholder="e.g. 2018"></p-inputNumber>
+  </div>
+  <div class="filter-field">
+    <label>to</label>
+    <p-inputNumber [ngModel]="filter().onsetYearTo" (ngModelChange)="updateFilter('onsetYearTo', $event)"
+                    [useGrouping]="false" placeholder="e.g. 2026"></p-inputNumber>
+  </div>
+
+  <div class="filter-field">
+    <label>Classification</label>
+    <p-select [options]="classificationOptions" optionLabel="label" optionValue="value"
+              [ngModel]="filter().classification" (ngModelChange)="updateFilter('classification', $event)"></p-select>
+  </div>
+
+  <div class="filter-field">
+    <label>Disability grade</label>
+    <p-select [options]="gradeOptions" optionLabel="label" optionValue="value"
+              [ngModel]="filter().disabilityGrade" (ngModelChange)="updateFilter('disabilityGrade', $event)"></p-select>
+  </div>
+
+  <div class="filter-field">
+    <label>Sync status</label>
+    <p-select [options]="statusOptions" optionLabel="label" optionValue="value"
+              [ngModel]="filter().syncStatus" (ngModelChange)="updateFilter('syncStatus', $event)"></p-select>
+  </div>
+</div>
+
+<div class="card table-card">
+  <p-table [value]="rows()" [paginator]="true" [rows]="15" dataKey="id" responsiveLayout="scroll">
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Name</th>
+        <th>Onset year</th>
+        <th>Classification</th>
+        <th>Grade</th>
+        <th>Org unit</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-p>
+      <tr>
+        <td>
+          <a [routerLink]="['/patients', p.id]">{{ p.firstName }} {{ p.lastName }}</a>
+          @if (p.phoneNumber) { <div class="muted">{{ p.phoneNumber }}</div> }
+        </td>
+        <td>{{ p.onsetYear }}</td>
+        <td>
+          <span class="badge" [class.badge--mb]="p.classification === 'MB'" [class.badge--pb]="p.classification === 'PB'">
+            {{ p.classification }}
+          </span>
+        </td>
+        <td>Grade {{ p.disabilityGrade }}</td>
+        <td>{{ p.orgUnitName || p.orgUnitId || '—' }}</td>
+        <td><p-tag [value]="p.syncStatus" [severity]="statusSeverity(p.syncStatus)"></p-tag></td>
+        <td class="actions">
+          <a [routerLink]="['/patients', p.id]"><button pButton icon="pi pi-pencil" class="p-button-text"></button></a>
+          <button pButton icon="pi pi-trash" class="p-button-text p-button-danger" (click)="remove(p.id)"></button>
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="emptymessage">
+      <tr><td colspan="7" class="empty">No patients match these filters yet.</td></tr>
+    </ng-template>
+  </p-table>
+</div>

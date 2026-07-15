@@ -1,0 +1,36 @@
+<div class="shell">
+  <aside class="shell__nav">
+    <div class="shell__brand">
+      <span class="shell__brand-mark">L</span>
+      <div>
+        <div class="shell__brand-name">Leprosy PMS</div>
+        <div class="shell__brand-sub">Case registry</div>
+      </div>
+    </div>
+
+    <nav class="shell__links">
+      <a routerLink="/dashboard" routerLinkActive="is-active">Dashboard</a>
+      <a routerLink="/patients" routerLinkActive="is-active">Patients</a>
+      <a routerLink="/patients/new" routerLinkActive="is-active">Register patient</a>
+      <a routerLink="/map" routerLinkActive="is-active">Map view</a>
+    </nav>
+
+    <div class="shell__status">
+      <span class="offline-pill" [class.offline-pill--online]="patients.isOnline()"
+            [class.offline-pill--offline]="!patients.isOnline()">
+        <span class="dot"></span>
+        {{ patients.isOnline() ? 'Online' : 'Offline' }}
+      </span>
+
+      @if (patients.pendingCount() > 0) {
+        <button class="shell__sync-btn" (click)="syncNow()" [disabled]="!patients.isOnline() || patients.isSyncing()">
+          {{ patients.isSyncing() ? 'Syncing…' : 'Sync ' + patients.pendingCount() + ' record(s)' }}
+        </button>
+      }
+    </div>
+  </aside>
+
+  <main class="shell__content">
+    <router-outlet />
+  </main>
+</div>

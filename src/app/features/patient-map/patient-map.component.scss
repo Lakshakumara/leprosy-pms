@@ -1,0 +1,20 @@
+.page-head__sub { color: var(--color-muted); font-size: 0.85rem; margin: 0 0 16px; }
+.map-card { padding: 6px; overflow: hidden; }
+.notice { padding: 20px; }
+.notice code {
+  background: var(--color-teal-100);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+.selected-info { margin-top: 14px; padding: 14px 18px; display: flex; flex-direction: column; gap: 4px; }
+.muted { color: var(--color-muted); font-size: 0.85rem; }
+.legend {
+  margin-top: 14px;
+  display: flex;
+  gap: 18px;
+  font-size: 0.82rem;
+  color: var(--color-muted);
+}
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+.dot--mb { background: var(--color-mb); }
+.dot--pb { background: var(--color-pb); }
