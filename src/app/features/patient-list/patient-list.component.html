@@ -181,8 +181,8 @@
                     <div class="sub-text">{{ enrolledDaysAgo(p.enrolledAt) }} days ago</div>
                 </td>
                 <td>
-                    <span class="ehf-badge" [class.ehf-high]="p.ehfScore >= 7"
-                        [class.ehf-mid]="p.ehfScore >= 4 && p.ehfScore < 7">
+                    <span class="ehf-badge" [class.ehf-high]="p.treatmentType == 'MBA'"
+                        [class.ehf-mid]="p.treatmentType == 'MBC' && p.treatmentType =='PBC'">
                         {{ p.treatmentType }}
                     </span>
                 </td>
