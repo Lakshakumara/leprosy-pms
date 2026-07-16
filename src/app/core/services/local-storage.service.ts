@@ -1,24 +1,20 @@
 import { Injectable } from '@angular/core';
 import { createStore, entries, get, set, del } from 'idb-keyval';
-import { Patient } from '../models/patient.model';
+import { Patient } from '../delete/patient.model';
 
 /**
- * Offline-first persistence layer.
+ * Offline-first persistence layer using IndexedDB (idb-keyval).
  *
- * Patient records live in IndexedDB (via idb-keyval), so the app is fully
- * usable without network access. The PatientService is responsible for
- * reconciling this local store with DHIS2 when connectivity returns.
+ * Patient records are stored locally so the app is fully usable offline.
+ * PatientService is responsible for syncing with DHIS2 when online.
  *
- * NOTE ON PRIVACY: this stores identifiable health data (name, diagnosis
- * classification, location) on-device. For production use on shared or
- * loaned devices, wrap this store with an encryption-at-rest layer (e.g.
- * encrypt values with a passphrase-derived key before calling idb-keyval)
- * and/or enforce an app-level PIN/biometric lock before rendering patient
- * data.
+ * NOTE ON PRIVACY: stores identifiable health data on-device. For production
+ * use on shared devices, wrap with an encryption-at-rest layer and enforce
+ * an app-level PIN/biometric lock before rendering patient data.
  */
 @Injectable({ providedIn: 'root' })
 export class LocalStorageService {
-  private readonly store = createStore('leprosy-pms-db', 'patients');
+  private readonly store    = createStore('leprosy-pms-db', 'patients');
   private readonly metaStore = createStore('leprosy-pms-db', 'meta');
 
   async getAllPatients(): Promise<Patient[]> {
@@ -34,6 +30,10 @@ export class LocalStorageService {
     await set(patient.id, patient, this.store);
   }
 
+  async savePatients(patients: Patient[]): Promise<void> {
+    await Promise.all(patients.map(p => set(p.id, p, this.store)));
+  }
+
   async deletePatient(id: string): Promise<void> {
     await del(id, this.store);
   }
@@ -44,6 +44,24 @@ export class LocalStorageService {
   }
 
   async setMeta<T>(key: string, value: T): Promise<void> {
+    console.log(key, value)
     await set(key, value, this.metaStore);
+  }
+
+  /**
+   * Returns sorted distinct non-empty string values for the given field across
+   * all locally stored patients. Used to populate filter dropdowns
+   * (MOH area, PHI area, GN Division) without a live DHIS2 call.
+   */
+  async getDistinctValues(field: keyof Patient): Promise<string[]> {
+    const all = await this.getAllPatients();
+    const set_ = new Set<string>();
+    for (const p of all) {
+      const v = p[field];
+      if (typeof v === 'string' && v.trim() !== '') {
+        set_.add(v.trim());
+      }
+    }
+    return [...set_].sort((a, b) => a.localeCompare(b));
   }
 }

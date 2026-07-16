@@ -8,8 +8,8 @@ import { SelectModule } from 'primeng/select';
 import { ButtonModule } from 'primeng/button';
 import { TextareaModule } from 'primeng/textarea';
 import { environment } from '../../../environments/environment';
-import { PatientService } from '../../core/services/patient.service';
-import { Patient } from '../../core/models/patient.model';
+import { PatientService } from '../../core/delete/patient.service';
+import { Patient } from '../../core/delete/patient.model';
 
 @Component({
   selector: 'app-patient-form',

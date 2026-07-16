@@ -29,13 +29,12 @@
   @if (selected(); as p) {
     <div class="card selected-info">
       <div>
-        <strong>{{ p.firstName }} {{ p.lastName }}</strong>
-        <span class="badge" [class.badge--mb]="p.classification === 'MB'" [class.badge--pb]="p.classification === 'PB'">
-          {{ p.classification }}
+        <strong>{{ p.patientName }} {{ p.alcNum }}</strong>
+        <span class="badge" [class.badge--mb]="p.treatmentClassification === 'MB'" [class.badge--pb]="p.treatmentClassification === 'PB'">
+          {{ p.treatmentClassification }}
         </span>
       </div>
-      <div class="muted">Onset {{ p.onsetYear }} · Grade {{ p.disabilityGrade }} · {{ p.address || 'No address on file' }}</div>
-    </div>
+      </div>
   }
 
   <div class="legend">

@@ -1,95 +1,253 @@
 <div class="page-head">
-  <div>
-    <h1>Patients</h1>
-    <p class="page-head__sub">{{ rows().length }} of {{ patientService.patients().length }} records shown</p>
-  </div>
-  <a routerLink="/patients/new"><button pButton label="+ Register patient" class="p-button-primary"></button></a>
+    <div>
+        <h1>Patient Registry</h1>
+        <p class="page-head__sub">
+            {{ rows().length }} of {{ patientService.patients().length }} patients shown
+            @if (activeFilterCount() > 0) {
+            · <span class="filter-badge">{{ activeFilterCount() }} filter{{ activeFilterCount() > 1 ? 's' : '' }}
+                active</span>
+            }
+        </p>
+    </div>
+    <div class="page-head__actions">
+        <button class="btn-filter" (click)="showFilters.set(!showFilters())" id="toggle-filters-btn">
+            <i class="pi pi-filter"></i>
+            Filters
+            @if (activeFilterCount() > 0) {
+            <span class="count-pill">{{ activeFilterCount() }}</span>
+            }
+        </button>
+        <button class="btn-sync" (click)="syncNow()"
+            [disabled]="!patientService.isOnline() || patientService.isSyncing()" id="sync-btn">
+            <i class="pi" [class.pi-refresh]="!patientService.isSyncing()" [class.pi-spin]="patientService.isSyncing()"
+                [class.pi-spinner]="patientService.isSyncing()"></i>
+            {{ patientService.isSyncing() ? 'Syncing…' : 'Sync DHIS2' }}
+        </button>
+    </div>
 </div>
-
+<!-- ── Error banner ──────────────────────────────────────────────────────────── -->
 @if (patientService.lastPullError(); as err) {
-  <div class="card sync-error">
-    <strong>Could not load patients from DHIS2:</strong> {{ err }}
-    <div class="muted">Showing locally stored data only. Check the browser console (F12 → Console/Network) for the full request/response.</div>
-  </div>
-}
-
-<div class="card filters">
-  <span class="p-input-icon-left search">
-    <input
-      pInputText
-      type="text"
-      placeholder="Search by name or phone"
-      [ngModel]="filter().search"
-      (ngModelChange)="updateFilter('search', $event)"
-    />
-  </span>
-
-  <div class="filter-field">
-    <label>Onset year from</label>
-    <p-inputNumber [ngModel]="filter().onsetYearFrom" (ngModelChange)="updateFilter('onsetYearFrom', $event)"
-                    [useGrouping]="false" placeholder="e.g. 2018"></p-inputNumber>
-  </div>
-  <div class="filter-field">
-    <label>to</label>
-    <p-inputNumber [ngModel]="filter().onsetYearTo" (ngModelChange)="updateFilter('onsetYearTo', $event)"
-                    [useGrouping]="false" placeholder="e.g. 2026"></p-inputNumber>
-  </div>
-
-  <div class="filter-field">
-    <label>Classification</label>
-    <p-select [options]="classificationOptions" optionLabel="label" optionValue="value"
-              [ngModel]="filter().classification" (ngModelChange)="updateFilter('classification', $event)"></p-select>
-  </div>
-
-  <div class="filter-field">
-    <label>Disability grade</label>
-    <p-select [options]="gradeOptions" optionLabel="label" optionValue="value"
-              [ngModel]="filter().disabilityGrade" (ngModelChange)="updateFilter('disabilityGrade', $event)"></p-select>
-  </div>
-
-  <div class="filter-field">
-    <label>Sync status</label>
-    <p-select [options]="statusOptions" optionLabel="label" optionValue="value"
-              [ngModel]="filter().syncStatus" (ngModelChange)="updateFilter('syncStatus', $event)"></p-select>
-  </div>
+<div class="alert alert--error" role="alert">
+    <i class="pi pi-exclamation-triangle"></i>
+    <div>
+        <strong>Could not load from DHIS2:</strong> {{ err }}
+        <div class="alert__hint">Showing locally cached data. Check F12 → Console for details.</div>
+    </div>
 </div>
-
-<div class="card table-card">
-  <p-table [value]="rows()" [paginator]="true" [rows]="15" dataKey="id" responsiveLayout="scroll">
-    <ng-template pTemplate="header">
-      <tr>
-        <th>Name</th>
-        <th>Onset year</th>
-        <th>Classification</th>
-        <th>Grade</th>
-        <th>Org unit</th>
-        <th>Status</th>
-        <th></th>
-      </tr>
-    </ng-template>
-    <ng-template pTemplate="body" let-p>
-      <tr>
-        <td>
-          <a [routerLink]="['/patients', p.id]">{{ p.firstName }} {{ p.lastName }}</a>
-          @if (p.phoneNumber) { <div class="muted">{{ p.phoneNumber }}</div> }
-        </td>
-        <td>{{ p.onsetYear }}</td>
-        <td>
-          <span class="badge" [class.badge--mb]="p.classification === 'MB'" [class.badge--pb]="p.classification === 'PB'">
-            {{ p.classification }}
-          </span>
-        </td>
-        <td>Grade {{ p.disabilityGrade }}</td>
-        <td>{{ p.orgUnitName || p.orgUnitId || '—' }}</td>
-        <td><p-tag [value]="p.syncStatus" [severity]="statusSeverity(p.syncStatus)"></p-tag></td>
-        <td class="actions">
-          <a [routerLink]="['/patients', p.id]"><button pButton icon="pi pi-pencil" class="p-button-text"></button></a>
-          <button pButton icon="pi pi-trash" class="p-button-text p-button-danger" (click)="remove(p.id)"></button>
-        </td>
-      </tr>
-    </ng-template>
-    <ng-template pTemplate="emptymessage">
-      <tr><td colspan="7" class="empty">No patients match these filters yet.</td></tr>
-    </ng-template>
-  </p-table>
+}
+<!-- ── Filter panel ──────────────────────────────────────────────────────────── -->
+@if (showFilters()) {
+<div class="filters-panel card" id="filters-panel">
+    <div class="filters-panel__header">
+        <span class="filters-panel__title"><i class="pi pi-filter"></i> Filter Patients</span>
+        @if (activeFilterCount() > 0) {
+        <button class="btn-clear" (click)="clearFilters()" id="clear-filters-btn">
+            <i class="pi pi-times"></i> Clear all
+        </button>
+        }
+    </div>
+    <div class="filters-grid">
+        <!-- Search -->
+        <div class="filter-field filter-field--wide">
+            <label for="search-input">Search</label>
+            <div class="input-wrap">
+                <i class="pi pi-search input-icon"></i>
+                <input id="search-input" pInputText type="text" placeholder="Name, ALC number or NIC…"
+                    [ngModel]="filter().search" (ngModelChange)="updateFilter('search', $event)" />
+            </div>
+        </div>
+        <!-- Classification -->
+        <div class="filter-field">
+            <label>Classification</label>
+            <p-select [options]="classificationOptions" optionLabel="label" optionValue="value"
+                [ngModel]="filter().classification" (ngModelChange)="updateFilter('classification', $event)"
+                id="classification-select">
+            </p-select>
+        </div>
+        <!-- Hospital -->
+        <div class="filter-field">
+            <label>Hospital</label>
+            <p-select [options]="hospitalOptions" optionLabel="label" optionValue="value" [ngModel]="filter().orgUnitId"
+                (ngModelChange)="updateFilter('orgUnitId', $event)" id="hospital-select">
+            </p-select>
+        </div>
+        <!-- MOH Area -->
+        <div class="filter-field">
+            <label>MOH Area</label>
+            <p-select [options]="mohAreaOptions()" optionLabel="label" optionValue="value" [ngModel]="filter().mohArea"
+                (ngModelChange)="updateFilter('mohArea', $event)" [loading]="filtersLoading()" id="moh-select">
+            </p-select>
+        </div>
+        <!-- PHI Area -->
+        <div class="filter-field">
+            <label>PHI Area</label>
+            <p-select [options]="phiAreaOptions()" optionLabel="label" optionValue="value" [ngModel]="filter().phiArea"
+                (ngModelChange)="updateFilter('phiArea', $event)" [loading]="filtersLoading()" id="phi-select">
+            </p-select>
+        </div>
+        <!-- GN Division -->
+        <div class="filter-field">
+            <label>GN Division</label>
+            <p-select [options]="gnDivisionOptions()" optionLabel="label" optionValue="value"
+                [ngModel]="filter().gnDivision" (ngModelChange)="updateFilter('gnDivision', $event)"
+                [loading]="filtersLoading()" id="gn-select">
+            </p-select>
+        </div>
+        <!-- Enrolled date range -->
+        <div class="filter-field">
+            <label for="enrolled-from">Enrolled from</label>
+            <input id="enrolled-from" pInputText type="date" [ngModel]="filter().enrolledFrom"
+                (ngModelChange)="updateFilter('enrolledFrom', $event)" />
+        </div>
+        <div class="filter-field">
+            <label for="enrolled-to">Enrolled to</label>
+            <input id="enrolled-to" pInputText type="date" [ngModel]="filter().enrolledTo"
+                (ngModelChange)="updateFilter('enrolledTo', $event)" />
+        </div>
+    </div>
+</div>
+}
+<!-- ── Desktop table ─────────────────────────────────────────────────────────── -->
+<div class="card table-card desktop-only">
+    @if (patientService.isSyncing() && patientService.patients().length === 0) {
+    <!-- Skeleton loader while initial sync -->
+    <div class="skeleton-rows">
+        @for (_ of [1,2,3,4,5,6]; track $index) {
+        <div class="skeleton-row">
+            <p-skeleton width="8rem" height="1rem" />
+            <p-skeleton width="14rem" height="1rem" />
+            <p-skeleton width="5rem" height="1rem" />
+            <p-skeleton width="5rem" height="1.4rem" styleClass="border-radius:999px" />
+            <p-skeleton width="10rem" height="1rem" />
+            <p-skeleton width="7rem" height="1rem" />
+            <p-skeleton width="6rem" height="1rem" />
+        </div>
+        }
+    </div>
+    } @else {
+    <p-table [value]="rows()" [paginator]="true" [rows]="20" dataKey="id" responsiveLayout="scroll" [rowHover]="true"
+        styleClass="p-datatable-sm">
+        <ng-template pTemplate="header">
+            <tr>
+                <th>ALC #</th>
+                <th>Patient Name</th>
+                <th>Sex / Age</th>
+                <th>Classification</th>
+                <th>Hospital</th>
+                <th>MOH Area</th>
+                <th>Enrolled</th>
+                <th>Type</th>
+                <th></th>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-p>
+            <tr>
+                <td class="alc-cell">
+                    <span class="alc-num">{{ p.alcNum || '—' }}</span>
+                    @if (p.clinicNum) {
+                    <div class="sub-text">{{ p.clinicNum }}</div>
+                    }
+                </td>
+                <td>
+                    <a [routerLink]="['/patients', p.id]" class="patient-name-link">
+                        {{ p.patientName || '(no name)' }}
+                    </a>
+                    @if (p.mobileNum) {
+                    <div class="sub-text">{{ p.mobileNum }}</div>
+                    }
+                </td>
+                <td>
+                    {{ p.patientSex || '—' }}
+                    @if (p.patientAge) { · {{ p.patientAge }} yrs }
+                </td>
+                <td>
+                    @if (p.treatmentClassification) {
+                    <span class="badge" [class]="classBadge(p.treatmentClassification)">
+                        {{ p.treatmentClassification }}
+                    </span>
+                    } @else {
+                    <span class="text-muted">—</span>
+                    }
+                </td>
+                <td>{{ p.orgUnitName || '—' }}</td>
+                <td>
+                    {{ p.patientMohArea || '—' }}
+                    @if (p.patientPhiArea) {
+                    <div class="sub-text">PHI: {{ p.patientPhiArea }}</div>
+                    }
+                </td>
+                <td>
+                    {{ p.enrolledAt | date:'yyyy-MM-dd' }}
+                    <div class="sub-text">{{ enrolledDaysAgo(p.enrolledAt) }} days ago</div>
+                </td>
+                <td>
+                    <span class="ehf-badge" [class.ehf-high]="p.ehfScore >= 7"
+                        [class.ehf-mid]="p.ehfScore >= 4 && p.ehfScore < 7">
+                        {{ p.treatmentType }}
+                    </span>
+                </td>
+                <td class="actions">
+                    <a [routerLink]="['/patients', p.id]" pButton icon="pi pi-eye" class="p-button-text p-button-sm"
+                        title="View details"></a>
+                </td>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+            <tr>
+                <td colspan="9" class="empty-state">
+                    <i class="pi pi-inbox empty-icon"></i>
+                    @if (patientService.patients().length === 0) {
+                    <p>No patients in local cache yet.<br>
+                        <button class="link-btn" (click)="syncNow()" [disabled]="!patientService.isOnline()">
+                            Sync from DHIS2
+                        </button> to load records.
+                    </p>
+                    } @else {
+                    <p>No patients match the current filters.</p>
+                    }
+                </td>
+            </tr>
+        </ng-template>
+    </p-table>
+    }
+</div>
+<!-- ── Mobile card list ──────────────────────────────────────────────────────── -->
+<div class="mobile-cards mobile-only">
+    @if (patientService.isSyncing() && patientService.patients().length === 0) {
+    @for (_ of [1,2,3]; track $index) {
+    <div class="patient-card patient-card--skeleton">
+        <p-skeleton width="100%" height="1.1rem" />
+        <p-skeleton width="60%" height="0.85rem" styleClass="mt-2" />
+        <p-skeleton width="80%" height="0.85rem" styleClass="mt-1" />
+    </div>
+    }
+    } @else if (rows().length === 0) {
+    <div class="mobile-empty">
+        <i class="pi pi-inbox"></i>
+        <p>No patients found. {{ patientService.isOnline() ? '' : 'Go online to sync.' }}</p>
+    </div>
+    } @else {
+    @for (p of rows(); track p.id) {
+    <a class="patient-card" [routerLink]="['/patients', p.id]">
+        <div class="patient-card__top">
+            <div>
+                <div class="patient-card__name">{{ p.patientName || '(no name)' }}</div>
+                <div class="patient-card__alc">ALC: {{ p.alcNum || '—' }}</div>
+            </div>
+            @if (p.treatmentClassification) {
+            <span class="badge" [class]="classBadge(p.treatmentClassification)">
+                {{ p.treatmentClassification }}
+            </span>
+            }
+        </div>
+        <div class="patient-card__meta">
+            <span><i class="pi pi-building"></i> {{ p.orgUnitName || '—' }}</span>
+            <span><i class="pi pi-map-marker"></i> {{ p.patientMohArea || '—' }}</span>
+            <span><i class="pi pi-calendar"></i> {{ p.enrolledAt | date:'dd MMM yyyy' }}</span>
+            <span>EHF: <strong class="ehf-badge" [class.ehf-high]="p.ehfScore >= 7"
+                    [class.ehf-mid]="p.ehfScore >= 4 && p.ehfScore < 7">{{ p.ehfScore }}</strong></span>
+        </div>
+    </a>
+    }
+    }
 </div>

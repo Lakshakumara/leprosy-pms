@@ -1,9 +1,9 @@
 import { Component, inject, computed, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GoogleMapsModule } from '@angular/google-maps';
-import { PatientService } from '../../core/services/patient.service';
+import { PatientService } from '../../core/delete/patient.service';
 import { environment } from '../../../environments/environment';
-import { Patient } from '../../core/models/patient.model';
+import { Patient } from '../../core/delete/patient.model';
 
 @Component({
   selector: 'app-patient-map',
@@ -21,7 +21,7 @@ export class PatientMapComponent implements OnInit {
   protected readonly zoom = signal(7);
 
   protected readonly mappable = computed(() =>
-    this.patientService.patients().filter((p) => p.latitude != null && p.longitude != null)
+    this.patientService.patients().filter((p:any) => p.latitude != null && p.longitude != null)
   );
 
   ngOnInit(): void {
@@ -44,7 +44,7 @@ export class PatientMapComponent implements OnInit {
   }
 
   protected markerIcon(p: Patient): google.maps.Icon {
-    const color = p.classification === 'MB' ? '#b5532c' : '#b08900';
+    const color = p.treatmentClassification === 'MB' ? '#b5532c' : '#b08900';
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26">
       <circle cx="13" cy="13" r="10" fill="${color}" stroke="white" stroke-width="2"/>
     </svg>`;

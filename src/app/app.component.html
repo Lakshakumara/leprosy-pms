@@ -1,36 +1,73 @@
 <div class="shell">
+  <!-- ── Sidebar nav (tablet / desktop) ──────────────────────────────────── -->
   <aside class="shell__nav">
     <div class="shell__brand">
       <span class="shell__brand-mark">L</span>
       <div>
         <div class="shell__brand-name">Leprosy PMS</div>
-        <div class="shell__brand-sub">Case registry</div>
+        <div class="shell__brand-sub">Ratnapura RDHS · Read-only</div>
       </div>
     </div>
 
     <nav class="shell__links">
-      <a routerLink="/dashboard" routerLinkActive="is-active">Dashboard</a>
-      <a routerLink="/patients" routerLinkActive="is-active">Patients</a>
-      <a routerLink="/patients/new" routerLinkActive="is-active">Register patient</a>
-      <a routerLink="/map" routerLinkActive="is-active">Map view</a>
+      <a routerLink="/dashboard" routerLinkActive="is-active">
+        <i class="pi pi-chart-bar"></i> Dashboard
+      </a>
+      <a routerLink="/patients" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">
+        <i class="pi pi-users"></i> Patients
+      </a>
+      <a routerLink="/map" routerLinkActive="is-active">
+        <i class="pi pi-map"></i> Map
+      </a>
     </nav>
 
     <div class="shell__status">
-      <span class="offline-pill" [class.offline-pill--online]="patients.isOnline()"
+      <span class="offline-pill"
+            [class.offline-pill--online]="patients.isOnline()"
             [class.offline-pill--offline]="!patients.isOnline()">
         <span class="dot"></span>
         {{ patients.isOnline() ? 'Online' : 'Offline' }}
       </span>
 
-      @if (patients.pendingCount() > 0) {
-        <button class="shell__sync-btn" (click)="syncNow()" [disabled]="!patients.isOnline() || patients.isSyncing()">
-          {{ patients.isSyncing() ? 'Syncing…' : 'Sync ' + patients.pendingCount() + ' record(s)' }}
-        </button>
+@if (patients.lastSyncedAt()) {
+        <div class="shell__sync-info">
+          Last sync<br>
+          <strong>{{ patients.lastSyncedAt() | date:'dd MMM HH:mm' }}</strong>
+        </div>
       }
+<button class="shell__sync-btn"
+              (click)="syncNow()"
+              [disabled]="!patients.isOnline() || patients.isSyncing()">
+        <i class="pi" [class.pi-refresh]="!patients.isSyncing()" [class.pi-spin]="patients.isSyncing()" [class.pi-spinner]="patients.isSyncing()"></i>
+        {{ patients.isSyncing() ? 'Syncing…' : 'Sync from DHIS2' }}
+      </button>
     </div>
   </aside>
 
+  <!-- ── Main content ────────────────────────────────────────────────────── -->
   <main class="shell__content">
     <router-outlet />
   </main>
+
+  <!-- ── Bottom nav (mobile only) ───────────────────────────────────────── -->
+  <nav class="bottom-nav">
+    <a routerLink="/dashboard" routerLinkActive="is-active">
+      <i class="pi pi-chart-bar"></i>
+      <span>Dashboard</span>
+    </a>
+    <a routerLink="/patients" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">
+      <i class="pi pi-users"></i>
+      <span>Patients</span>
+    </a>
+    <a routerLink="/map" routerLinkActive="is-active">
+      <i class="pi pi-map"></i>
+      <span>Map</span>
+    </a>
+    <button class="bottom-nav__sync"
+            (click)="syncNow()"
+            [disabled]="!patients.isOnline() || patients.isSyncing()">
+      <i class="pi" [class.pi-refresh]="!patients.isSyncing()" [class.pi-spin]="patients.isSyncing()" [class.pi-spinner]="patients.isSyncing()"></i>
+      <span>{{ patients.isSyncing() ? 'Syncing' : 'Sync' }}</span>
+    </button>
+  </nav>
 </div>
