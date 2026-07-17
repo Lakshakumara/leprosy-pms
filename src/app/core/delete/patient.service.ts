@@ -6,17 +6,17 @@ import { Patient, PatientFilter } from './patient.model';
 @Injectable({ providedIn: 'root' })
 export class PatientService {
   private readonly localStore = inject(LocalStorageService);
-  private readonly dhis2      = inject(Dhis2Service);
+  private readonly dhis2 = inject(Dhis2Service);
   /** Full in-memory cache of local records; source of truth for the UI. */
   private readonly _patients = signal<Patient[]>([]);
   readonly patients = this._patients.asReadonly();
-  readonly isOnline   = signal<boolean>(navigator.onLine);
-  readonly isSyncing  = signal(false);
+  readonly isOnline = signal<boolean>(navigator.onLine);
+  readonly isSyncing = signal(false);
   readonly lastPullError = signal<string | null>(null);
 
-  readonly lastSyncedAt  = signal<string | null>(null);
+  readonly lastSyncedAt = signal<string | null>(null);
   constructor() {
-    window.addEventListener('online',  () => this.isOnline.set(true));
+    window.addEventListener('online', () => this.isOnline.set(true));
     window.addEventListener('offline', () => this.isOnline.set(false));
     this.loadFromLocal();
   }
@@ -24,7 +24,7 @@ export class PatientService {
   async loadFromLocal(): Promise<void> {
     const all = await this.localStore.getAllPatients();
     this._patients.set(
-      all /*.sort((a, b) => b.enrolledAt.localeCompare(a.enrolledAt))*/
+      all.sort((a, b) => b.enrolledAt.localeCompare(a.enrolledAt))
     );
   }
   // ── Filter ─────────────────────────────────────────────────────────────────
@@ -64,17 +64,17 @@ export class PatientService {
       }
       // Enrolled date range
       if (filter.enrolledFrom && p.enrolledAt < filter.enrolledFrom) return false;
-      if (filter.enrolledTo   && p.enrolledAt > filter.enrolledTo)   return false;
+      if (filter.enrolledTo && p.enrolledAt > filter.enrolledTo) return false;
       return true;
     })
-    // Mandatory sort: newest enrolled patient first
+      // Mandatory sort: newest enrolled patient first
       .sort((a, b) => b.enrolledAt.localeCompare(a.enrolledAt));
   }
 
   async getById(id: string): Promise<Patient | undefined> {
     return this.localStore.getPatient(id);
   }
-  
+
   /**
    * Pull all patients from DHIS2 Tracker API and save to IndexedDB.
    * Existing local-only records are preserved; synced records are overwritten
@@ -114,18 +114,51 @@ export class PatientService {
         // Merge: don't overwrite local-only / pending records with server data
         for (const r of remote) {
           const existing = await this.localStore.getPatient(r.id);
+          const ageCorrected = this.setAge(r)
           if (!existing || existing.syncStatus === 'synced') {
-            await this.localStore.savePatient(r);
+            await this.localStore.savePatient(ageCorrected);
           }
         }
         const now = new Date().toISOString();
-       // await this.localStore.setMeta('lastSyncedAt', now);
+        // await this.localStore.setMeta('lastSyncedAt', now);
         this.lastSyncedAt.set(now);
         this.isSyncing.set(false);
         await this.loadFromLocal();
       });
   }
-  
+
+  setAge(p: Patient): Patient {
+    const value = p.patientAge?.trim();
+
+    // If it's already an age like "24" or "24y", keep it
+    if (!value || value.length <= 4 && !value.includes('-')) {
+      return p;
+    }
+
+    // Try to treat value as DOB: "2000-01-02" or "2000-01-02T00:00:00.000"
+    const dobStr = value.split('T')[0];
+    const enrolledStr = (p.enrolledAt || new Date().toISOString()).split('T')[0];
+
+    const dob = new Date(dobStr);
+    const enrolled = new Date(enrolledStr);
+
+    if (isNaN(dob.getTime()) || isNaN(enrolled.getTime())) {
+      return p; // not a valid date, return as-is
+    }
+
+    let age = enrolled.getFullYear() - dob.getFullYear();
+
+    // Reduce 1 year if birthday hasn't happened yet at enrollment
+    /*const monthDiff = enrolled.getMonth() - dob.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && enrolled.getDate() < dob.getDate())) {
+      age--;
+    }*/
+console.log('map age', String(age) )
+    return {
+      ...p,
+      patientAge: String(age)
+    };
+  }
   // ── Distinct values for filter dropdowns ───────────────────────────────────
   getDistinctValues(field: keyof Patient): Promise<string[]> {
     return this.localStore.getDistinctValues(field);

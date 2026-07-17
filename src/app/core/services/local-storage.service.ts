@@ -44,7 +44,6 @@ export class LocalStorageService {
   }
 
   async setMeta<T>(key: string, value: T): Promise<void> {
-    console.log(key, value)
     await set(key, value, this.metaStore);
   }
 

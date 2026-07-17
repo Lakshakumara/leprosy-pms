@@ -24,10 +24,11 @@ export interface Patient {
   nicNum: string;       // B6au8evTRWl — National ID Card
   guardianName: string; // UBWQy1GFOee
   mobileNum: string;    // Y4H01gi8N2M
+  telNum:string;        // g71IALGz9U8
   patientName: string;  // hGbU1zkkxH8 — full name
   patientSex: string;   // C9FV3HiPEkA — 'Male' | 'Female'
   ethnicGroup: string;  // cw1sJo3q9UF
-  patientAge: number;   // C0ZoykFjsTP
+  patientAge: string;   // C0ZoykFjsTP
 
   // ── Enrollment ─────────────────────────────────────────────────────────────
   orgUnitId: string;         // facility UID (level 4)
@@ -82,6 +83,7 @@ export interface Patient {
  */
 export interface PatientFilter {
   /** Free-text search across patientName, alcNum, nicNum */
+  district?:string;
   search?: string;
   /** Exact ALC number match */
   alcNum?: string;

@@ -43,12 +43,10 @@ interface TrackerInstance {
 
 interface TrackerListResponse {
   instances: TrackerInstance[];
-  pager: {
-    page: number;
-    pageSize: number;
-    pageCount: number;
-    total: number;
-  };
+  page: number;
+  pageSize: number;
+  pageCount: number;
+  total: number;
 }
 
 // ── UIDs from environment (shorthand) ─────────────────────────────────────────
@@ -77,9 +75,9 @@ export class Dhis2Service {
     return this.fetchPage(orgUnitId, 1).pipe(
       expand(response => {
         console.log('responsex', response)
-        /*if (response.pager.page < response.pager.pageCount) {
-          return this.fetchPage(orgUnitId, response.pager.page + 1);
-        }*/
+        if (response.page < response.pageCount) {
+          return this.fetchPage(orgUnitId, response.page + 1);
+        }
         return EMPTY;
       }),
       reduce((acc: Patient[], response: TrackerListResponse) => {
@@ -101,25 +99,25 @@ export class Dhis2Service {
       'trackedEntity,',
       'orgUnit,',
       'enrollments[',
-        'enrollment,status,enrolledAt,orgUnit,orgUnitName,',
-        'attributes[attribute,value],',
-        'events[event,programStage,status,occurredAt,dataValues[dataElement,value]]',
+      'enrollment,status,enrolledAt,orgUnit,orgUnitName,',
+      'attributes[attribute,value],',
+      'events[event,programStage,status,occurredAt,dataValues[dataElement,value]]',
       ']',
     ].join('');
-console.log('orgUnitID', orgUnitId)
+    console.log('orgUnitID', orgUnitId)
     const params = new HttpParams()
       .set('program', environment.dhis2.program)
       .set('orgUnit', orgUnitId)
       .set('ouMode', 'DESCENDANTS')
       .set('fields', fields)
       .set('pageSize', '250')
-      .set('page', String(page))
-      .set('attribute','hGbU1zkkxH8');
+      .set('page', String(1))
+      .set('attribute', 'hGbU1zkkxH8');
 
     return this.http
       .get<TrackerListResponse>(`${this.base}/tracker/trackedEntities`, { params })
       .pipe(
-        tap(r => console.info(`[Dhis2Service] page ${page}/${r.pager?.pageCount ?? '?'} — ${r.instances?.length ?? 0} records`))
+        tap(r => console.info(`[Dhis2Service] page ${page}/${r?.pageCount ?? '?'} — ${r.instances?.length ?? 0} records`))
       );
   }
 
@@ -147,7 +145,7 @@ console.log('orgUnitID', orgUnitId)
         const coords = JSON.parse(gpsRaw);
         if (Array.isArray(coords) && coords.length >= 2) {
           longitude = coords[0];
-          latitude  = coords[1];
+          latitude = coords[1];
         }
       } catch { /* ignore malformed GPS data */ }
     }
@@ -155,61 +153,62 @@ console.log('orgUnitID', orgUnitId)
     const now = new Date().toISOString();
 
     return {
-      id:     tei.trackedEntity,
-      teiId:  tei.trackedEntity,
+      id: tei.trackedEntity,
+      teiId: tei.trackedEntity,
 
       // TEI Attributes
-      alcNum:       attrMap.get(A.ALC_NUM.uid)       ?? '',
-      clinicNum:    attrMap.get(A.CLINIC_NUM.uid)    ?? '',
-      nicNum:       attrMap.get(A.NIC_NUM.uid)       ?? '',
+      alcNum: attrMap.get(A.ALC_NUM.uid) ?? '',
+      clinicNum: attrMap.get(A.CLINIC_NUM.uid) ?? '',
+      nicNum: attrMap.get(A.NIC_NUM.uid) ?? '',
       guardianName: attrMap.get(A.GUARDIAN_NAME.uid) ?? '',
-      mobileNum:    attrMap.get(A.MOBILE_NUM.uid)    ?? '',
-      patientName:  attrMap.get(A.PATIENT_NAME.uid)  ?? '',
-      patientSex:   attrMap.get(A.PATIENT_SEX.uid)   ?? '',
-      ethnicGroup:  attrMap.get(A.ETHNIC_GROUP.uid)  ?? '',
-      patientAge:   Number(attrMap.get(A.PATIENT_AGE.uid) ?? 0),
+      mobileNum: attrMap.get(A.MOBILE_NUM.uid) ?? '',
+      telNum: attrMap.get(A.TEL_NUM.uid) ?? '',
+      patientName: attrMap.get(A.PATIENT_NAME.uid) ?? '',
+      patientSex: attrMap.get(A.PATIENT_SEX.uid) ?? '',
+      ethnicGroup: attrMap.get(A.ETHNIC_GROUP.uid) ?? '',
+      patientAge: attrMap.get(A.PATIENT_AGE.uid) ?? '',
 
       // Enrollment
-      orgUnitId:        enrollment?.orgUnit     ?? tei.orgUnit ?? '',
-      orgUnitName:      enrollment?.orgUnitName ?? '',
-      enrolledAt:       enrollment?.enrolledAt  ?? '',
-      enrollmentStatus: enrollment?.status      ?? '',
+      orgUnitId: enrollment?.orgUnit ?? tei.orgUnit ?? '',
+      orgUnitName: enrollment?.orgUnitName ?? '',
+      enrolledAt: enrollment?.enrolledAt ?? '',
+      enrollmentStatus: enrollment?.status ?? '',
 
       // FIRST_VISIT data elements
-      treatmentClassification:      dvMap.get(D.TREATMENT_CLASSIFICATION.uid)       ?? '',
-      disabilityAtDiagnosis:        dvMap.get(D.DISABILITY_AT_DIAGNOSIS.uid)        ?? '',
-      ehfScore:                     Number(dvMap.get(D.EHF_SCORE.uid)               ?? 0),
-      patientMohArea:               dvMap.get(D.PATIENT_MOH_AREA.uid)               ?? '',
-      patientPhiArea:               dvMap.get(D.PATIENT_PHI_AREA.uid)               ?? '',
-      patientGnDivision:            dvMap.get(D.PATIENT_GN_DIVISION.uid)            ?? '',
-      patientDistrict:              dvMap.get(D.PATIENT_DISTRICT.uid)               ?? '',
-      patientHomeAddress:           dvMap.get(D.PATIENT_HOME_ADDRESS.uid)           ?? '',
-      treatmentType:                dvMap.get(D.TREATMENT_TYPE.uid)                 ?? '',
-      caseType:                     dvMap.get(D.CASE_TYPE.uid)                      ?? '',
-      contactHistory:               dvMap.get(D.CONTACT_HISTORY.uid) === 'true',
-      contactHistorySource:         dvMap.get(D.SOURCE_OF_CONTACT_HISTORY.uid)      ?? '',
-      relapse:                      dvMap.get(D.RELAPSE.uid)                        ?? '',
+      treatmentClassification: dvMap.get(D.TREATMENT_CLASSIFICATION.uid) ?? '',
+      disabilityAtDiagnosis: dvMap.get(D.DISABILITY_AT_DIAGNOSIS.uid) ?? '',
+      ehfScore: Number(dvMap.get(D.EHF_SCORE.uid) ?? 0),
+      patientMohArea: dvMap.get(D.PATIENT_MOH_AREA.uid) ?? '',
+      patientPhiArea: dvMap.get(D.PATIENT_PHI_AREA.uid) ?? '',
+      patientGnDivision: dvMap.get(D.PATIENT_GN_DIVISION.uid) ?? '',
+      patientDistrict: dvMap.get(D.PATIENT_DISTRICT.uid) ?? '',
+      patientHomeAddress: dvMap.get(D.PATIENT_HOME_ADDRESS.uid) ?? '',
+      treatmentType: dvMap.get(D.TREATMENT_TYPE.uid) ?? '',
+      caseType: dvMap.get(D.CASE_TYPE.uid) ?? '',
+      contactHistory: dvMap.get(D.CONTACT_HISTORY.uid) === 'true',
+      contactHistorySource: dvMap.get(D.SOURCE_OF_CONTACT_HISTORY.uid) ?? '',
+      relapse: dvMap.get(D.RELAPSE.uid) ?? '',
       defaulterRestartingTreatment: dvMap.get(D.DEFAULTER_RESTARTING_TREATMENT.uid) ?? '',
-      changeOfTreatmentType:        dvMap.get(D.CHANGE_OF_TREATMENT_TYPE.uid)       ?? '',
-      previousTreatmentType:        dvMap.get(D.PREVIOUS_TREATMENT_TYPE.uid)        ?? '',
-      yearOfTreatmentCompletion:    dvMap.get(D.YEAR_OF_TREATMENT_COMPLETION.uid)   ?? '',
-      timeSinceOnsetMonths:         dvMap.get(D.TIME_SINCE_ONSET_MONTHS.uid)        ?? '',
-      nameOfConsultant:             dvMap.get(D.NAME_OF_CONSULTANT.uid)             ?? '',
-      nameOfMO:                     dvMap.get(D.NAME_OF_MO.uid)                     ?? '',
-      patientReferredBy:            dvMap.get(D.PATIENT_REFERRED_BY.uid)            ?? '',
+      changeOfTreatmentType: dvMap.get(D.CHANGE_OF_TREATMENT_TYPE.uid) ?? '',
+      previousTreatmentType: dvMap.get(D.PREVIOUS_TREATMENT_TYPE.uid) ?? '',
+      yearOfTreatmentCompletion: dvMap.get(D.YEAR_OF_TREATMENT_COMPLETION.uid) ?? '',
+      timeSinceOnsetMonths: dvMap.get(D.TIME_SINCE_ONSET_MONTHS.uid) ?? '',
+      nameOfConsultant: dvMap.get(D.NAME_OF_CONSULTANT.uid) ?? '',
+      nameOfMO: dvMap.get(D.NAME_OF_MO.uid) ?? '',
+      patientReferredBy: dvMap.get(D.PATIENT_REFERRED_BY.uid) ?? '',
 
       // Deformity
-      clawHand:       dvMap.get(D.CLAW_HAND.uid) === 'true',
-      footDrop:       dvMap.get(D.FOOT_DROP.uid)       ?? '',
-      footUlcer:      dvMap.get(D.FOOT_ULCER.uid)      ?? '',
+      clawHand: dvMap.get(D.CLAW_HAND.uid) === 'true',
+      footDrop: dvMap.get(D.FOOT_DROP.uid) ?? '',
+      footUlcer: dvMap.get(D.FOOT_ULCER.uid) ?? '',
       eyeInvolvement: dvMap.get(D.EYE_INVOLVEMENT.uid) ?? '',
-      faceInvolvement:dvMap.get(D.FACE_INVOLVEMENT.uid) ?? '',
+      faceInvolvement: dvMap.get(D.FACE_INVOLVEMENT.uid) ?? '',
 
       latitude,
       longitude,
 
-      createdAt:  enrollment?.enrolledAt ?? now,
-      updatedAt:  now,
+      createdAt: enrollment?.enrolledAt ?? now,
+      updatedAt: now,
       syncStatus: 'synced',
     };
   }

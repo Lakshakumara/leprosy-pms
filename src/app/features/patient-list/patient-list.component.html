@@ -47,6 +47,14 @@
         }
     </div>
     <div class="filters-grid">
+        <!-- Living District -->
+        <div class="filter-field">
+            <label>District</label>
+            <p-select [options]="districtOptions()" optionLabel="label" optionValue="value"
+                [ngModel]="filter().district" (ngModelChange)="updateFilter('district', $event)"
+                [loading]="filtersLoading()" id="district-select">
+            </p-select>
+        </div>
         <!-- Search -->
         <div class="filter-field filter-field--wide">
             <label for="search-input">Search</label>
@@ -131,12 +139,12 @@
             <tr>
                 <th>ALC #</th>
                 <th>Patient Name</th>
+                <th>Address</th>
                 <th>Sex / Age</th>
                 <th>Classification</th>
                 <th>Hospital</th>
                 <th>MOH Area</th>
                 <th>Enrolled</th>
-                <th>Type</th>
                 <th></th>
             </tr>
         </ng-template>
@@ -155,6 +163,13 @@
                     @if (p.mobileNum) {
                     <div class="sub-text">{{ p.mobileNum }}</div>
                     }
+                    @if (p.telNum) {
+                    <div class="sub-text">{{ p.telNum }}</div>
+                    }
+
+                </td>
+                <td>
+                     {{ p.patientHomeAddress }}
                 </td>
                 <td>
                     {{ p.patientSex || '—' }}
@@ -180,12 +195,7 @@
                     {{ p.enrolledAt | date:'yyyy-MM-dd' }}
                     <div class="sub-text">{{ enrolledDaysAgo(p.enrolledAt) }} days ago</div>
                 </td>
-                <td>
-                    <span class="ehf-badge" [class.ehf-high]="p.treatmentType == 'MBA'"
-                        [class.ehf-mid]="p.treatmentType == 'MBC' && p.treatmentType =='PBC'">
-                        {{ p.treatmentType }}
-                    </span>
-                </td>
+                
                 <td class="actions">
                     <a [routerLink]="['/patients', p.id]" pButton icon="pi pi-eye" class="p-button-text p-button-sm"
                         title="View details"></a>

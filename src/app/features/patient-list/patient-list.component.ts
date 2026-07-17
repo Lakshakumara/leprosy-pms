@@ -5,11 +5,13 @@ import { RouterLink } from '@angular/router';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
-import { SelectModule } from 'primeng/select'; import { TagModule } from 'primeng/tag';
+import { SelectModule } from 'primeng/select'; 
+import { TagModule } from 'primeng/tag';
 import { SkeletonModule } from 'primeng/skeleton';
 import { PatientService } from '../../core/delete/patient.service';
 import { PatientFilter } from '../../core/delete/patient.model';
 import { environment } from '../../../environments/environment';
+import { DISTRICT } from '../../core/util/util';
 interface SelectOption { label: string; value: string; }
 @Component({
     selector: 'app-patient-list',
@@ -25,13 +27,25 @@ interface SelectOption { label: string; value: string; }
 export class PatientListComponent implements OnInit {
     protected readonly patientService = inject(PatientService);
     protected readonly filter = signal<PatientFilter>({
+        district: 'All',
         search: '',
         classification: 'ALL',
         orgUnitId: 'ALL',
         mohArea: 'ALL',
         phiArea: 'ALL',
         gnDivision: 'ALL',
+        ...this.defaultDateRange(),
     });
+    private defaultDateRange(): { enrolledFrom: string; enrolledTo: string } {
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        return {
+            enrolledFrom: `${yyyy}-01-01`,
+            enrolledTo: `${yyyy}-${mm}-${dd}`,
+        };
+    }
     protected readonly showFilters = signal(false);
     protected readonly filtersLoading = signal(true);
     // ── Static filter options ─────────────────────────────────────────────────
@@ -48,11 +62,13 @@ export class PatientListComponent implements OnInit {
     protected mohAreaOptions = signal<SelectOption[]>([{ label: 'All MOH areas', value: 'ALL' }]);
     protected phiAreaOptions = signal<SelectOption[]>([{ label: 'All PHI areas', value: 'ALL' }]);
     protected gnDivisionOptions = signal<SelectOption[]>([{ label: 'All GN divisions', value: 'ALL' }]);
+    protected districtOptions = signal<SelectOption[]>([{ label: 'All District', value: 'ALL' }]);
     // ── Filtered rows ─────────────────────────────────────────────────────────
     protected readonly rows = computed(() => this.patientService.filtered(this.filter()));
     protected readonly activeFilterCount = computed(() => {
         const f = this.filter();
         let count = 0;
+        if(f.district) count++;
         if (f.search) count++;
         if (f.classification && f.classification !== 'ALL') count++;
         if (f.orgUnitId && f.orgUnitId !== 'ALL') count++;
@@ -72,10 +88,15 @@ export class PatientListComponent implements OnInit {
     }
     private async loadDistinctValues(): Promise<void> {
         this.filtersLoading.set(true);
-        const [moh, phi, gn] = await Promise.all([
+        const [moh, phi, gn, district] = await Promise.all([
             this.patientService.getDistinctValues('patientMohArea'),
             this.patientService.getDistinctValues('patientPhiArea'),
             this.patientService.getDistinctValues('patientGnDivision'),
+            this.patientService.getDistinctValues('patientDistrict')
+        ]);
+        this.districtOptions.set([
+            { label: 'All District', value: 'ALL' },
+            ...district.map(v => ({ label: v, value: v })),
         ]);
         this.mohAreaOptions.set([
             { label: 'All MOH areas', value: 'ALL' },
@@ -96,12 +117,14 @@ export class PatientListComponent implements OnInit {
     }
     protected clearFilters(): void {
         this.filter.set({
+            district: DISTRICT,
             search: '',
             classification: 'ALL',
             orgUnitId: 'ALL',
             mohArea: 'ALL',
             phiArea: 'ALL',
             gnDivision: 'ALL',
+            ...this.defaultDateRange(),
         });
     }
 

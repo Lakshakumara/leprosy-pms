@@ -1,4 +1,8 @@
-<h1>Dashboard</h1>
+<h1 class="dashboard-title">
+  Dashboard
+  <p-multiSelect [options]="yearOptions" [(ngModel)]="selectedYears" display="chip" placeholder="+ years"
+    [showClear]="true" styleClass="year-title-select"></p-multiSelect>
+</h1>
 
 <div class="stats">
   <div class="card stat">
@@ -14,7 +18,7 @@
     <div class="stat__label">PB — paucibacillary</div>
   </div>
   <div class="card stat">
-    <div class="stat__value">{{ grade0Count() }}</div>
+    <div class="stat__value">{{ grade2Count() }}</div>
     <div class="stat__label">Grade 2 disability</div>
   </div>
 </div>
@@ -22,16 +26,16 @@
 <div class="card chart">
   <h3>Cases by year of onset</h3>
   @if (byYear().length === 0) {
-    <p class="muted">No patient data yet. <a routerLink="/patients/new">Register your first patient</a>.</p>
+  <p class="muted">No patient data yet. <a routerLink="/patients/new">Register your first patient</a>.</p>
   } @else {
-    <div class="bars">
-      @for (entry of byYear(); track entry.year) {
-        <div class="bar-col">
-          <div class="bar" [style.height.%]="(entry.count / activeCount()) * 100"></div>
-          <div class="bar-label">{{ entry.year }}</div>
-          <div class="bar-count">{{ entry.count }}</div>
-        </div>
-      }
+  <div class="bars">
+    @for (entry of byYear(); track entry.year) {
+    <div class="bar-col">
+      <div class="bar" [style.height.%]="(entry.count / activeCount()) * 100"></div>
+      <div class="bar-label">{{ entry.year }}</div>
+      <div class="bar-count">{{ entry.count }}</div>
     </div>
+    }
+  </div>
   }
 </div>

@@ -13,6 +13,16 @@
 .chart { padding: 22px; }
 .muted { color: var(--color-muted); }
 
+.year-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+
+  label { font-size: 0.8rem; font-weight: 600; color: var(--color-muted); }
+}
+.year-multiselect { min-width: 220px; }
+
 .bars {
   display: flex;
   align-items: flex-end;

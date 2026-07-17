@@ -18,8 +18,8 @@ export const environment = {
     apiToken: 'd2pat_xDvgejPgu5QW9GojtAxn7dfycUSpMfSj0148869625',
     // Fallback basic auth (dev only - do not ship credentials in prod builds,
     // and do not commit a real password here — set it locally only)
-    username: 'ALC-RPra-PHI1',
-    password: 'AlcRatnapura@2023',
+    username: '',
+    password: '',
     program: 'sqsddKuTGlJ',        // Leprosy program
     trackedEntityType: 'S2afGQZ5tDu',
     // The authenticated user's assigned org unit (district level, level 3).
@@ -85,15 +85,16 @@ export const environment = {
    * Tracked Entity Attributes (confirmed from `displayName` in source JSON)
    */
   TRACKED_ENTITY_ATTRIBUTES: {
-    ALC_NUM:        { uid: 'AujHTe3nXx4', displayName: 'Lep - Alc - Num',        valueType: 'TEXT' },
+    ALC_NUM:        { uid: 'AujHTe3nXx4', displayName: 'Lep - Alc - Num',         valueType: 'TEXT' },
     CLINIC_NUM:     { uid: 'Sn6LwDqapMU', displayName: 'Lep - Clinic Num',        valueType: 'TEXT' },
     NIC_NUM:        { uid: 'B6au8evTRWl', displayName: 'Lep - NIC Num',           valueType: 'TEXT' },
     GUARDIAN_NAME:  { uid: 'UBWQy1GFOee', displayName: 'Lep - Guardian Name',     valueType: 'TEXT' },
     MOBILE_NUM:     { uid: 'Y4H01gi8N2M', displayName: 'Lep - Mobile Num',        valueType: 'PHONE_NUMBER' },
+    TEL_NUM:        { uid: 'g71IALGz9U8', displayName: 'Lep - Tel Num',           valueType: 'PHONE_NUMBER' },
     PATIENT_NAME:   { uid: 'hGbU1zkkxH8', displayName: 'Lep - Patient name',      valueType: 'TEXT' },
     PATIENT_SEX:    { uid: 'C9FV3HiPEkA', displayName: 'Lep - Patient Sex',       valueType: 'TEXT' },
     ETHNIC_GROUP:   { uid: 'cw1sJo3q9UF', displayName: 'Lep - Ethnic group',      valueType: 'TEXT' },
-    PATIENT_AGE:    { uid: 'C0ZoykFjsTP', displayName: 'Lep - Patient age',       valueType: 'AGE' },
+    PATIENT_AGE:    { uid: 'C0ZoykFjsTP', displayName: 'Lep - Patient age',       valueType: 'TEXT' },
   } as const,
 
   /**
