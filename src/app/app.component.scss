@@ -125,6 +125,46 @@
   i { font-size: 0.9rem; }
 }
 
+// ── User info & logout ─────────────────────────────────────────────────────────
+.shell__user {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: 12px;
+}
+.shell__user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: #9fc2bd;
+  i { font-size: 0.85rem; }
+}
+.shell__user-name {
+  font-weight: 600;
+  color: #cfe4e0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.shell__logout-btn {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  border-radius: var(--radius-sm);
+  padding: 7px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  transition: background 0.15s;
+  &:hover { background: rgba(239, 68, 68, 0.22); }
+  i { font-size: 0.88rem; }
+}
+
 // ── Main content ──────────────────────────────────────────────────────────────
 .shell__content {
   padding: 28px 32px;

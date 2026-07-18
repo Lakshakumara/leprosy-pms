@@ -8,8 +8,8 @@ import { SelectModule } from 'primeng/select';
 import { ButtonModule } from 'primeng/button';
 import { TextareaModule } from 'primeng/textarea';
 import { environment } from '../../../environments/environment';
-import { PatientService } from '../../core/delete/patient.service';
-import { Patient } from '../../core/delete/patient.model';
+import { PatientService } from '../../core/services/patient.service';
+import { Patient } from '../../core/services/patient.model';
 
 @Component({
   selector: 'app-patient-form',
@@ -60,7 +60,7 @@ export class PatientFormComponent implements OnInit {
     classification: ['PB' as 'MB' | 'PB', Validators.required],
     disabilityGrade: ['0' as '0' | '1' | '2'| '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10', Validators.required],
     phoneNumber: [''],
-    orgUnitId: [environment.dhis2.orgUnitId],
+    //orgUnitId: [environment.dhis2.orgUnitId],
     address: [''],
     latitude: [null as number | null],
     longitude: [null as number | null],
@@ -100,18 +100,18 @@ export class PatientFormComponent implements OnInit {
     const v = this.form.getRawValue();
     const now = new Date().toISOString();
 
-    const patient: Patient = {
+    /*const patient: Patient = {
       id: this.existing?.id ?? crypto.randomUUID(),
       teiId: this.existing?.teiId,
-      firstName: v.firstName,
-      lastName: v.lastName,
-      gender: v.gender,
-      onsetYear: v.onsetYear,
+      patientName: v.firstName,
+      telNum: v.lastName,
+      patientSex: v.gender,
+      enrolledAt: v.registeredAt,
       classification: v.classification,
      // registeredAt: v.registeredAt,
       disabilityGrade: v.disabilityGrade,
       phoneNumber: v.phoneNumber || undefined,
-      orgUnitId: v.orgUnitId || environment.dhis2.orgUnitId,
+      //orgUnitId: v.orgUnitId || environment.dhis2.orgUnitId,
       address: v.address || undefined,
       latitude: v.latitude ?? undefined,
       longitude: v.longitude ?? undefined,
@@ -119,9 +119,9 @@ export class PatientFormComponent implements OnInit {
       createdAt: this.existing?.createdAt ?? now,
       updatedAt: now,
       syncStatus: this.existing?.syncStatus ?? 'local-only'
-    };
+    };*/
 
-    await this.patientService.save(patient);
+    //await this.patientService.save(patient);
     this.saving.set(false);
     this.router.navigate(['/patients']);
   }

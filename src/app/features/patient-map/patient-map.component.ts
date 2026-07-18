@@ -1,9 +1,9 @@
 import { Component, inject, computed, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GoogleMapsModule } from '@angular/google-maps';
-import { PatientService } from '../../core/delete/patient.service';
+import { PatientService } from '../../core/services/patient.service';
 import { environment } from '../../../environments/environment';
-import { Patient } from '../../core/delete/patient.model';
+import { Patient } from '../../core/services/patient.model';
 
 @Component({
   selector: 'app-patient-map',

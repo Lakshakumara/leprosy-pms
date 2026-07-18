@@ -1,12 +1,14 @@
-import { Component, inject, computed, signal } from '@angular/core';
+import { Component, inject, computed, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { PatientService } from '../../core/delete/patient.service';
+import { PatientService } from '../../core/services/patient.service';
 import { environment } from '../../../environments/environment';
-import { Patient } from '../../core/delete/patient.model';
+import { Patient } from '../../core/services/patient.model';
 
 import { MultiSelectModule } from 'primeng/multiselect';
 import { FormsModule } from '@angular/forms';
+import { DISTRICT } from '../../core/util/util';
+import { OrgScopeService } from '../../core/services/org-scope.service';
 
 interface CountRow { label: string; count: number; pct: number; }
 
@@ -17,7 +19,12 @@ interface CountRow { label: string; count: number; pct: number; }
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })
-export class DashboardComponent {
+export class DashboardComponent implements OnInit{
+  private readonly scope = inject(OrgScopeService)
+  ngOnInit(): void {
+    console.log('assignedDistricts()', this.scope.assignedDistricts())
+    console.log('assignedFacilities()', this.scope.assignedFacilities())
+  }
   protected readonly patientService = inject(PatientService);
 
   private readonly currentYear = new Date().getFullYear();
@@ -29,7 +36,7 @@ export class DashboardComponent {
   );
 
   /** Empty selection = show all years (default state). */
-  protected readonly selectedYears = signal<number[]>([]);
+  protected readonly selectedYears = signal<number[]>([this.currentYear]);
 
   /**
    * enrolledAt is stored as "yyyy-MM-dd". Pull the year straight out of the
@@ -49,7 +56,7 @@ export class DashboardComponent {
     if (years.length === 0) return all; // no selection = all years
     return all.filter((p) => {
       const year = this.yearOf(p.enrolledAt);
-      return year != null && years.includes(year);
+      return year != null && years.includes(year) && p.patientDistrict === DISTRICT;
     });
   });
 

@@ -169,7 +169,7 @@
 
                 </td>
                 <td>
-                     {{ p.patientHomeAddress }}
+                    {{ p.patientHomeAddress }}
                 </td>
                 <td>
                     {{ p.patientSex || '—' }}
@@ -195,7 +195,7 @@
                     {{ p.enrolledAt | date:'yyyy-MM-dd' }}
                     <div class="sub-text">{{ enrolledDaysAgo(p.enrolledAt) }} days ago</div>
                 </td>
-                
+
                 <td class="actions">
                     <a [routerLink]="['/patients', p.id]" pButton icon="pi pi-eye" class="p-button-text p-button-sm"
                         title="View details"></a>

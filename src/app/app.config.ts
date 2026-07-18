@@ -1,4 +1,4 @@
-import { ApplicationConfig, provideZoneChangeDetection, isDevMode } from '@angular/core';
+import { ApplicationConfig, provideZoneChangeDetection, isDevMode, APP_INITIALIZER } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
@@ -8,6 +8,16 @@ import Aura from '@primeuix/themes/aura';
 
 import { routes } from './app.routes';
 import { dhis2AuthInterceptor } from './core/services/dhis2-auth.interceptor';
+import { AuthService } from './core/services/auth.service';
+
+/**
+ * Restore the auth session from localStorage synchronously before the router
+ * activates any route. This ensures the auth guard sees the correct state on
+ * the very first navigation (e.g., deep-linking to /dashboard while logged in).
+ */
+function initAuth(auth: AuthService): () => void {
+  return () => auth.restoreSession();
+}
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -15,6 +25,12 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideHttpClient(withInterceptors([dhis2AuthInterceptor])),
     provideAnimationsAsync(),
+    {
+      provide: APP_INITIALIZER,
+      useFactory: initAuth,
+      deps: [AuthService],
+      multi: true,
+    },
     providePrimeNG({
       theme: {
         preset: Aura,

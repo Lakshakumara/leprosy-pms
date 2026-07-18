@@ -129,9 +129,7 @@
     ]
 }
 
- curl -g -i -H "Authorization: ApiToken d2pat_xDvgejPgu5QW9GojtAxn7dfycUSpMfSj0148869625" "https://phsmis.health.gov.lk/api/me.json?fields=id,username,organisationUnits[id,name,level],dataViewOrganisationUnits[id,name,level],teiSearchOrganisationUnits[id,name,level]"  
-
-{
+ curl -g -i -H "Authorization: ApiToken d2pat_xDvgejPgu5QW9GojtAxn7dfycUSpMfSj0148869625""https://phsmis.health.gov.lk/api/me.json?fields=id,username,organisationUnits[id,name,level],dataViewOrganisationUnits[id,name,level],teiSearchOrganisationUnits[id,name,level]"{
     "id": "NsLsuAj4aHV",
     "username": "ALC-RPra-PHI1",
     "dataViewOrganisationUnits": [
@@ -180,4 +178,225 @@
             "level": 4
         }
     ]
+}
+
+
+
+
+
+
+{
+    "id": "NsLsuAj4aHV",
+    "username": "ALC-RPra-PHI1",
+    "surname": "LC-Ratnapura",
+    "firstName": "ALC",
+    "gender": "gender_male",
+    "jobTitle": "PHI ALC Ratnapura",
+    "created": "2023-11-06T08:36:08.262",
+    "lastUpdated": "2026-07-17T22:35:54.139",
+    "dataViewOrganisationUnits": [
+        {
+            "id": "GYBZ1og9bk7"
+        }
+    ],
+    "favorites": [],
+    "sharing": {
+        "owner": "NsLsuAj4aHV",
+        "external": false,
+        "users": {},
+        "userGroups": {}
+    },
+    "userGroupAccesses": [],
+    "userAccesses": [],
+    "userGroups": [
+        {
+            "id": "djWT4BZUsoe"
+        }
+    ],
+    "translations": [],
+    "teiSearchOrganisationUnits": [
+        {
+            "id": "GYBZ1og9bk7"
+        }
+    ],
+    "organisationUnits": [
+        {
+            "id": "nqVVoCVGEr3"
+        },
+        {
+            "id": "LCZgWKWn26c"
+        },
+        {
+            "id": "LCZgWKW134a"
+        },
+        {
+            "id": "LCZgWKWn71b"
+        },
+        {
+            "id": "LCZgWKWn36c"
+        },
+        {
+            "id": "LCZgWKWn63a"
+        }
+    ],
+    "externalAccess": false,
+    "displayName": "ALC LC-Ratnapura",
+    "access": {
+        "manage": true,
+        "externalize": false,
+        "write": true,
+        "read": true,
+        "update": true,
+        "delete": false
+    },
+    "name": "ALC LC-Ratnapura",
+    "email": "lakshakumara@gmail.com",
+    "phoneNumber": "0714396453",
+    "introduction": "Leprosy Campaign Ratnapura",
+    "birthday": "1977-12-31T00:00:00.000",
+    "nationality": "Sri lankan",
+    "education": "BTech Hons (Eng) (OUSL)",
+    "interests": "Computer Programmimg",
+    "whatsApp": "+94714396453",
+    "facebookMessenger": "Lakshakumara",
+    "userRoles": [
+        {
+            "id": "Y6IStUOP4Fb"
+        },
+        {
+            "id": "JJNYXoUUCue"
+        }
+    ],
+    "settings": {
+        "keyMessageSmsNotification": true,
+        "keyTrackerDashboardLayout": "{\"sqsddKuTGlJ\":{\"widgets\":[{\"show\":true,\"view\":\"components/enrollment/enrollment.html\",\"order\":0,\"title\":\"enrollment\",\"expand\":true,\"parent\":\"biggerWidget\"},{\"show\":true,\"view\":\"components/rulebound/rulebound.html\",\"order\":1,\"title\":\"indicators\",\"expand\":true,\"parent\":\"biggerWidget\",\"topBarView\":\"components/rulebound/rulebound-topbar.html#indicators\",\"useAsTopBar\":true,\"canBeUsedAsTopBar\":true},{\"show\":true,\"view\":\"components/dataentry/dataentry.html\",\"order\":2,\"title\":\"dataentry\",\"expand\":true,\"parent\":\"biggerWidget\"},{\"show\":true,\"view\":\"components/dataentry/dataentry-tabular-layout.html\",\"order\":3,\"title\":\"dataentryTabular\",\"expand\":true,\"parent\":\"biggerWidget\"},{\"show\":true,\"view\":\"components/report/tei-report.html\",\"order\":4,\"title\":\"report\",\"expand\":false,\"parent\":\"biggerWidget\"},{\"show\":false,\"view\":\"components/selected/selected.html\",\"order\":0,\"title\":\"current_selections\",\"expand\":false,\"parent\":\"smallerWidget\"},{\"show\":false,\"view\":\"components/rulebound/rulebound.html\",\"order\":1,\"title\":\"feedback\",\"expand\":false,\"parent\":\"smallerWidget\",\"topBarView\":\"components/rulebound/rulebound-topbar.html#feedback\",\"useAsTopBar\":false,\"canBeUsedAsTopBar\":true},{\"show\":true,\"view\":\"components/profile/profile.html\",\"order\":2,\"title\":\"profile\",\"expand\":true,\"parent\":\"smallerWidget\",\"topBarView\":\"components/profile/profile-topbar.html\",\"useAsTopBar\":false,\"canBeUsedAsTopBar\":true},{\"show\":true,\"view\":\"components/relationship/relationship.html\",\"order\":3,\"title\":\"relationships\",\"expand\":true,\"parent\":\"smallerWidget\"},{\"show\":true,\"view\":\"components/notes/notes.html\",\"order\":4,\"title\":\"notes\",\"expand\":true,\"parent\":\"smallerWidget\"},{\"show\":true,\"view\":\"components/messaging/messaging.html\",\"order\":5,\"title\":\"messaging\",\"expand\":true,\"parent\":\"smallerWidget\"}],\"topBarSettings\":{\"active\":true,\"selectedFields\":{\"AujHTe3nXx4\":{\"show\":true,\"order\":1},\"B6au8evTRWl\":{\"show\":true,\"order\":9},\"C0ZoykFjsTP\":{\"show\":true,\"order\":3},\"C9FV3HiPEkA\":{\"show\":true,\"order\":4},\"Sn6LwDqapMU\":{\"show\":true,\"order\":8},\"UBWQy1GFOee\":{\"show\":true,\"order\":7},\"Y4H01gi8N2M\":{\"show\":true,\"order\":5},\"cw1sJo3q9UF\":{\"show\":true,\"order\":6},\"hGbU1zkkxH8\":{\"show\":true,\"order\":2},\"sSN5lK9QSYu\":{\"show\":true,\"order\":3}}},\"program\":\"sqsddKuTGlJ\",\"programStageTimeLineLayout\":{\"x0vRwubw5S7\":{\"timelineDataEntryMode\":2,\"tableEditMode\":1}}}}",
+        "keyStyle": "myanmar/myanmar.css",
+        "keyUiLocale": "en",
+        "keyAnalysisDisplayProperty": "name",
+        "keyMessageEmailNotification": true
+    },
+    "programs": [
+        "sqsddKuTGlJ"
+    ],
+    "authorities": [
+        "F_PROGRAM_INDICATOR_PUBLIC_ADD",
+        "F_TRACKED_ENTITY_INSTANCE_SEARCH_IN_ALL_ORGUNITS",
+        "F_USER_VIEW",
+        "F_DATAELEMENTGROUP_PUBLIC_ADD",
+        "F_PROGRAM_PUBLIC_ADD",
+        "F_VALIDATIONRULE_PUBLIC_ADD",
+        "F_MAP_PUBLIC_ADD",
+        "F_ATTRIBUTE_PUBLIC_ADD",
+        "F_INDICATORGROUPSET_PUBLIC_ADD",
+        "F_ORGANISATIONUNIT_ADD",
+        "F_CATEGORY_OPTION_GROUP_PUBLIC_ADD",
+        "F_PREDICTORGROUP_ADD",
+        "M_linelisting",
+        "F_LEGEND_SET_PUBLIC_ADD",
+        "F_CONSTANT_ADD",
+        "F_DATAVALUE_ADD",
+        "F_SEND_EMAIL",
+        "F_ENROLLMENT_CASCADE_DELETE",
+        "F_INDICATORTYPE_ADD",
+        "M_dhis-web-event-reports",
+        "F_VIEW_EVENT_ANALYTICS",
+        "F_INDICATOR_PUBLIC_ADD",
+        "F_INDICATORGROUP_PUBLIC_ADD",
+        "F_IMPORT_EVENTS",
+        "M_dhis-web-approval",
+        "F_PROGRAM_RULE_MANAGEMENT",
+        "F_PREDICTOR_ADD",
+        "F_TEI_CASCADE_DELETE",
+        "F_EXPORT_DATA",
+        "M_dhis-web-cache-cleaner",
+        "F_USERGROUP_PUBLIC_ADD",
+        "F_EVENTCHART_PUBLIC_ADD",
+        "M_dhis-web-event-visualizer",
+        "F_TRACKED_ENTITY_ATTRIBUTE_PUBLIC_ADD",
+        "F_USER_ADD",
+        "F_MOBILE_SENDSMS",
+        "F_PROGRAM_DASHBOARD_CONFIG_ADMIN",
+        "F_TRACKED_ENTITY_ADD",
+        "F_EVENT_VISUALIZATION_PUBLIC_ADD",
+        "F_VALIDATIONRULEGROUP_PUBLIC_ADD",
+        "F_ORGUNITGROUP_PUBLIC_ADD",
+        "M_dhis-web-reports",
+        "F_APPROVE_DATA_LOWER_LEVELS",
+        "F_CATEGORY_OPTION_PUBLIC_ADD",
+        "F_DOCUMENT_PUBLIC_ADD",
+        "F_VISUALIZATION_PUBLIC_ADD",
+        "M_dhis-web-data-quality",
+        "F_OPTIONSET_PUBLIC_ADD",
+        "F_REPORT_PUBLIC_ADD",
+        "M_dhis-web-dataentry",
+        "F_ORGANISATIONUNIT_MOVE",
+        "F_EXTERNAL_MAP_LAYER_PUBLIC_ADD",
+        "F_DATAELEMENT_PUBLIC_ADD",
+        "F_RUN_VALIDATION",
+        "F_PROGRAM_RULE_ADD",
+        "F_USERROLE_PUBLIC_ADD",
+        "M_dhis-web-settings",
+        "F_IMPORT_DATA",
+        "F_ORGUNITGROUPSET_PUBLIC_ADD",
+        "F_DATASET_PUBLIC_ADD",
+        "M_dhis-web-tracker-capture",
+        "M_dhis-web-maps",
+        "F_PROGRAMSTAGE_ADD",
+        "F_DASHBOARD_PUBLIC_ADD",
+        "F_EXPORT_EVENTS",
+        "F_CATEGORY_PUBLIC_ADD",
+        "M_dhis-web-data-visualizer",
+        "F_CATEGORY_COMBO_PUBLIC_ADD",
+        "M_dhis-web-dashboard",
+        "F_MINMAX_DATAELEMENT_ADD",
+        "F_ACCEPT_DATA_LOWER_LEVELS",
+        "F_APPROVE_DATA",
+        "F_EVENTREPORT_PUBLIC_ADD",
+        "F_OPTIONGROUPSET_PUBLIC_ADD",
+        "M_dhis-web-capture",
+        "F_OPTIONGROUP_PUBLIC_ADD",
+        "F_PROGRAM_INDICATOR_GROUP_PUBLIC_ADD",
+        "F_TRACKED_ENTITY_UPDATE",
+        "M_dhis-web-messaging",
+        "F_CATEGORY_OPTION_GROUP_SET_PUBLIC_ADD",
+        "F_UNCOMPLETE_EVENT",
+        "F_DATAELEMENTGROUPSET_PUBLIC_ADD"
+    ],
+    "dataSets": [],
+    "userCredentials": {
+        "id": "NsLsuAj4aHV",
+        "username": "ALC-RPra-PHI1",
+        "externalAuth": false,
+        "twoFA": false,
+        "passwordLastUpdated": "2025-01-22T04:47:12.769",
+        "cogsDimensionConstraints": [],
+        "catDimensionConstraints": [],
+        "previousPasswords": [],
+        "lastLogin": "2026-07-17T22:35:54.137",
+        "selfRegistered": false,
+        "invitation": false,
+        "disabled": false,
+        "access": {
+            "manage": true,
+            "externalize": false,
+            "write": true,
+            "read": true,
+            "update": true,
+            "delete": false
+        },
+        "sharing": {
+            "owner": "NsLsuAj4aHV",
+            "external": false,
+            "users": {},
+            "userGroups": {}
+        },
+        "userRoles": [
+            {
+                "id": "Y6IStUOP4Fb"
+            },
+            {
+                "id": "JJNYXoUUCue"
+            }
+        ]
+    }
 }

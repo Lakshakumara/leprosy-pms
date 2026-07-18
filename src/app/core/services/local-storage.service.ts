@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { createStore, entries, get, set, del } from 'idb-keyval';
-import { Patient } from '../delete/patient.model';
+import { Patient } from './patient.model';
 
 /**
  * Offline-first persistence layer using IndexedDB (idb-keyval).

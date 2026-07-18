@@ -8,8 +8,8 @@ import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select'; 
 import { TagModule } from 'primeng/tag';
 import { SkeletonModule } from 'primeng/skeleton';
-import { PatientService } from '../../core/delete/patient.service';
-import { PatientFilter } from '../../core/delete/patient.model';
+import { PatientService } from '../../core/services/patient.service';
+import { PatientFilter } from '../../core/services/patient.model';
 import { environment } from '../../../environments/environment';
 import { DISTRICT } from '../../core/util/util';
 interface SelectOption { label: string; value: string; }

@@ -1,8 +1,8 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { PatientService } from '../../core/delete/patient.service';
-import { Patient } from '../../core/delete/patient.model';
+import { PatientService } from '../../core/services/patient.service';
+import { Patient } from '../../core/services/patient.model';
 import { environment } from '../../../environments/environment';
 
 @Component({

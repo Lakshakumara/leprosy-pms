@@ -1,8 +1,9 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { catchError, of } from 'rxjs';
-import { LocalStorageService } from '../services/local-storage.service';
+import { LocalStorageService } from './local-storage.service';
 import { Dhis2Service } from './dhis2.service';
 import { Patient, PatientFilter } from './patient.model';
+
 @Injectable({ providedIn: 'root' })
 export class PatientService {
   private readonly localStore = inject(LocalStorageService);
@@ -148,11 +149,6 @@ export class PatientService {
 
     let age = enrolled.getFullYear() - dob.getFullYear();
 
-    // Reduce 1 year if birthday hasn't happened yet at enrollment
-    /*const monthDiff = enrolled.getMonth() - dob.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && enrolled.getDate() < dob.getDate())) {
-      age--;
-    }*/
 console.log('map age', String(age) )
     return {
       ...p,
