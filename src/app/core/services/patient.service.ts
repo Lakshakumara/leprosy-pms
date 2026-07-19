@@ -6,8 +6,9 @@ import { Patient, PatientFilter } from './patient.model';
 
 @Injectable({ providedIn: 'root' })
 export class PatientService {
-  private readonly localStore = inject(LocalStorageService);
+  private readonly localStorage = inject(LocalStorageService);
   private readonly dhis2 = inject(Dhis2Service);
+  
   /** Full in-memory cache of local records; source of truth for the UI. */
   private readonly _patients = signal<Patient[]>([]);
   readonly patients = this._patients.asReadonly();
@@ -23,7 +24,7 @@ export class PatientService {
   }
   // ── Load from IndexedDB ────────────────────────────────────────────────────
   async loadFromLocal(): Promise<void> {
-    const all = await this.localStore.getAllPatients();
+    const all = await this.localStorage.getAllPatients();
     this._patients.set(
       all.sort((a, b) => b.enrolledAt.localeCompare(a.enrolledAt))
     );
@@ -73,7 +74,7 @@ export class PatientService {
   }
 
   async getById(id: string): Promise<Patient | undefined> {
-    return this.localStore.getPatient(id);
+    return this.localStorage.getPatient(id);
   }
 
   /**
@@ -114,10 +115,10 @@ export class PatientService {
         console.info(`[PatientService] pullFromServer received ${remote.length} record(s)`);
         // Merge: don't overwrite local-only / pending records with server data
         for (const r of remote) {
-          const existing = await this.localStore.getPatient(r.id);
+          const existing = await this.localStorage.getPatient(r.id);
           const ageCorrected = this.setAge(r)
           if (!existing || existing.syncStatus === 'synced') {
-            await this.localStore.savePatient(ageCorrected);
+            await this.localStorage.savePatient(ageCorrected);
           }
         }
         const now = new Date().toISOString();
@@ -157,6 +158,6 @@ console.log('map age', String(age) )
   }
   // ── Distinct values for filter dropdowns ───────────────────────────────────
   getDistinctValues(field: keyof Patient): Promise<string[]> {
-    return this.localStore.getDistinctValues(field);
+    return this.localStorage.getDistinctValues(field);
   }
 }

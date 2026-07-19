@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { PatientService } from '../../core/services/patient.service';
 import { Patient } from '../../core/services/patient.model';
 import { environment } from '../../../environments/environment';
+import { DeviceStorageService } from '../../core/services/device-storage.service';
 
 @Component({
   selector: 'app-patient-detail',
@@ -15,6 +16,7 @@ import { environment } from '../../../environments/environment';
 export class PatientDetailComponent implements OnInit {
   private readonly route  = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly storage = inject(DeviceStorageService)
   private readonly patientService = inject(PatientService);
 
   protected readonly patient = signal<Patient | null>(null);
@@ -23,7 +25,7 @@ export class PatientDetailComponent implements OnInit {
 
   /** Resolve the facility display name from the environment FACILITIES list. */
   protected facilityName(orgUnitId: string): string {
-    return environment.FACILITIES.find(f => f.id === orgUnitId)?.displayName ?? orgUnitId;
+    return this.storage.getFacilities().find((f:any) => f.id === orgUnitId)?.displayName ?? orgUnitId;
   }
 
   async ngOnInit(): Promise<void> {

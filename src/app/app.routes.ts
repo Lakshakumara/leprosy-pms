@@ -12,7 +12,7 @@ export const routes: Routes = [
   // Authenticated — all routes below require a valid session
   {
     path: 'dashboard',
-    //canActivate: [authGuard],
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent),
   },
@@ -27,6 +27,13 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () =>
       import('./features/patient-detail/patient-detail.component').then(m => m.PatientDetailComponent),
+  },
+
+  {
+    path: 'new',
+    //canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/patient-form/patient-form.component').then(m => m.PatientFormComponent),
   },
   {
     path: 'map',

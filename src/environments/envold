@@ -43,5 +43,5 @@ export const environment = {
 
   // --- Google Maps ---
   // Get a key from https://console.cloud.google.com/google/maps-apis
-  googleMapsApiKey: ''
+  googleMapsApiKey: 'AIzaSyASfzX-MbMu9lWERu0l2JVA0TAUH1_Mws4'
 };

@@ -5,13 +5,14 @@ import { RouterLink } from '@angular/router';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
-import { SelectModule } from 'primeng/select'; 
+import { SelectModule } from 'primeng/select';
 import { TagModule } from 'primeng/tag';
 import { SkeletonModule } from 'primeng/skeleton';
 import { PatientService } from '../../core/services/patient.service';
 import { PatientFilter } from '../../core/services/patient.model';
 import { environment } from '../../../environments/environment';
-import { DISTRICT } from '../../core/util/util';
+import { DISTRICT, STORAGE_KEYS } from '../../core/util/util';
+import { DeviceStorageService } from '../../core/services/device-storage.service';
 interface SelectOption { label: string; value: string; }
 @Component({
     selector: 'app-patient-list',
@@ -25,6 +26,7 @@ interface SelectOption { label: string; value: string; }
     styleUrl: './patient-list.component.scss',
 })
 export class PatientListComponent implements OnInit {
+    private readonly storage = inject(DeviceStorageService);
     protected readonly patientService = inject(PatientService);
     protected readonly filter = signal<PatientFilter>({
         district: 'All',
@@ -54,9 +56,11 @@ export class PatientListComponent implements OnInit {
         { label: 'MB — Multibacillary', value: 'MB (>5 lesions)' },
         { label: 'PB — Paucibacillary', value: 'PB (1-5 lesions)' },
     ];
+    protected readonly user = this.storage.getJSON<any>(STORAGE_KEYS.USER_DATA);
     protected readonly hospitalOptions: SelectOption[] = [
         { label: 'All hospitals', value: 'ALL' },
-        ...environment.FACILITIES.map(f => ({ label: f.displayName, value: f.id })),
+        // ...environment.FACILITIES.map(f => ({ label: f.displayName, value: f.id })),
+        ...this.user.organisationUnits.map((f: any) => ({ label: f.name, value: f.id })),
     ];
     // ── Dynamic filter options (from IndexedDB distinct values) ───────────────
     protected mohAreaOptions = signal<SelectOption[]>([{ label: 'All MOH areas', value: 'ALL' }]);
@@ -68,7 +72,7 @@ export class PatientListComponent implements OnInit {
     protected readonly activeFilterCount = computed(() => {
         const f = this.filter();
         let count = 0;
-        if(f.district) count++;
+        if (f.district) count++;
         if (f.search) count++;
         if (f.classification && f.classification !== 'ALL') count++;
         if (f.orgUnitId && f.orgUnitId !== 'ALL') count++;

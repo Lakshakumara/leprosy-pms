@@ -300,3 +300,61 @@
         font-size: 1.25rem;
     }
 }
+// Append this block to your existing login.component.scss
+
+.login-mode-toggle {
+    display: flex;
+    gap: 4px;
+    background: #f3f4f6;
+    border-radius: 10px;
+    padding: 4px;
+    margin-bottom: 22px;
+}
+
+.login-mode-tab {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 9px 10px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #6b7280;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: background 0.15s, color 0.15s;
+
+    &:hover { color: #374151; }
+
+    &.login-mode-tab--active {
+        background: #fff;
+        color: #0b4f4a;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+}
+
+.field__hint {
+    font-size: 0.76rem;
+    color: #9ca3af;
+    margin: 6px 0 0;
+}
+
+.remember-me {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: #374151;
+    margin-bottom: 20px;
+    cursor: pointer;
+
+    input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        accent-color: #0b4f4a;
+        cursor: pointer;
+    }
+}

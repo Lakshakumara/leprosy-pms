@@ -7,7 +7,15 @@
  *  - FIRST_VISIT event data elements → classification, EHF score, areas, deformities, etc.
  *
  * EHF score (Eye–Hand–Foot) ranges 0–12 and serves as the disability grade.
- * New patients are entered directly in DHIS2; this app is read-only + offline cache.
+ *
+ * This app supports full create/edit, pushed back to DHIS2 (not read-only -
+ * this comment previously said otherwise; that was stale). Writes go to
+ * TWO places in DHIS2 and both need handling in Dhis2Service.upsertPatient:
+ *  - Tracked Entity Attributes (demographics/identifiers)
+ *  - The FIRST_VISIT program stage EVENT (classification, EHF score,
+ *    deformities, location, etc.) - as of the last sync implementation,
+ *    only the TEI attribute push existed; the event push still needs to
+ *    be added for this model's clinical fields to actually reach DHIS2.
  */
 
 export type SyncStatus = 'synced' | 'pending' | 'error' | 'local-only';
@@ -24,7 +32,7 @@ export interface Patient {
   nicNum: string;       // B6au8evTRWl — National ID Card
   guardianName: string; // UBWQy1GFOee
   mobileNum: string;    // Y4H01gi8N2M
-  telNum:string;        // g71IALGz9U8
+  telNum: string;       // g71IALGz9U8
   patientName: string;  // hGbU1zkkxH8 — full name
   patientSex: string;   // C9FV3HiPEkA — 'Male' | 'Female'
   ethnicGroup: string;  // cw1sJo3q9UF
@@ -82,26 +90,18 @@ export interface Patient {
  * MOH / PHI / GN values come from distinct values stored in IndexedDB.
  */
 export interface PatientFilter {
-  /** Free-text search across patientName, alcNum, nicNum */
-  district?:string;
+  district?: string;
   search?: string;
-  /** Exact ALC number match */
   alcNum?: string;
-  /** 'MB' | 'PB' | 'ALL' */
   classification?: string;
-  /** Facility org unit ID, one of the 6 hospitals */
   orgUnitId?: string;
-  /** MOH area, matched by contains-ignore-case */
   mohArea?: string;
-  /** PHI area, matched by contains-ignore-case */
   phiArea?: string;
-  /** GN Division, matched by contains-ignore-case */
   gnDivision?: string;
-  /** ISO date string — filter patients enrolled on or after this date */
   enrolledFrom?: string;
-  /** ISO date string — filter patients enrolled on or before this date */
   enrolledTo?: string;
 }
+
 export const createDefaultPatientFilter = (): PatientFilter => ({
   enrolledFrom: `${new Date().getFullYear()}-01-01`,
   enrolledTo: new Date().toISOString().split('T')[0]

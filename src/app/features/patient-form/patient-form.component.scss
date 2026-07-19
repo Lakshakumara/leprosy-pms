@@ -5,6 +5,20 @@
   flex-direction: column;
   gap: 16px;
 }
+
+// Append to your existing patient-form.component.scss
+
+.form__section {
+  margin: 22px 0 4px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-teal-900);
+  border-bottom: 1px solid var(--color-line);
+  padding-bottom: 6px;
+
+  &:first-of-type { margin-top: 0; }
+}
+
 .grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -29,3 +43,4 @@
   padding-top: 8px;
   border-top: 1px solid var(--color-line);
 }
+

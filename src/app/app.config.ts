@@ -9,14 +9,32 @@ import Aura from '@primeuix/themes/aura';
 import { routes } from './app.routes';
 import { dhis2AuthInterceptor } from './core/services/dhis2-auth.interceptor';
 import { AuthService } from './core/services/auth.service';
+import { OrgScopeService } from './core/services/org-scope.service';
 
 /**
- * Restore the auth session from localStorage synchronously before the router
- * activates any route. This ensures the auth guard sees the correct state on
- * the very first navigation (e.g., deep-linking to /dashboard while logged in).
+ * Restores auth session AND org scope from localStorage synchronously
+ * before the router activates any route - both are network-free reads, so
+ * this works fully offline. This is what lets a returning user open the
+ * PWA with no connectivity and land straight in the app instead of being
+ * bounced to the login page.
+ *
+ * If the device happens to be online at startup, a background refresh of
+ * the org scope is kicked off afterwards (fire-and-forget) to pick up any
+ * change to the user's facility/district assignment - but this never
+ * blocks app startup and silently falls back to the cached scope if it
+ * fails (offline, server hiccup, etc).
  */
-function initAuth(auth: AuthService): () => void {
-  return () => auth.restoreSession();
+function initAuth(auth: AuthService, orgScope: OrgScopeService): () => void {
+  return () => {
+    auth.restoreSession();
+    orgScope.restoreFromCache();
+
+    if (navigator.onLine && auth.isLoggedIn()) {
+      orgScope.refreshFromServer().catch((err) => {
+        console.warn('[appConfig] Background org scope refresh failed - using cached scope.', err);
+      });
+    }
+  };
 }
 
 export const appConfig: ApplicationConfig = {
@@ -28,7 +46,7 @@ export const appConfig: ApplicationConfig = {
     {
       provide: APP_INITIALIZER,
       useFactory: initAuth,
-      deps: [AuthService],
+      deps: [AuthService, OrgScopeService],
       multi: true,
     },
     providePrimeNG({

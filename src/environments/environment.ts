@@ -36,52 +36,7 @@ export const environment = {
     },
   },
 
-  /**
-   * The 6 level-4 facilities registered under Ratnapura RDHS.
-   * Used for hospital filter dropdowns — static to avoid an async org-unit fetch
-   * on every page load.
-   */
-  FACILITIES: [
-    {
-      id: 'LCZgWKWn71b',
-      displayName: 'TH-Rathnapura',
-      path: '/GYBZ1og9bk7/G8wNqDYI245/Sa955F8q271/LCZgWKWn71b',
-      level: 4,
-    },
-    {
-      id: 'nqVVoCVGEr3',
-      displayName: 'DGH Embilipitiya',
-      path: '/GYBZ1og9bk7/G8wNqDYI245/Sa955F8q271/nqVVoCVGEr3',
-      level: 4,
-    },
-    {
-      id: 'LCZgWKWn63a',
-      displayName: 'BHB Balangoda',
-      path: '/GYBZ1og9bk7/G8wNqDYI245/Sa955F8q271/LCZgWKWn63a',
-      level: 4,
-    },
-    {
-      id: 'LCZgWKWn36c',
-      displayName: 'BHB Kahawatta',
-      path: '/GYBZ1og9bk7/G8wNqDYI245/Sa955F8q271/LCZgWKWn36c',
-      level: 4,
-    },
-    {
-      id: 'LCZgWKWn26c',
-      displayName: 'BHB Kalawana',
-      path: '/GYBZ1og9bk7/G8wNqDYI245/Sa955F8q271/LCZgWKWn26c',
-      level: 4,
-    },
-    {
-      id: 'LCZgWKW134a',
-      displayName: 'BHB Eheliyagoda',
-      path: '/GYBZ1og9bk7/G8wNqDYI245/Sa955F8q271/LCZgWKW134a',
-      level: 4,
-    },
-    
-  ] as const,
-
-  /**
+    /**
    * Tracked Entity Attributes (confirmed from `displayName` in source JSON)
    */
   TRACKED_ENTITY_ATTRIBUTES: {
@@ -159,8 +114,53 @@ export const environment = {
 
   // --- Google Maps ---
   // Get a key from https://console.cloud.google.com/google/maps-apis
-  googleMapsApiKey: ''
+  googleMapsApiKey: 'AIzaSyASfzX-MbMu9lWERu0l2JVA0TAUH1_Mws4'
 };
 
 export type Dhis2Environment = typeof environment;
-export type FacilityDto = typeof environment.FACILITIES[number];
+//export type FacilityDto = typeof environment.FACILITIES[number];
+/**
+   * The 6 level-4 facilities registered under Ratnapura RDHS.
+   * Used for hospital filter dropdowns — static to avoid an async org-unit fetch
+   * on every page load.
+   */
+  /*FACILITIES: [
+    {
+      id: 'LCZgWKWn71b',
+      displayName: 'TH-Rathnapura',
+      path: '/GYBZ1og9bk7/G8wNqDYI245/Sa955F8q271/LCZgWKWn71b',
+      level: 4,
+    },
+    {
+      id: 'nqVVoCVGEr3',
+      displayName: 'DGH Embilipitiya',
+      path: '/GYBZ1og9bk7/G8wNqDYI245/Sa955F8q271/nqVVoCVGEr3',
+      level: 4,
+    },
+    {
+      id: 'LCZgWKWn63a',
+      displayName: 'BHB Balangoda',
+      path: '/GYBZ1og9bk7/G8wNqDYI245/Sa955F8q271/LCZgWKWn63a',
+      level: 4,
+    },
+    {
+      id: 'LCZgWKWn36c',
+      displayName: 'BHB Kahawatta',
+      path: '/GYBZ1og9bk7/G8wNqDYI245/Sa955F8q271/LCZgWKWn36c',
+      level: 4,
+    },
+    {
+      id: 'LCZgWKWn26c',
+      displayName: 'BHB Kalawana',
+      path: '/GYBZ1og9bk7/G8wNqDYI245/Sa955F8q271/LCZgWKWn26c',
+      level: 4,
+    },
+    {
+      id: 'LCZgWKW134a',
+      displayName: 'BHB Eheliyagoda',
+      path: '/GYBZ1og9bk7/G8wNqDYI245/Sa955F8q271/LCZgWKW134a',
+      level: 4,
+    },
+    
+  ] as const,
+*/

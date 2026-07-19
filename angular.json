@@ -37,7 +37,13 @@
               ],
               "outputHashing": "all",
               "serviceWorker": "ngsw-config.json",
-              "optimization": { "fonts": false }
+              "optimization": { "fonts": false },
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.prod.ts"
+                }
+              ]
             },
             "development": {
               "optimization": false,
@@ -55,7 +61,7 @@
             "production": { "buildTarget": "leprosy-pms:build:production" },
             "development": { "buildTarget": "leprosy-pms:build:development" }
           },
-          "options": {"proxyConfig": "proxy.conf.json"},
+          "options": {"proxyConfig": "proxy.config.json"},
           "defaultConfiguration": "development"
         }
       }

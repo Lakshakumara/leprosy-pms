@@ -21,11 +21,17 @@ export class PatientMapComponent implements OnInit {
   protected readonly zoom = signal(7);
 
   protected readonly mappable = computed(() =>
-    this.patientService.patients().filter((p:any) => p.latitude != null && p.longitude != null)
-  );
+    this.patientService.patients().filter((p: any) => {
 
+      return p.latitude != null && p.longitude != null
+    })
+  );
   ngOnInit(): void {
-    if (!this.hasApiKey) return;
+    if (!this.hasApiKey) {
+      console.log('no api key')
+      return;
+    }
+    
     void this.loadGoogleMapsScript();
   }
 

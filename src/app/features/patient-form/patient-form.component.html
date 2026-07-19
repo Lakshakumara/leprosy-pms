@@ -1,45 +1,179 @@
 <h1>{{ isEdit() ? 'Edit patient' : 'Register patient' }}</h1>
 
 <form [formGroup]="form" (ngSubmit)="save()" class="card form">
+
+  <!-- Identifiers -->
+  <h3 class="form__section">Identifiers</h3>
   <div class="grid">
     <label class="field">
-      <span>First name *</span>
-      <input pInputText formControlName="firstName" />
+      <span>ALC Number *</span>
+      <input pInputText formControlName="alcNum" placeholder="ALC 45287" />
     </label>
     <label class="field">
-      <span>Last name *</span>
-      <input pInputText formControlName="lastName" />
+      <span>Clinic Number</span>
+      <input pInputText formControlName="clinicNum" />
     </label>
     <label class="field">
-      <span>Gender</span>
-      <p-select [options]="genderOptions" optionLabel="label" optionValue="value" formControlName="gender"></p-select>
+      <span>NIC Number</span>
+      <input pInputText formControlName="nicNum" />
     </label>
     <label class="field">
-      <span>Phone number</span>
-      <input pInputText formControlName="phoneNumber" placeholder="+94 7X XXX XXXX" />
+      <span>Guardian Name</span>
+      <input pInputText formControlName="guardianName" />
     </label>
+  </div>
 
+  <!-- Demographics -->
+  <h3 class="form__section">Demographics</h3>
+  <div class="grid">
     <label class="field">
-      <span>Year of onset *</span>
-      <p-inputNumber formControlName="onsetYear" [useGrouping]="false" [min]="1950" [max]="2100"></p-inputNumber>
+      <span>Patient Name *</span>
+      <input pInputText formControlName="patientName" />
     </label>
     <label class="field">
-      <span>Classification (MB/PB) *</span>
-      <p-select [options]="classificationOptions" optionLabel="label" optionValue="value" formControlName="classification"></p-select>
+      <span>Sex *</span>
+      <p-select [options]="sexOptions" optionLabel="label" optionValue="value" formControlName="patientSex"></p-select>
     </label>
     <label class="field">
-      <span>WHO disability grade *</span>
-      <p-select [options]="gradeOptions" optionLabel="label" optionValue="value" formControlName="disabilityGrade"></p-select>
+      <span>Age</span>
+      <input pInputText formControlName="patientAge" />
     </label>
     <label class="field">
-      <span>Org unit ID (DHIS2)</span>
-      <input pInputText formControlName="orgUnitId" placeholder="Facility org unit UID" />
+      <span>Ethnic Group</span>
+      <input pInputText formControlName="ethnicGroup" />
+    </label>
+    <label class="field">
+      <span>Mobile Number</span>
+      <input pInputText formControlName="mobileNum" placeholder="+94 7X XXX XXXX" />
+    </label>
+    <label class="field">
+      <span>Telephone Number</span>
+      <input pInputText formControlName="telNum" />
+    </label>
+  </div>
+
+  <!-- Enrollment -->
+  <h3 class="form__section">Enrollment</h3>
+  <div class="grid">
+    <label class="field">
+      <span>Facility (Org Unit) *</span>
+      <p-select [options]="facilityOptions()" optionLabel="name" optionValue="id" formControlName="orgUnitId"
+                placeholder="Select facility"></p-select>
+    </label>
+    <label class="field">
+      <span>Enrolled Date *</span>
+      <input pInputText type="date" formControlName="enrolledAt" />
+    </label>
+    <label class="field">
+      <span>Enrollment Status *</span>
+      <p-select [options]="enrollmentStatusOptions" optionLabel="label" optionValue="value" formControlName="enrollmentStatus"></p-select>
+    </label>
+  </div>
+
+  <!-- Clinical / First Visit -->
+  <h3 class="form__section">Clinical (First Visit)</h3>
+  <div class="grid">
+    <label class="field">
+      <span>Treatment Classification *</span>
+      <p-select [options]="classificationOptions" optionLabel="label" optionValue="value" formControlName="treatmentClassification"></p-select>
+    </label>
+    <label class="field">
+      <span>Treatment Type</span>
+      <input pInputText formControlName="treatmentType" placeholder="MB-MDT / PB-MDT" />
+    </label>
+    <label class="field">
+      <span>Case Type</span>
+      <input pInputText formControlName="caseType" />
+    </label>
+    <label class="field">
+      <span>EHF Score (0–12)</span>
+      <p-inputNumber formControlName="ehfScore" [min]="0" [max]="12" [useGrouping]="false"></p-inputNumber>
+    </label>
+    <label class="field">
+      <span>Time Since Onset (months)</span>
+      <input pInputText formControlName="timeSinceOnsetMonths" />
+    </label>
+    <label class="field">
+      <span>Year of Treatment Completion</span>
+      <input pInputText formControlName="yearOfTreatmentCompletion" />
+    </label>
+    <label class="field">
+      <span>Relapse</span>
+      <input pInputText formControlName="relapse" />
+    </label>
+    <label class="field">
+      <span>Previous Treatment Type</span>
+      <input pInputText formControlName="previousTreatmentType" />
+    </label>
+    <label class="field">
+      <span>Change of Treatment Type</span>
+      <input pInputText formControlName="changeOfTreatmentType" />
+    </label>
+    <label class="field">
+      <span>Defaulter Restarting Treatment</span>
+      <input pInputText formControlName="defaulterRestartingTreatment" />
     </label>
   </div>
 
   <label class="field">
-    <span>Address</span>
-    <input pInputText formControlName="address" placeholder="Village / GN division / district" />
+    <span>Disability at Diagnosis</span>
+    <textarea pTextarea formControlName="disabilityAtDiagnosis" rows="2"></textarea>
+  </label>
+
+  <!-- Contact history -->
+  <h3 class="form__section">Contact History</h3>
+  <div class="grid">
+    <label class="field">
+      <span>Contact History</span>
+      <p-select [options]="yesNoOptions" optionLabel="label" optionValue="value" formControlName="contactHistory"></p-select>
+    </label>
+    <label class="field">
+      <span>Contact History Source</span>
+      <input pInputText formControlName="contactHistorySource" />
+    </label>
+  </div>
+
+  <!-- Referral -->
+  <h3 class="form__section">Referral</h3>
+  <div class="grid">
+    <label class="field">
+      <span>Referred By</span>
+      <input pInputText formControlName="patientReferredBy" />
+    </label>
+    <label class="field">
+      <span>Consultant Name</span>
+      <input pInputText formControlName="nameOfConsultant" />
+    </label>
+    <label class="field">
+      <span>MO Name</span>
+      <input pInputText formControlName="nameOfMO" />
+    </label>
+  </div>
+
+  <!-- Location -->
+  <h3 class="form__section">Location</h3>
+  <div class="grid">
+    <label class="field">
+      <span>District</span>
+      <input pInputText formControlName="patientDistrict" />
+    </label>
+    <label class="field">
+      <span>MOH Area</span>
+      <input pInputText formControlName="patientMohArea" />
+    </label>
+    <label class="field">
+      <span>PHI Area</span>
+      <input pInputText formControlName="patientPhiArea" />
+    </label>
+    <label class="field">
+      <span>GN Division</span>
+      <input pInputText formControlName="patientGnDivision" />
+    </label>
+  </div>
+
+  <label class="field">
+    <span>Home Address</span>
+    <input pInputText formControlName="patientHomeAddress" />
   </label>
 
   <div class="grid grid--geo">
@@ -55,10 +189,30 @@
             class="p-button-outlined" (click)="useCurrentLocation()"></button>
   </div>
 
-  <label class="field">
-    <span>Notes</span>
-    <textarea pTextarea formControlName="notes" rows="3"></textarea>
-  </label>
+  <!-- Deformity -->
+  <h3 class="form__section">Deformity Details</h3>
+  <div class="grid">
+    <label class="field">
+      <span>Claw Hand</span>
+      <p-select [options]="yesNoOptions" optionLabel="label" optionValue="value" formControlName="clawHand"></p-select>
+    </label>
+    <label class="field">
+      <span>Foot Drop</span>
+      <input pInputText formControlName="footDrop" />
+    </label>
+    <label class="field">
+      <span>Foot Ulcer</span>
+      <input pInputText formControlName="footUlcer" />
+    </label>
+    <label class="field">
+      <span>Eye Involvement</span>
+      <input pInputText formControlName="eyeInvolvement" />
+    </label>
+    <label class="field">
+      <span>Face Involvement</span>
+      <input pInputText formControlName="faceInvolvement" />
+    </label>
+  </div>
 
   <div class="form__actions">
     <button pButton type="submit" [label]="saving() ? 'Saving…' : 'Save patient'" [disabled]="saving()"></button>

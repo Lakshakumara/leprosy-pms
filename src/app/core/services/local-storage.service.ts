@@ -38,7 +38,6 @@ export class LocalStorageService {
     await del(id, this.store);
   }
 
-  /** Simple key/value area for sync bookkeeping (e.g. last sync timestamp). */
   async getMeta<T>(key: string): Promise<T | undefined> {
     return get<T>(key, this.metaStore);
   }
@@ -47,11 +46,6 @@ export class LocalStorageService {
     await set(key, value, this.metaStore);
   }
 
-  /**
-   * Returns sorted distinct non-empty string values for the given field across
-   * all locally stored patients. Used to populate filter dropdowns
-   * (MOH area, PHI area, GN Division) without a live DHIS2 call.
-   */
   async getDistinctValues(field: keyof Patient): Promise<string[]> {
     const all = await this.getAllPatients();
     const set_ = new Set<string>();

@@ -7,8 +7,9 @@ import { Patient } from '../../core/services/patient.model';
 
 import { MultiSelectModule } from 'primeng/multiselect';
 import { FormsModule } from '@angular/forms';
-import { DISTRICT } from '../../core/util/util';
+import { DISTRICT, STORAGE_KEYS } from '../../core/util/util';
 import { OrgScopeService } from '../../core/services/org-scope.service';
+import { DeviceStorageService } from '../../core/services/device-storage.service';
 
 interface CountRow { label: string; count: number; pct: number; }
 
@@ -19,11 +20,13 @@ interface CountRow { label: string; count: number; pct: number; }
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })
-export class DashboardComponent implements OnInit{
+export class DashboardComponent implements OnInit {
+  private readonly storage = inject(DeviceStorageService);
   private readonly scope = inject(OrgScopeService)
   ngOnInit(): void {
-    console.log('assignedDistricts()', this.scope.assignedDistricts())
-    console.log('assignedFacilities()', this.scope.assignedFacilities())
+
+    //console.log('f', this.user)
+    //console.log('assignedFacilities()', this.scope.assignedFacilities())
   }
   protected readonly patientService = inject(PatientService);
 
@@ -108,13 +111,14 @@ export class DashboardComponent implements OnInit{
     }).length;
   });
 
+  protected readonly facilities = this.storage.getJSON<any>(STORAGE_KEYS.USER_DATA).organisationUnits;
   // ── By hospital ─────────────────────────────────────────────────────────────
   protected readonly byHospital = computed<CountRow[]>(() => {
     const patients = this.filteredPatients();
     if (!patients.length) return [];
     const map = new Map<string, number>();
     for (const p of patients) {
-      const name = p.orgUnitName || environment.FACILITIES.find(f => f.id === p.orgUnitId)?.displayName || p.orgUnitId || 'Unknown';
+      const name = p.orgUnitName || this.storage.getFacilities().find((f: any) => f.id === p.orgUnitId)?.name || p.orgUnitId || 'Unknown';
       map.set(name, (map.get(name) ?? 0) + 1);
     }
     const total = patients.length;
