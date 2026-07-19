@@ -2,7 +2,6 @@ import { Component, inject, computed, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { PatientService } from '../../core/services/patient.service';
-import { environment } from '../../../environments/environment';
 import { Patient } from '../../core/services/patient.model';
 
 import { MultiSelectModule } from 'primeng/multiselect';
@@ -10,6 +9,7 @@ import { FormsModule } from '@angular/forms';
 import { DISTRICT, STORAGE_KEYS } from '../../core/util/util';
 import { OrgScopeService } from '../../core/services/org-scope.service';
 import { DeviceStorageService } from '../../core/services/device-storage.service';
+import { Dhis2Service } from '../../core/services/dhis2.service';
 
 interface CountRow { label: string; count: number; pct: number; }
 
@@ -23,10 +23,16 @@ interface CountRow { label: string; count: number; pct: number; }
 export class DashboardComponent implements OnInit {
   private readonly storage = inject(DeviceStorageService);
   private readonly scope = inject(OrgScopeService)
+  private readonly dhis2Service = inject(Dhis2Service)
   ngOnInit(): void {
-
-    //console.log('f', this.user)
-    //console.log('assignedFacilities()', this.scope.assignedFacilities())
+    console.log('scope()', this.scope.scope())
+    // Reuse the same [2024, 2025, 2026] array your dashboard's year MultiSelect already produces
+    this.dhis2Service
+      .fetchPatientsByLivingDistrictForYears([2026])
+      .subscribe(async (patients) => {
+        console.log(patients)
+        //await this.localStore.savePatients(patients);
+      });
   }
   protected readonly patientService = inject(PatientService);
 
@@ -56,6 +62,7 @@ export class DashboardComponent implements OnInit {
   protected readonly filteredPatients = computed<Patient[]>(() => {
     const all = this.patientService.patients();
     const years = this.selectedYears();
+    if (years === null) return all;
     if (years.length === 0) return all; // no selection = all years
     return all.filter((p) => {
       const year = this.yearOf(p.enrolledAt);

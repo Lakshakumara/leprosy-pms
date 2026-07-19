@@ -139,8 +139,8 @@ export class PatientListComponent implements OnInit {
 
     protected classBadge(cls: string): string {
         if (!cls) return 'badge--unknown';
-        return cls.toUpperCase() === 'MB' ? 'badge--mb' : 'badge--pb';
-    }
+        return cls.toUpperCase() === 'MB (>5 lesions)' ? 'badge--mb' : 'badge--pb';
+    } 
     protected enrolledDaysAgo(enrolledAt: string): number {
         if (!enrolledAt) return 0;
         const ms = Date.now() - new Date(enrolledAt).getTime();

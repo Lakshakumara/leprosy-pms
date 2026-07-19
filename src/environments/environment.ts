@@ -22,14 +22,6 @@ export const environment = {
     password: '',
     program: 'sqsddKuTGlJ',        // Leprosy program
     trackedEntityType: 'S2afGQZ5tDu',
-    // The authenticated user's assigned org unit (district level, level 3).
-    // Facilities under it (level 4) are listed in FACILITIES below.
-    district: {
-      id: 'Sa955F8q271',
-      displayName: 'Ratnapura RDHS',
-      level: 3,
-      path: '/GYBZ1og9bk7/G8wNqDYI245/Sa955F8q271',
-    },
     endpoints: {
       organisationUnits: '/organisationUnits',
       trackedEntities: '/tracker/trackedEntities', // new Tracker API
@@ -163,4 +155,11 @@ export type Dhis2Environment = typeof environment;
     },
     
   ] as const,
-*/
+   // The authenticated user's assigned org unit (district level, level 3).
+    // Facilities under it (level 4) are listed in FACILITIES below.
+    /*district: {
+      id: 'Sa955F8q271',
+      displayName: 'Ratnapura RDHS',
+      level: 3,
+      path: '/GYBZ1og9bk7/G8wNqDYI245/Sa955F8q271',
+    },*/

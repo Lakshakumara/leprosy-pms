@@ -30,11 +30,23 @@ export class OrgScopeService {
   private readonly storage = inject(DeviceStorageService);
   private readonly base = environment.dhis2.baseUrl;
 
+  private readonly DISTRICT_NAME_OVERRIDES: Record<string, string> = {
+    'NuwaraEliya': 'Nuwara Eliya'
+  };
   private readonly _scope = signal<CurrentUserOrgScope | null>(null);
   readonly scope = this._scope.asReadonly();
   readonly assignedDistricts = computed(() => this._scope()?.assignedDistricts ?? []);
   readonly assignedFacilities = computed(() => this._scope()?.assignedFacilities ?? []);
   readonly hasScope = computed(() => this._scope() !== null);
+
+  readonly healthDistricts = computed(() => {
+    const suffixPattern = /\s+(RDHS|RD)\s*$/i;
+    return this._scope()?.assignedDistricts
+      .map((d) => d.name.replace(suffixPattern, '').trim())
+      .map((name) => this.DISTRICT_NAME_OVERRIDES[name] ?? name)
+      .filter((name) => name.length > 0)
+      ?? [];
+  });
 
   private districtLevelCache: number | null = null;
 
@@ -122,4 +134,6 @@ export class OrgScopeService {
     this.districtLevelCache = match.level;
     return match.level;
   }
+
+
 }

@@ -17,6 +17,11 @@ export class PatientService {
   readonly lastPullError = signal<string | null>(null);
 
   readonly lastSyncedAt = signal<string | null>(null);
+
+  get districtPatients() {
+    return  this.patients().filter(p => p.patientDistrict === 'Ratnapura')
+  };
+
   constructor() {
     window.addEventListener('online', () => this.isOnline.set(true));
     window.addEventListener('offline', () => this.isOnline.set(false));
@@ -92,7 +97,8 @@ export class PatientService {
     this.lastPullError.set(null);
     this.isSyncing.set(true);
     this.dhis2
-      .fetchPatients()
+      //.fetchPatients()
+      .fetchPatientsByLivingDistrictForYears([2026])
       .pipe(
         catchError(err => {
           const message =

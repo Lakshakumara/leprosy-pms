@@ -2,7 +2,7 @@
     <div>
         <h1>Patient Registry</h1>
         <p class="page-head__sub">
-            {{ rows().length }} of {{ patientService.patients().length }} patients shown
+            {{ rows().length }} of {{ rows().length }} patients shown
             @if (activeFilterCount() > 0) {
             · <span class="filter-badge">{{ activeFilterCount() }} filter{{ activeFilterCount() > 1 ? 's' : '' }}
                 active</span>
@@ -237,12 +237,13 @@
         <p>No patients found. {{ patientService.isOnline() ? '' : 'Go online to sync.' }}</p>
     </div>
     } @else {
-    @for (p of rows(); track p.id) {
+    @for (p of rows(); track p.id; let i = $index) {
     <a class="patient-card" [routerLink]="['/patients', p.id]">
         <div class="patient-card__top">
             <div>
-                <div class="patient-card__name">{{ p.patientName || '(no name)' }}</div>
-                <div class="patient-card__alc">ALC: {{ p.alcNum || '—' }}</div>
+                <div class="patient-card__name">#{{ rows().length - i}}.{{ p.patientName }} -  {{ p.alcNum }}</div>
+                <div class="patient-card__alc"> {{ p.patientHomeAddress }}</div>
+                <div class="patient-card__alc"> {{ p.telNum }}, {{ p.mobileNum }}</div>
             </div>
             @if (p.treatmentClassification) {
             <span class="badge" [class]="classBadge(p.treatmentClassification)">
@@ -253,7 +254,7 @@
         <div class="patient-card__meta">
             <span><i class="pi pi-building"></i> {{ p.orgUnitName || '—' }}</span>
             <span><i class="pi pi-map-marker"></i> {{ p.patientMohArea || '—' }}</span>
-            <span><i class="pi pi-calendar"></i> {{ p.enrolledAt | date:'dd MMM yyyy' }}</span>
+            <span><i class="pi pi-calendar"></i> {{ p.enrolledAt | date:'yyyy-MM-dd' }}</span>
             <span>EHF: <strong class="ehf-badge" [class.ehf-high]="p.ehfScore >= 7"
                     [class.ehf-mid]="p.ehfScore >= 4 && p.ehfScore < 7">{{ p.ehfScore }}</strong></span>
         </div>

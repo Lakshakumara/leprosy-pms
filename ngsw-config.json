@@ -21,7 +21,7 @@
   "dataGroups": [
     {
       "name": "dhis2-api",
-      "urls": ["https://your-dhis2-instance.org/api/**"],
+      "urls": ["https://phsmis.health.gov.lk/api/**"],
       "cacheConfig": {
         "strategy": "freshness",
         "maxSize": 100,
