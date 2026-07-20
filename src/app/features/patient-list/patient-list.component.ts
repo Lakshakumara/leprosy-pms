@@ -9,7 +9,7 @@ import { SelectModule } from 'primeng/select';
 import { TagModule } from 'primeng/tag';
 import { SkeletonModule } from 'primeng/skeleton';
 import { PatientService } from '../../core/services/patient.service';
-import { PatientFilter } from '../../core/services/patient.model';
+import { Patient, PatientFilter } from '../../core/services/patient.model';
 import { environment } from '../../../environments/environment';
 import { DISTRICT, STORAGE_KEYS } from '../../core/util/util';
 import { DeviceStorageService } from '../../core/services/device-storage.service';
@@ -137,13 +137,60 @@ export class PatientListComponent implements OnInit {
         await this.loadDistinctValues();
     }
 
-    protected classBadge(cls: string): string {
+    /*protected classBadge(cls: string): string {
         if (!cls) return 'badge--unknown';
         return cls.toUpperCase() === 'MB (>5 lesions)' ? 'badge--mb' : 'badge--pb';
-    } 
+    } */
     protected enrolledDaysAgo(enrolledAt: string): number {
         if (!enrolledAt) return 0;
         const ms = Date.now() - new Date(enrolledAt).getTime();
         return Math.floor(ms / (1000 * 60 * 60 * 24));
     }
+    /**
+ * Splice these into your existing PatientListComponent class, replacing
+ * the old classBadge() method.
+ */
+
+/**
+ * FIXED: previously compared an uppercased full string against a
+ * lowercase-in-part literal ("MB (>5 lesions)"), which could never match
+ * since .toUpperCase() also uppercases "lesions". Now only checks the
+ * MB/PB prefix, case-insensitively, ignoring the parenthetical detail -
+ * works regardless of exact DHIS2 option-set wording.
+ */
+protected classBadge(cls: string): string {
+  if (!cls) return 'badge--unknown';
+  const upper = cls.trim().toUpperCase();
+  if (upper.startsWith('MB')) return 'badge--mb';
+  if (upper.startsWith('PB')) return 'badge--pb';
+  return 'badge--unknown';
+}
+
+/**
+ * True if this patient was enrolled at a facility OUTSIDE your own
+ * hospitalOptions list (i.e. an "outer district" registration you're
+ * seeing via the living-district cross-search, not your own catchment).
+ * Assumes hospitalOptions items have `.value` matching p.orgUnitId -
+ * adjust the field name here if your actual hospitalOptions shape differs.
+ */
+protected isOuterDistrict(p: Patient): boolean {
+  if (!p.orgUnitId) return false;
+  return !this.hospitalOptions.some((h: any) => h.value === p.orgUnitId);
+}
+
+/** True if this is a pediatric case (under 15) worth flagging visually. */
+protected isChildCase(p: Patient): boolean {
+  const age = Number(p.patientAge);
+  return !Number.isNaN(age) && age < 15;
+}
+
+/**
+ * Bottom-to-top numbering across the WHOLE filtered dataset (not just the
+ * current page). PrimeNG's p-table body template exposes `rowIndex` as the
+ * absolute 0-based index accounting for pagination offset - pass it in
+ * from the template as `let-rowIndex="rowIndex"`.
+ */
+protected rowNumber(rowIndex: number): number {
+  return this.rows().length - rowIndex;
+}
 }

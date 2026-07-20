@@ -287,3 +287,49 @@
 // ── Responsive visibility ─────────────────────────────────────────────────────
 .desktop-only { @media (max-width: 700px) { display: none; } }
 .mobile-only  { display: none; @media (max-width: 700px) { display: block; } }
+// Append these to your existing patient-list.component.scss
+
+// ── Row numbering column ─────────────────────────────────────────────────
+.num-col {
+  width: 40px;
+  text-align: center;
+  color: var(--color-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+// ── Outer-district highlight (light red background) ─────────────────────
+// Desktop table row
+tr.row--outer-district {
+  background: #fdf1f1;
+
+  &:hover { background: #fbe4e4 !important; }
+}
+
+// Mobile card
+.patient-card.patient-card--outer-district {
+  background: #fdf1f1;
+  border-color: #f3caca;
+}
+
+// ── Classification badges - distinct colors per class ────────────────────
+.badge--mb {
+  background: var(--color-mb-bg, #f7e6de);
+  color: var(--color-mb, #b5532c);
+}
+.badge--pb {
+  background: var(--color-pb-bg, #f6edd2);
+  color: var(--color-pb, #b08900);
+}
+.badge--unknown {
+  background: #eceef0;
+  color: #6b7280;
+}
+
+// ── Child case indicator ──────────────────────────────────────────────────
+.badge--child {
+  background: #e0edff;
+  color: #1d4ed8;
+  margin-left: 6px;
+  font-size: 0.68rem;
+  vertical-align: middle;
+}

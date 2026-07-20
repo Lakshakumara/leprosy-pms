@@ -1,68 +1,69 @@
-import { Component, inject, computed, signal, OnInit } from '@angular/core';
+import { Component, inject, computed, signal, OnInit, AfterViewInit, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { GoogleMapsModule } from '@angular/google-maps';
 import { PatientService } from '../../core/services/patient.service';
-import { environment } from '../../../environments/environment';
 import { Patient } from '../../core/services/patient.model';
 
+/**
+ * Free map view using Leaflet + OpenStreetMap tiles - no API key, no
+ * billing account, no signup required at all. Genuinely free, unlike
+ * Google Maps (which needs a billing account on file even for free-tier
+ * usage) or Firebase Cloud Functions (needs Blaze plan for external calls).
+ *
+ * Install: npm install leaflet @types/leaflet --save
+ */
 @Component({
   selector: 'app-patient-map',
   standalone: true,
-  imports: [CommonModule, GoogleMapsModule],
+  imports: [CommonModule],
   templateUrl: './patient-map.component.html',
   styleUrl: './patient-map.component.scss'
 })
-export class PatientMapComponent implements OnInit {
-  protected readonly patientService = inject(PatientService);
-  protected readonly hasApiKey = !!environment.googleMapsApiKey;
+export class PatientMapComponent implements OnInit, AfterViewInit {
+  @ViewChild('mapContainer', { static: true }) mapContainer!: ElementRef<HTMLDivElement>;
+
+  public readonly patientService = inject(PatientService);
   protected readonly selected = signal<Patient | null>(null);
 
-  protected readonly center = signal<google.maps.LatLngLiteral>({ lat: 7.8731, lng: 80.7718 }); // Sri Lanka centroid, adjust as needed
-  protected readonly zoom = signal(7);
-
   protected readonly mappable = computed(() =>
-    this.patientService.patients().filter((p: any) => {
-
-      return p.latitude != null && p.longitude != null
-    })
+    this.patientService.patients().filter((p) => p.latitude != null && p.longitude != null)
   );
-  ngOnInit(): void {
-    if (!this.hasApiKey) {
-      console.log('no api key')
-      return;
+
+  private map: any;
+  private markers: any[] = [];
+
+  ngOnInit(): void {}
+
+  async ngAfterViewInit(): Promise<void> {
+    const L = await import('leaflet');
+
+    // Sri Lanka centroid as default view
+    this.map = L.map(this.mapContainer.nativeElement).setView([7.8731, 80.7718], 7);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19
+    }).addTo(this.map);
+
+    this.renderMarkers(L);
+  }
+
+  private renderMarkers(L: typeof import('leaflet')): void {
+    for (const m of this.markers) m.remove();
+    this.markers = [];
+
+    for (const p of this.mappable()) {
+      const isMb = p.treatmentClassification?.toUpperCase().startsWith('MB');
+      const color = isMb ? '#b5532c' : '#b08900';
+
+      const icon = L.divIcon({
+        className: '',
+        html: `<div style="width:16px;height:16px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,0.4)"></div>`,
+        iconSize: [16, 16]
+      });
+
+      const marker = L.marker([p.latitude!, p.longitude!], { icon }).addTo(this.map);
+      marker.on('click', () => this.selected.set(p));
+      this.markers.push(marker);
     }
-    
-    void this.loadGoogleMapsScript();
-  }
-
-  private loadGoogleMapsScript(): Promise<void> {
-    return new Promise((resolve) => {
-      if ((window as unknown as { google?: unknown }).google) {
-        resolve();
-        return;
-      }
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${environment.googleMapsApiKey}`;
-      script.async = true;
-      script.onload = () => resolve();
-      document.head.appendChild(script);
-    });
-  }
-
-  protected markerIcon(p: Patient): google.maps.Icon {
-    const color = p.treatmentClassification === 'MB' ? '#b5532c' : '#b08900';
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26">
-      <circle cx="13" cy="13" r="10" fill="${color}" stroke="white" stroke-width="2"/>
-    </svg>`;
-    return {
-      url: `data:image/svg+xml;base64,${btoa(svg)}`,
-      scaledSize: { width: 26, height: 26 } as google.maps.Size
-    };
-  }
-
-  protected select(p: Patient): void {
-    this.selected.set(p);
-    this.center.set({ lat: p.latitude!, lng: p.longitude! });
-    this.zoom.set(13);
   }
 }

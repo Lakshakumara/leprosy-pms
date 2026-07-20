@@ -21,7 +21,7 @@
             [disabled]="!patientService.isOnline() || patientService.isSyncing()" id="sync-btn">
             <i class="pi" [class.pi-refresh]="!patientService.isSyncing()" [class.pi-spin]="patientService.isSyncing()"
                 [class.pi-spinner]="patientService.isSyncing()"></i>
-            {{ patientService.isSyncing() ? 'Syncing…' : 'Sync DHIS2' }}
+            {{ patientService.isSyncing() ? 'Syncing…' : 'Deep Sync DHIS2' }}
         </button>
     </div>
 </div>
@@ -47,7 +47,6 @@
         }
     </div>
     <div class="filters-grid">
-        <!-- Living District -->
         <div class="filter-field">
             <label>District</label>
             <p-select [options]="districtOptions()" optionLabel="label" optionValue="value"
@@ -55,7 +54,6 @@
                 [loading]="filtersLoading()" id="district-select">
             </p-select>
         </div>
-        <!-- Search -->
         <div class="filter-field filter-field--wide">
             <label for="search-input">Search</label>
             <div class="input-wrap">
@@ -64,7 +62,6 @@
                     [ngModel]="filter().search" (ngModelChange)="updateFilter('search', $event)" />
             </div>
         </div>
-        <!-- Classification -->
         <div class="filter-field">
             <label>Classification</label>
             <p-select [options]="classificationOptions" optionLabel="label" optionValue="value"
@@ -72,28 +69,24 @@
                 id="classification-select">
             </p-select>
         </div>
-        <!-- Hospital -->
         <div class="filter-field">
             <label>Hospital</label>
             <p-select [options]="hospitalOptions" optionLabel="label" optionValue="value" [ngModel]="filter().orgUnitId"
                 (ngModelChange)="updateFilter('orgUnitId', $event)" id="hospital-select">
             </p-select>
         </div>
-        <!-- MOH Area -->
         <div class="filter-field">
             <label>MOH Area</label>
             <p-select [options]="mohAreaOptions()" optionLabel="label" optionValue="value" [ngModel]="filter().mohArea"
                 (ngModelChange)="updateFilter('mohArea', $event)" [loading]="filtersLoading()" id="moh-select">
             </p-select>
         </div>
-        <!-- PHI Area -->
         <div class="filter-field">
             <label>PHI Area</label>
             <p-select [options]="phiAreaOptions()" optionLabel="label" optionValue="value" [ngModel]="filter().phiArea"
                 (ngModelChange)="updateFilter('phiArea', $event)" [loading]="filtersLoading()" id="phi-select">
             </p-select>
         </div>
-        <!-- GN Division -->
         <div class="filter-field">
             <label>GN Division</label>
             <p-select [options]="gnDivisionOptions()" optionLabel="label" optionValue="value"
@@ -101,7 +94,6 @@
                 [loading]="filtersLoading()" id="gn-select">
             </p-select>
         </div>
-        <!-- Enrolled date range -->
         <div class="filter-field">
             <label for="enrolled-from">Enrolled from</label>
             <input id="enrolled-from" pInputText type="date" [ngModel]="filter().enrolledFrom"
@@ -118,7 +110,6 @@
 <!-- ── Desktop table ─────────────────────────────────────────────────────────── -->
 <div class="card table-card desktop-only">
     @if (patientService.isSyncing() && patientService.patients().length === 0) {
-    <!-- Skeleton loader while initial sync -->
     <div class="skeleton-rows">
         @for (_ of [1,2,3,4,5,6]; track $index) {
         <div class="skeleton-row">
@@ -137,6 +128,7 @@
         styleClass="p-datatable-sm">
         <ng-template pTemplate="header">
             <tr>
+                <th class="num-col">#</th>
                 <th>ALC #</th>
                 <th>Patient Name</th>
                 <th>Address</th>
@@ -148,8 +140,9 @@
                 <th></th>
             </tr>
         </ng-template>
-        <ng-template pTemplate="body" let-p>
-            <tr>
+        <ng-template pTemplate="body" let-p let-rowIndex="rowIndex">
+            <tr [class.row--outer-district]="isOuterDistrict(p)">
+                <td class="num-col">{{ rowNumber(rowIndex) }}</td>
                 <td class="alc-cell">
                     <span class="alc-num">{{ p.alcNum || '—' }}</span>
                     @if (p.clinicNum) {
@@ -166,7 +159,6 @@
                     @if (p.telNum) {
                     <div class="sub-text">{{ p.telNum }}</div>
                     }
-
                 </td>
                 <td>
                     {{ p.patientHomeAddress }}
@@ -174,6 +166,9 @@
                 <td>
                     {{ p.patientSex || '—' }}
                     @if (p.patientAge) { · {{ p.patientAge }} yrs }
+                    @if (isChildCase(p)) {
+                    <span class="badge badge--child">Child</span>
+                    }
                 </td>
                 <td>
                     @if (p.treatmentClassification) {
@@ -195,7 +190,6 @@
                     {{ p.enrolledAt | date:'yyyy-MM-dd' }}
                     <div class="sub-text">{{ enrolledDaysAgo(p.enrolledAt) }} days ago</div>
                 </td>
-
                 <td class="actions">
                     <a [routerLink]="['/patients', p.id]" pButton icon="pi pi-eye" class="p-button-text p-button-sm"
                         title="View details"></a>
@@ -204,7 +198,7 @@
         </ng-template>
         <ng-template pTemplate="emptymessage">
             <tr>
-                <td colspan="9" class="empty-state">
+                <td colspan="10" class="empty-state">
                     <i class="pi pi-inbox empty-icon"></i>
                     @if (patientService.patients().length === 0) {
                     <p>No patients in local cache yet.<br>
@@ -238,10 +232,15 @@
     </div>
     } @else {
     @for (p of rows(); track p.id; let i = $index) {
-    <a class="patient-card" [routerLink]="['/patients', p.id]">
+    <a class="patient-card" [class.patient-card--outer-district]="isOuterDistrict(p)" [routerLink]="['/patients', p.id]">
         <div class="patient-card__top">
             <div>
-                <div class="patient-card__name">#{{ rows().length - i}}.{{ p.patientName }} -  {{ p.alcNum }}</div>
+                <div class="patient-card__name">
+                    #{{ rows().length - i }}. {{ p.patientName }} - {{ p.alcNum }}
+                    @if (isChildCase(p)) {
+                    <span class="badge badge--child">Child</span>
+                    }
+                </div>
                 <div class="patient-card__alc"> {{ p.patientHomeAddress }}</div>
                 <div class="patient-card__alc"> {{ p.telNum }}, {{ p.mobileNum }}</div>
             </div>

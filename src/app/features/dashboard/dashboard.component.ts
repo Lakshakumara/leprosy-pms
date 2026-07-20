@@ -5,6 +5,7 @@ import { PatientService } from '../../core/services/patient.service';
 import { Patient } from '../../core/services/patient.model';
 
 import { MultiSelectModule } from 'primeng/multiselect';
+import { SelectModule } from 'primeng/select';
 import { FormsModule } from '@angular/forms';
 import { DISTRICT, STORAGE_KEYS } from '../../core/util/util';
 import { OrgScopeService } from '../../core/services/org-scope.service';
@@ -16,24 +17,17 @@ interface CountRow { label: string; count: number; pct: number; }
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, MultiSelectModule],
+  imports: [CommonModule, FormsModule, RouterLink, MultiSelectModule, SelectModule],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })
 export class DashboardComponent implements OnInit {
   private readonly storage = inject(DeviceStorageService);
-  private readonly scope = inject(OrgScopeService)
-  private readonly dhis2Service = inject(Dhis2Service)
-  ngOnInit(): void {
-    console.log('scope()', this.scope.scope())
-    // Reuse the same [2024, 2025, 2026] array your dashboard's year MultiSelect already produces
-    this.dhis2Service
-      .fetchPatientsByLivingDistrictForYears([2026])
-      .subscribe(async (patients) => {
-        console.log(patients)
-        //await this.localStore.savePatients(patients);
-      });
-  }
+  private readonly scope = inject(OrgScopeService);
+  private readonly dhis2Service = inject(Dhis2Service);
+
+  ngOnInit(): void {}
+
   protected readonly patientService = inject(PatientService);
 
   private readonly currentYear = new Date().getFullYear();
@@ -46,6 +40,16 @@ export class DashboardComponent implements OnInit {
 
   /** Empty selection = show all years (default state). */
   protected readonly selectedYears = signal<number[]>([this.currentYear]);
+
+  /**
+   * District options - fill this in on your end (e.g. from OrgScopeService
+   * assigned districts, or the full national list). Single-select, so
+   * selectedDistrict holds one value, not an array.
+   */
+  protected readonly districtOptions: { label: string; value: string }[] = [{'label': 'Ratnapura', 'value': 'Ratnapura'}, {'label': 'Nuwara Eliya', 'value': 'NuwaraEliya'}];
+
+  /** Defaults to the user's own district; still overridable via the dropdown. */
+  protected readonly selectedDistrict = signal<string>(DISTRICT);
 
   /**
    * enrolledAt is stored as "yyyy-MM-dd". Pull the year straight out of the
@@ -62,11 +66,13 @@ export class DashboardComponent implements OnInit {
   protected readonly filteredPatients = computed<Patient[]>(() => {
     const all = this.patientService.patients();
     const years = this.selectedYears();
-    if (years === null) return all;
-    if (years.length === 0) return all; // no selection = all years
+    const district = this.selectedDistrict();
+
     return all.filter((p) => {
+      if (district && p.patientDistrict !== district) return false;
+      if (years.length === 0) return true; // no year selection = all years
       const year = this.yearOf(p.enrolledAt);
-      return year != null && years.includes(year) && p.patientDistrict === DISTRICT;
+      return year != null && years.includes(year);
     });
   });
 
@@ -118,7 +124,8 @@ export class DashboardComponent implements OnInit {
     }).length;
   });
 
-  protected readonly facilities = this.storage.getJSON<any>(STORAGE_KEYS.USER_DATA).organisationUnits;
+  protected readonly facilities = this.storage.getJSON<any>(STORAGE_KEYS.USER_DATA)?.organisationUnits;
+
   // ── By hospital ─────────────────────────────────────────────────────────────
   protected readonly byHospital = computed<CountRow[]>(() => {
     const patients = this.filteredPatients();

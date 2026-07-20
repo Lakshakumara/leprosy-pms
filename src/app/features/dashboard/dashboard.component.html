@@ -1,8 +1,21 @@
-<h1 class="dashboard-title">
-  Dashboard
-  <p-multiSelect [options]="yearOptions" [(ngModel)]="selectedYears" display="chip" placeholder="+ years"
-    [showClear]="true" styleClass="year-title-select"></p-multiSelect>
-</h1>
+<h3 class="dashboard-title">
+  <p-select
+    [options]="districtOptions"
+    [(ngModel)]="selectedDistrict"
+    optionLabel="label"
+    optionValue="value"
+    placeholder="District"
+    styleClass="district-title-select"
+  ></p-select>
+  <p-multiSelect
+    [options]="yearOptions"
+    [(ngModel)]="selectedYears"
+    display="chip"
+    placeholder="+ years"
+    [showClear]="true"
+    styleClass="year-title-select"
+  ></p-multiSelect>
+</h3>
 
 <div class="stats">
   <div class="card stat">

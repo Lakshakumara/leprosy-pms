@@ -13,16 +13,6 @@
 .chart { padding: 22px; }
 .muted { color: var(--color-muted); }
 
-.year-filter {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 18px;
-
-  label { font-size: 0.8rem; font-weight: 600; color: var(--color-muted); }
-}
-.year-multiselect { min-width: 220px; }
-
 .bars {
   display: flex;
   align-items: flex-end;
@@ -50,3 +40,193 @@
 }
 .bar-label { font-size: 0.7rem; color: var(--color-muted); margin-top: 6px; }
 .bar-count { font-size: 0.7rem; font-weight: 700; color: var(--color-teal-900); }
+
+// ── Title bar: district + year selects disguised as plain title text ──────
+// Both p-select (district) and p-multiSelect (years) are stripped of their
+// default box/border chrome so the whole line reads like one heading:
+// "Ratnapura 2026 2025" - not two separate boxed dropdowns.
+// Replace your previous ".dashboard-title" + selector block entirely with
+// everything below.
+
+.dashboard-title {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 18px;
+
+  @media (max-width: 640px) {
+    gap: 6px;
+  }
+}
+
+// Attacking this via OUR OWN styleClass wrapper (district-title-select /
+// year-title-select), not PrimeNG's internal class names - those are
+// guesses that can be wrong or shift between versions, but the styleClass
+// we assign ourselves in the template is guaranteed to land on the
+// rendered root element regardless of PrimeNG's internals.
+//
+// This resets EVERYTHING - border, box-shadow, background, AND the
+// browser's native focus outline (a separate thing from PrimeNG's own
+// styling entirely - :focus-visible is the browser's default blue ring on
+// any focusable element, controlled purely by CSS outline, nothing to do
+// with any UI library).
+:host ::ng-deep .district-title-select,
+:host ::ng-deep .year-title-select {
+  display: inline-flex;
+  align-items: baseline;
+
+  &,
+  * {
+    font-size: inherit !important;
+    font-family: inherit !important;
+    font-weight: inherit !important;
+    color: inherit !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+  }
+
+  &:focus,
+  &:focus-within,
+  &:focus-visible,
+  *:focus,
+  *:focus-within,
+  *:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+    border-color: transparent !important;
+  }
+
+  // Placeholder text ("District", "+ years")
+  [class*="placeholder"] {
+    font-size: 1rem !important;
+    font-weight: 500 !important;
+    color: var(--color-muted) !important;
+    opacity: 0.8;
+  }
+
+  // Selected chips/tokens (years) and the selected district value both get
+  // the same "title" visual weight so the line reads consistently.
+  [class*="chip"],
+  [class*="token"] {
+    font-size: 1.4rem !important;
+    font-weight: 800 !important;
+    color: var(--color-teal-900) !important;
+    background: var(--color-teal-100) !important;
+    border-radius: 8px !important;
+    padding: 0 8px 0 12px !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  // Small dropdown trigger icon - kept quiet rather than removed entirely,
+  // so there's still a visible affordance that this is tappable.
+  [class*="dropdown-icon"],
+  [class*="trigger"] i {
+    font-size: 0.75rem !important;
+    color: var(--color-teal-700) !important;
+  }
+}
+ 
+/*
+::ng-deep .district-title-select,
+::ng-deep .year-title-select {
+  display: inline-flex;
+  vertical-align: baseline;
+
+  .p-select,
+  .p-multiselect {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+
+    // No visible outline on focus either - keeps the "just text" illusion
+    // even when the control is focused/active, on both desktop and mobile.
+    &:focus,
+    &:focus-within,
+    &.p-focus {
+      box-shadow: none;
+      outline: none;
+    }
+  }
+
+  .p-select-label,
+  .p-multiselect-label {
+    font: inherit;
+    color: inherit;
+    padding: 0;
+    display: inline-flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  // Placeholder text ("District", "+ years") - a visibly lighter/smaller
+  // prompt rather than full title-sized text, so an empty selection
+  // doesn't look like a giant blank heading.
+  .p-select-label.p-placeholder,
+  .p-multiselect-label.p-placeholder {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--color-muted);
+    opacity: 0.8;
+  }
+
+  // Year chips - sized to match the surrounding h1 text.
+  .p-multiselect-chip-item,
+  .p-multiselect-token {
+    font: inherit;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--color-teal-900);
+    background: var(--color-teal-100);
+    border-radius: 8px;
+    padding: 0 8px 0 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    line-height: 1.6;
+  }
+  .p-multiselect-chip-icon,
+  .p-multiselect-token-icon {
+    font-size: 1rem;
+    opacity: 0.55;
+    cursor: pointer;
+    &:hover { opacity: 1; }
+  }
+
+  // Selected district value - same visual weight as a year chip, so both
+  // controls read consistently as "title" content once something's picked.
+  .p-select-label:not(.p-placeholder) {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--color-teal-900);
+  }
+
+  // Dropdown trigger icons - small and quiet, not a full form-control arrow.
+  .p-select-dropdown,
+  .p-multiselect-trigger {
+    width: 1.3rem;
+    color: var(--color-teal-700);
+  }
+  .p-select-dropdown-icon,
+  .p-multiselect-dropdown-icon {
+    font-size: 0.8rem;
+  }
+
+  // Mobile: no border/outline anywhere, ever - this is meant to read as a
+  // page title bar, not a form, on small screens especially.
+  @media (max-width: 640px) {
+    .p-select,
+    .p-multiselect {
+      border: none !important;
+      box-shadow: none !important;
+    }
+  }
+}*/

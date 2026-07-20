@@ -87,7 +87,8 @@ export class PatientService {
    * Existing local-only records are preserved; synced records are overwritten
    * with fresh DHIS2 data.
    */
-  async pullFromServer(): Promise<void> {
+  async pullFromServer(year?: number): Promise<void> {
+    console.log('year', year)
     if (!this.isOnline()) {
       this.lastPullError.set('Device is offline — showing local data only.');
       return;
@@ -96,9 +97,12 @@ export class PatientService {
     if (this.isSyncing()) return;
     this.lastPullError.set(null);
     this.isSyncing.set(true);
-    this.dhis2
-      //.fetchPatients()
-      .fetchPatientsByLivingDistrictForYears([2026])
+    const source$ =
+    year != undefined
+      ? this.dhis2.fetchPatientsByLivingDistrictForYears([year])
+      : this.dhis2.fetchPatients();
+ 
+  source$
       .pipe(
         catchError(err => {
           const message =
