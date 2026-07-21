@@ -10,8 +10,7 @@ import { TagModule } from 'primeng/tag';
 import { SkeletonModule } from 'primeng/skeleton';
 import { PatientService } from '../../core/services/patient.service';
 import { Patient, PatientFilter } from '../../core/services/patient.model';
-import { environment } from '../../../environments/environment';
-import { DISTRICT, STORAGE_KEYS } from '../../core/util/util';
+import { STORAGE_KEYS } from '../../core/util/util';
 import { DeviceStorageService } from '../../core/services/device-storage.service';
 interface SelectOption { label: string; value: string; }
 @Component({
@@ -28,9 +27,10 @@ interface SelectOption { label: string; value: string; }
 export class PatientListComponent implements OnInit {
     private readonly storage = inject(DeviceStorageService);
     private readonly route = inject(ActivatedRoute);
+    //private readonly orgScope = inject(OrgScopeService);
     protected readonly patientService = inject(PatientService);
     protected readonly filter = signal<PatientFilter>({
-        district: this.patientService.userDistricts() ,
+        district: this.patientService.userDistricts(),
         search: '',
         classification: 'ALL',
         orgUnitId: 'ALL',
@@ -105,8 +105,8 @@ export class PatientListComponent implements OnInit {
         if (classification) patch.classification = classification;
         if (orgUnitId) patch.orgUnitId = orgUnitId;
         if (mohArea) patch.mohArea = mohArea;
-    const alert = params.get('alert');
-    if (alert) patch.alert = alert;
+        const alert = params.get('alert');
+        if (alert) patch.alert = alert;
         if (year) {
             patch.enrolledFrom = `${year}-01-01`;
             patch.enrolledTo = `${year}-12-31`;
@@ -148,7 +148,7 @@ export class PatientListComponent implements OnInit {
     }
     protected clearFilters(): void {
         this.filter.set({
-            district: DISTRICT,
+            district: this.patientService.userDistricts(),
             search: '',
             classification: 'ALL',
             orgUnitId: 'ALL',
@@ -178,46 +178,46 @@ export class PatientListComponent implements OnInit {
  * the old classBadge() method.
  */
 
-/**
- * FIXED: previously compared an uppercased full string against a
- * lowercase-in-part literal ("MB (>5 lesions)"), which could never match
- * since .toUpperCase() also uppercases "lesions". Now only checks the
- * MB/PB prefix, case-insensitively, ignoring the parenthetical detail -
- * works regardless of exact DHIS2 option-set wording.
- */
-protected classBadge(cls: string): string {
-  if (!cls) return 'badge--unknown';
-  const upper = cls.trim().toUpperCase();
-  if (upper.startsWith('MB')) return 'badge--mb';
-  if (upper.startsWith('PB')) return 'badge--pb';
-  return 'badge--unknown';
-}
+    /**
+     * FIXED: previously compared an uppercased full string against a
+     * lowercase-in-part literal ("MB (>5 lesions)"), which could never match
+     * since .toUpperCase() also uppercases "lesions". Now only checks the
+     * MB/PB prefix, case-insensitively, ignoring the parenthetical detail -
+     * works regardless of exact DHIS2 option-set wording.
+     */
+    protected classBadge(cls: string): string {
+        if (!cls) return 'badge--unknown';
+        const upper = cls.trim().toUpperCase();
+        if (upper.startsWith('MB')) return 'badge--mb';
+        if (upper.startsWith('PB')) return 'badge--pb';
+        return 'badge--unknown';
+    }
 
-/**
- * True if this patient was enrolled at a facility OUTSIDE your own
- * hospitalOptions list (i.e. an "outer district" registration you're
- * seeing via the living-district cross-search, not your own catchment).
- * Assumes hospitalOptions items have `.value` matching p.orgUnitId -
- * adjust the field name here if your actual hospitalOptions shape differs.
- */
-protected isOuterDistrict(p: Patient): boolean {
-  if (!p.orgUnitId) return false;
-  return !this.hospitalOptions.some((h: any) => h.value === p.orgUnitId);
-}
+    /**
+     * True if this patient was enrolled at a facility OUTSIDE your own
+     * hospitalOptions list (i.e. an "outer district" registration you're
+     * seeing via the living-district cross-search, not your own catchment).
+     * Assumes hospitalOptions items have `.value` matching p.orgUnitId -
+     * adjust the field name here if your actual hospitalOptions shape differs.
+     */
+    protected isOuterDistrict(p: Patient): boolean {
+        if (!p.orgUnitId) return false;
+        return !this.hospitalOptions.some((h: any) => h.value === p.orgUnitId);
+    }
 
-/** True if this is a pediatric case (under 15) worth flagging visually. */
-protected isChildCase(p: Patient): boolean {
-  const age = Number(p.patientAge);
-  return !Number.isNaN(age) && age < 15;
-}
+    /** True if this is a pediatric case (under 15) worth flagging visually. */
+    protected isChildCase(p: Patient): boolean {
+        const age = Number(p.patientAge);
+        return !Number.isNaN(age) && age < 15;
+    }
 
-/**
- * Bottom-to-top numbering across the WHOLE filtered dataset (not just the
- * current page). PrimeNG's p-table body template exposes `rowIndex` as the
- * absolute 0-based index accounting for pagination offset - pass it in
- * from the template as `let-rowIndex="rowIndex"`.
- */
-protected rowNumber(rowIndex: number): number {
-  return this.rows().length - rowIndex;
-}
+    /**
+     * Bottom-to-top numbering across the WHOLE filtered dataset (not just the
+     * current page). PrimeNG's p-table body template exposes `rowIndex` as the
+     * absolute 0-based index accounting for pagination offset - pass it in
+     * from the template as `let-rowIndex="rowIndex"`.
+     */
+    protected rowNumber(rowIndex: number): number {
+        return this.rows().length - rowIndex;
+    }
 }

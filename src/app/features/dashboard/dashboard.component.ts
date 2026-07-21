@@ -7,14 +7,13 @@ import { Patient } from '../../core/services/patient.model';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { SelectModule } from 'primeng/select';
 import { TooltipModule } from 'primeng/tooltip';
-import { DISTRICT, STORAGE_KEYS } from '../../core/util/util';
+import { STORAGE_KEYS } from '../../core/util/util';
 import { DeviceStorageService } from '../../core/services/device-storage.service';
 import {
   buildAlerts,
   countByField,
   ehfDistribution,
   enrollmentTrend,
-  hasDeformity,
   hasDelayedDiagnosis,
   hasGrade2Disability,
   isChildCase,
@@ -60,11 +59,36 @@ export class DashboardComponent implements OnInit {
   );
 
   protected readonly districtOptions: SelectOption[] = [
-    { label: 'Ratnapura', value: 'Ratnapura' },
+    { label: 'Ampara', value: 'Ampara' },
+    { label: 'Anuradhapura', value: 'Anuradhapura' },
+    { label: 'Badulla', value: 'Badulla' },
+    { label: 'Batticaloa', value: 'Batticaloa' },
+    { label: 'Colombo', value: 'Colombo' },
+    { label: 'CMC', value: 'CMC' },
+    { label: 'Galle', value: 'Galle' },
+    { label: 'Gampaha', value: 'Gampaha' },
+    { label: 'Hambantota', value: 'Hambantota' },
+    { label: 'Jaffna', value: 'Jaffna' },
+    { label: 'Kalutara', value: 'Kalutara' },
+    { label: 'Kandy', value: 'Kandy' },
+    { label: 'Kegalle', value: 'Kegalle' },
+    { label: 'Kilinochchi', value: 'Kilinochchi' },
+    { label: 'Kurunegala', value: 'Kurunegala' },
+    { label: 'Mannar', value: 'Mannar' },
+    { label: 'Matale', value: 'Matale' },
+    { label: 'Matara', value: 'Matara' },
+    { label: 'Monaragala', value: 'Monaragala' },
+    { label: 'Mullaitivu', value: 'Mullaitivu' },
+    { label: 'NIHS', value: 'NIHS' },
     { label: 'Nuwara Eliya', value: 'NuwaraEliya' },
+    { label: 'Polonnaruwa', value: 'Polonnaruwa' },
+    { label: 'Puttalam', value: 'Puttalam' },
+    { label: 'Ratnapura', value: 'Ratnapura' },
+    { label: 'Trincomalee', value: 'Trincomalee' },
+    { label: 'Vavuniya', value: 'Vavuniya' },
   ];
 
-  protected readonly selectedDistrict = model(DISTRICT);
+  protected readonly selectedDistrict = model(this.patientService.userDistricts());
   protected readonly selectedYears = model<number[]>([this.currentYear]);
   protected readonly selectedFacility = model<string>('ALL');
 
