@@ -16,8 +16,6 @@ export const environment = {
     // Generate one from DHIS2: Profile > Personal Access Tokens.
     // Sent as header: Authorization: ApiToken <token>
     apiToken: 'd2pat_xDvgejPgu5QW9GojtAxn7dfycUSpMfSj0148869625',
-    // Fallback basic auth (dev only - do not ship credentials in prod builds,
-    // and do not commit a real password here — set it locally only)
     username: '',
     password: '',
     program: 'sqsddKuTGlJ',        // Leprosy program

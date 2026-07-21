@@ -90,7 +90,7 @@ export class AuthService {
       this.authMode.set('basic');
 
       if (!remember) {
-        this.storage.setJSON<SavedBasicCreds>(STORAGE_KEYS.BASIC_CREDS, { username: username.trim(), password: '' });
+       // this.storage.setJSON<SavedBasicCreds>(STORAGE_KEYS.BASIC_CREDS, { username: username.trim(), password: '' });
       }
       return user;
     } catch (err) {

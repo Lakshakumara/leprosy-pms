@@ -30,7 +30,7 @@ export class PatientListComponent implements OnInit {
     private readonly route = inject(ActivatedRoute);
     protected readonly patientService = inject(PatientService);
     protected readonly filter = signal<PatientFilter>({
-        district: 'All',
+        district: this.patientService.userDistricts() ,
         search: '',
         classification: 'ALL',
         orgUnitId: 'ALL',

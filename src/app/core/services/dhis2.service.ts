@@ -101,8 +101,6 @@ export class Dhis2Service {
 
     const districts = this.orgScope.assignedDistricts();
     if (districts.length === 0) {
-      console.warn('[Dhis2Service] No assigned districts on OrgScopeService - returning empty list. ' +
-        'Make sure orgScope.loadCurrentUserScope() has run (e.g. at login) before calling fetchPatients().');
       return of([]);
     }
 
@@ -149,7 +147,6 @@ export class Dhis2Service {
     const searchOrgUnits = searchScope.length > 0 ? searchScope : this.orgScope.assignedDistricts();
 
     if (searchOrgUnits.length === 0) {
-      console.warn('[Dhis2Service] No search scope available - cannot look up by living district.');
       return of([]);
     }
 
@@ -169,7 +166,6 @@ export class Dhis2Service {
         console.info(`[Dhis2Service] found ${patients.length} patient(s) living in "${livingDistrict}" across search scope`)
       ),
       catchError((err) => {
-        console.error(`[Dhis2Service] fetchPatientsByLivingDistrict("${livingDistrict}") failed:`, err);
         return throwError(() => err);
       })
     );
@@ -197,12 +193,10 @@ export class Dhis2Service {
     const searchOrgUnits = searchScope.length > 0 ? searchScope : this.orgScope.assignedDistricts();
 
     if (searchOrgUnits.length === 0) {
-      console.warn('[Dhis2Service] No search scope available - cannot look up by living district.');
       return of([]);
     }
     if (years.length === 0) {
-      console.warn('[Dhis2Service] No years provided - call fetchPatientsByLivingDistrict() instead for all-time.');
-      return of([]);
+     return of([]);
     }
 
     // One request per (year x org unit) combination - typically just
@@ -222,7 +216,6 @@ export class Dhis2Service {
         const merged = new Map<string, Patient>();
         for (const list of perRequestLists) {
           for (const p of list) {
-            console.log(p)
             if (p.patientDistrict?.trim().toLowerCase() === livingDistrict.toLowerCase()) {
               merged.set(p.id, p);
             }
@@ -237,7 +230,6 @@ export class Dhis2Service {
         )
       ),
       catchError((err) => {
-        console.error(`[Dhis2Service] fetchPatientsByLivingDistrictForYears failed:`, err);
         return throwError(() => err);
       })
     );
@@ -262,7 +254,6 @@ export class Dhis2Service {
         return [...acc, ...mapped];
       }, []),
       catchError((err) => {
-        console.error(`[Dhis2Service] fetchForOrgUnit(${orgUnitId}) failed:`, err);
         return throwError(() => err);
       })
     );
@@ -401,9 +392,13 @@ export class Dhis2Service {
 
 /** Fetch a single org unit's boundary geometry (e.g. a district). */
 fetchOrgUnitGeometry(orgUnitId: string): Observable<OrgUnitGeometry> {
-  return this.http.get<OrgUnitGeometry>(`${this.base}/organisationUnits/${orgUnitId}`, {
+  console.log('is this ok' , this.http.get<OrgUnitGeometry>(`${this.base}/organisationUnits/${orgUnitId}.json`, {
+    params: { fields: 'id,name,geometry' } }));
+
+  return this.http.get<OrgUnitGeometry>(`${this.base}/organisationUnits/${orgUnitId}.json`, {
     params: { fields: 'id,name,geometry' }
   });
+  //curl -i "https://dhis2-proxy.lakshakumara.workers.dev/dhis2-api/organisationUnits/Sa955F8q271?fields=id,name,geometry"
 }
 
 /**

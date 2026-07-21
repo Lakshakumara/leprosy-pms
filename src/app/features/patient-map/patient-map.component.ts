@@ -5,6 +5,7 @@ import { Dhis2Service, OrgUnitGeometry } from '../../core/services/dhis2.service
 import { OrgScopeService } from '../../core/services/org-scope.service';
 import { Patient } from '../../core/services/patient.model';
 import { firstValueFrom } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
 
 /**
  * Free map view using Leaflet + OpenStreetMap tiles - no API key, no
@@ -39,6 +40,7 @@ export class PatientMapComponent implements OnInit, AfterViewInit {
   protected readonly patientService = inject(PatientService);
   private readonly dhis2 = inject(Dhis2Service);
   private readonly orgScope = inject(OrgScopeService);
+  private readonly http = inject(HttpClient);
 
   protected readonly selected = signal<Patient | null>(null);
   protected readonly districtLoadError = signal<string | null>(null);
@@ -55,6 +57,7 @@ export class PatientMapComponent implements OnInit, AfterViewInit {
    * until you have real data - the layer will just be empty, no error.
    */
   private readonly manualDsGeoJson: GeoJSON.FeatureCollection | null = null;
+  private manualMohGeoJson: GeoJSON.FeatureCollection | null = null;
 
   private readonly yearColors: Record<number, string> = {
     2026: '#1d4ed8', // blue
@@ -68,13 +71,25 @@ export class PatientMapComponent implements OnInit, AfterViewInit {
     '#dc2626', '#059669', '#ea580c', '#4f46e5', '#0891b2'
   ];
 
+  private readonly mohAreaPalette = [
+    '#1d4ed8', '#b5532c', '#b08900', '#0d9488', '#7c3aed',
+    '#dc2626', '#059669', '#ea580c', '#4f46e5', '#0891b2'
+  ];
   private map: any;
   private L!: typeof import('leaflet');
 
-  ngOnInit(): void {}
+  ngOnInit(): void { }
 
   async ngAfterViewInit(): Promise<void> {
-    this.L = await import('leaflet');
+    // Leaflet is a CommonJS/UMD package. Angular's dev server and its
+    // production esbuild bundler can resolve `await import('leaflet')`
+    // differently - dev may return the Leaflet namespace directly, while
+    // the production bundle can wrap it as { default: <namespace> }
+    // instead. Normalizing here handles both shapes, rather than assuming
+    // one - this is exactly why "L.map is not a function" only showed up
+    // after deploying, not in `ng serve`.
+    const leafletModule: any = await import('leaflet');
+    this.L = (leafletModule.default ?? leafletModule) as typeof import('leaflet');
     const L = this.L;
 
     this.map = L.map(this.mapContainer.nativeElement, {
@@ -93,17 +108,24 @@ export class PatientMapComponent implements OnInit, AfterViewInit {
     // ── District boundary + cutout mask ─────────────────────────────────
     const districtLayer = await this.loadDistrictBoundary(L);
     if (districtLayer) {
-      overlays['District boundary'] = districtLayer;
+      const dot = `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background-color:#0b4f4a;margin-right:6px;vertical-align:middle;"></span>`;
+      overlays[`${dot}District boundary`] = districtLayer;
       districtLayer.addTo(this.map);
     }
 
-    // ── MOH area layer (DHIS2 geometry if available, else manual) ──
+    // ── MOH / DS area layer (DHIS2 geometry if available, else manual) ──
     const dsLayer = await this.loadDsAreaLayer(L);
     if (dsLayer) {
-      overlays['MOH areas'] = dsLayer;
+      const dot = `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background-color:#4f46e5;margin-right:6px;vertical-align:middle;"></span>`;
+      overlays[`${dot}MOH / DS areas`] = dsLayer;
       dsLayer.addTo(this.map);
     }
-
+    const mohLayer = await this.loadMOHAreaLayer(L);
+    if (mohLayer) {
+      const dot = `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background-color:#4f46e5;margin-right:6px;vertical-align:middle;"></span>`;
+      overlays[`${dot}MOH areas`] = mohLayer;
+      mohLayer.addTo(this.map);
+    }
     // ── Year-colored patient layers ─────────────────────────────────────
     const yearLayers = this.buildYearLayers(L);
     for (const [label, layer] of Object.entries(yearLayers)) {
@@ -222,6 +244,56 @@ export class PatientMapComponent implements OnInit, AfterViewInit {
     return group;
   }
 
+  private async loadMOHAreaLayer(L: typeof import('leaflet')): Promise<any | null> {
+    const district = this.orgScope.assignedDistricts()[0];
+    let features: OrgUnitGeometry[] = [];
+
+    // 2. NEW: If DHIS2 gave nothing, load from assets
+    if (features.length === 0 && !this.manualMohGeoJson) {
+      try {
+        console.log('[PatientMapComponent] Loading MOH boundaries from assets...');
+        // this is your extracted file
+        const assetGeoJson = await firstValueFrom(
+          this.http.get<any>('assets/geo/moh.geojson')
+        );
+        this.manualMohGeoJson = assetGeoJson;
+      } catch (err) {
+        console.warn('Could not load asset geojson', err);
+      }
+    }
+
+    if (features.length === 0 && !this.manualMohGeoJson) {
+      return null;
+    }
+
+    const group = L.layerGroup();
+
+    features.forEach((f, i) => {
+      const color = this.dsAreaPalette[i % this.dsAreaPalette.length];
+      L.geoJSON({ type: 'Feature', properties: { name: f.name }, geometry: f.geometry as any } as any, {
+        style: { color, weight: 1.5, fillColor: color, fillOpacity: 0.15 }
+      })
+        .bindTooltip(f.name)
+        .addTo(group);
+    });
+
+    if (this.manualMohGeoJson) {
+      this.manualMohGeoJson.features.forEach((f: any, i: number) => {
+        const color = this.mohAreaPalette[i % this.mohAreaPalette.length];
+        // handle both Feature and FeatureCollection
+        const geo = f.type === 'FeatureCollection' ? f.features : f;
+        L.geoJSON(geo, {
+          style: { color, weight: 1.5, fillColor: color, fillOpacity: 0.15 }
+        })
+          .bindTooltip((f.properties as any)?.['adm3_name'] || (f.properties as any)?.['name'] || 'DS area')
+          .addTo(group);
+      });
+    }
+
+    return group;
+  }
+
+
   /** One Leaflet layerGroup per year, each with its own marker color and popups. */
   private buildYearLayers(L: typeof import('leaflet')): Record<string, any> {
     const years = Object.keys(this.yearColors).map(Number).sort((a, b) => b - a);
@@ -249,7 +321,12 @@ export class PatientMapComponent implements OnInit, AfterViewInit {
         marker.addTo(group);
       }
 
-      layers[`${year} (${patientsThisYear.length})`] = group;
+      // Colored dot embedded directly in the label HTML - Leaflet's layer
+      // control renders overlay names as raw innerHTML, so this ties the
+      // color to this specific entry regardless of layer ordering, rather
+      // than relying on fragile CSS nth-child matching.
+      const dot = `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background-color:${color};margin-right:6px;vertical-align:middle;"></span>`;
+      layers[`${dot}${year} (${patientsThisYear.length})`] = group;
     }
 
     return layers;

@@ -3,9 +3,6 @@ export const environment = {
   appName: 'Leprosy Patient Management System',
   dhis2: {
     baseUrl: 'https://dhis2-proxy.lakshakumara.workers.dev/dhis2-api',
-    apiToken: '',
-    username: '',
-    password: '',
     program: 'sqsddKuTGlJ',        // Leprosy program
     trackedEntityType: 'S2afGQZ5tDu',
     endpoints: {

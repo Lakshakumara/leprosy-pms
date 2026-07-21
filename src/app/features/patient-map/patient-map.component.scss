@@ -1,6 +1,17 @@
 .page-head__sub { color: var(--color-muted); font-size: 0.85rem; margin: 0 0 16px; }
 .map-card { padding: 6px; overflow: hidden; margin-top: 12px; }
-.map-container { height: 560px; width: 100%; border-radius: 10px; }
+.map-container {
+  height: 560px;
+  width: 100%;
+  border-radius: 10px;
+
+  @media (max-width: 640px) {
+    // Cap to a viewport-relative height on mobile so the map + surrounding
+    // page content never forces unnecessary page-level scrolling.
+    height: calc(100vh - 220px);
+    min-height: 360px;
+  }
+}
 .selected-info { margin-top: 14px; padding: 14px 18px; display: flex; flex-direction: column; gap: 4px; }
 .muted { color: var(--color-muted); font-size: 0.85rem; }
 .notice { padding: 12px 16px; margin-bottom: 12px; border-left: 4px solid var(--color-pb); background: var(--color-pb-bg); }
@@ -39,12 +50,43 @@
   border-radius: 8px;
   font-family: var(--font-body);
   font-size: 0.82rem;
+}
 
-  input[type="checkbox"] {
-    accent-color: var(--color-teal-700);
-    width: 14px;
-    height: 14px;
-    vertical-align: middle;
-    margin-right: 4px;
+// accent-color only tints the CHECKED fill color - it does nothing to the
+// unchecked box, which is why it still looked white/default. Stripping
+// native rendering entirely with appearance:none and drawing a fully
+// custom box + checkmark instead, so there's no native OS chrome left at
+// all regardless of browser.
+:host ::ng-deep .leaflet-control-layers-selector {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: 14px;
+  height: 14px;
+  min-width: 14px;
+  border: 1.5px solid var(--color-line);
+  border-radius: 3px;
+  background: #fff;
+  cursor: pointer;
+  position: relative;
+  margin-right: 6px;
+  vertical-align: middle;
+  display: inline-block;
+
+  &:checked {
+    background: var(--color-teal-700);
+    border-color: var(--color-teal-700);
+  }
+
+  &:checked::after {
+    content: '';
+    position: absolute;
+    left: 3px;
+    top: -1px;
+    width: 4px;
+    height: 8px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
   }
 }
