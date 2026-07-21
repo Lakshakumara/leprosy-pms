@@ -18,7 +18,7 @@ export const routes: Routes = [
   },
   {
     path: 'patients',
-    //canActivate: [authGuard],
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/patient-list/patient-list.component').then(m => m.PatientListComponent),
   },
@@ -31,13 +31,13 @@ export const routes: Routes = [
 
   {
     path: 'new',
-    //canActivate: [authGuard],
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/patient-form/patient-form.component').then(m => m.PatientFormComponent),
   },
   {
     path: 'map',
-    //canActivate: [authGuard],
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/patient-map/patient-map.component').then(m => m.PatientMapComponent),
   },

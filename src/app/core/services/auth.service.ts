@@ -43,6 +43,7 @@ export class AuthService {
   restoreSession(): void {
     try {
       const mode = this.storage.getString(STORAGE_KEYS.AUTH_MODE) as AuthMode;
+      console.warn('Restoring session with mode:', mode);
       if (!mode) return;
 
       if (mode === 'token' && !this.storage.getString(STORAGE_KEYS.API_TOKEN)) return;

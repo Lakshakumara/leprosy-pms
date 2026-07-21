@@ -37,6 +37,9 @@ export class LoginComponent implements OnInit {
     console.log('getSavedBasicCreds', saved)
     if (saved?.username) this.username = saved.username;
 
+    const savedToken = this.auth.getSavedApiToken();
+    if (savedToken) this.apiToken = savedToken;
+
     // If a session was already restored from cache (offline-capable, no
     // network needed here), skip straight past the login page.
     if (this.auth.isLoggedIn()) {
@@ -83,6 +86,7 @@ export class LoginComponent implements OnInit {
 
       this.goToDashboard();
     } catch (err: any) {
+      console.log('login error', err)
       this.error.set('Login failed. Please check your credentials and try again.');
     } finally {
       this.loading.set(false);
