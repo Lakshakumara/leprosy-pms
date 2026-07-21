@@ -109,7 +109,7 @@
 }
 <!-- ── Desktop table ─────────────────────────────────────────────────────────── -->
 <div class="card table-card desktop-only">
-    @if (patientService.isSyncing() && patientService.patients().length === 0) {
+    @if (patientService.isSyncing() && patientService.districtPatients().length === 0) {
     <div class="skeleton-rows">
         @for (_ of [1,2,3,4,5,6]; track $index) {
         <div class="skeleton-row">
@@ -200,7 +200,7 @@
             <tr>
                 <td colspan="10" class="empty-state">
                     <i class="pi pi-inbox empty-icon"></i>
-                    @if (patientService.patients().length === 0) {
+                    @if (patientService.districtPatients().length === 0) {
                     <p>No patients in local cache yet.<br>
                         <button class="link-btn" (click)="syncNow()" [disabled]="!patientService.isOnline()">
                             Sync from DHIS2
@@ -217,7 +217,7 @@
 </div>
 <!-- ── Mobile card list ──────────────────────────────────────────────────────── -->
 <div class="mobile-cards mobile-only">
-    @if (patientService.isSyncing() && patientService.patients().length === 0) {
+    @if (patientService.isSyncing() && patientService.districtPatients().length === 0) {
     @for (_ of [1,2,3]; track $index) {
     <div class="patient-card patient-card--skeleton">
         <p-skeleton width="100%" height="1.1rem" />

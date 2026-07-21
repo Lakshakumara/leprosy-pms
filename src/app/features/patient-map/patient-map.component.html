@@ -1,5 +1,11 @@
 <h1>Patient map</h1>
-<p class="page-head__sub">{{ mappable().length }} of {{ patientService.patients().length }} patients have recorded coordinates.</p>
+<p class="page-head__sub">{{ mappable().length }} of {{ patientService.districtPatients().length }} patients have recorded coordinates.</p>
+
+@if (districtLoadError(); as err) {
+  <div class="card notice">
+    <strong>{{ err }}</strong>
+  </div>
+}
 
 <div class="card map-card">
   <div #mapContainer class="map-container"></div>
@@ -21,6 +27,9 @@
 }
 
 <div class="legend">
-  <span><i class="dot dot--mb"></i> MB — Multibacillary</span>
-  <span><i class="dot dot--pb"></i> PB — Paucibacillary</span>
+  <span><span class="dot dot--2026"></span> 2026</span>
+  <span><span class="dot dot--2025"></span> 2025</span>
+  <span><span class="dot dot--2024"></span> 2024</span>
+  <span><span class="dot dot--2023"></span> 2023</span>
+  <span><span class="dot dot--2022"></span> 2022</span>
 </div>

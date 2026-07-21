@@ -1,27 +1,246 @@
+.dash-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+
+  h1 {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 1.35rem;
+    margin: 0;
+  }
+
+  &__subtitle {
+    margin: 6px 0 0;
+    font-size: 0.85rem;
+    color: var(--color-muted);
+    max-width: 520px;
+  }
+
+  &__filters {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--color-teal-700);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 6px;
+  &:hover { text-decoration: underline; }
+}
+
+.indicator-strip {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+
+  @media (max-width: 1100px) { grid-template-columns: repeat(3, 1fr); }
+  @media (max-width: 560px) { grid-template-columns: repeat(2, 1fr); }
+}
+
+.indicator {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  text-align: center;
+  cursor: help;
+
+  &__value {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--color-teal-900);
+  }
+
+  &__label {
+    display: block;
+    font-size: 0.68rem;
+    color: var(--color-muted);
+    font-weight: 600;
+    margin-top: 2px;
+    line-height: 1.2;
+  }
+}
+
 .stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin-bottom: 24px;
+  gap: 12px;
+  margin-bottom: 18px;
 
-  @media (max-width: 760px) { grid-template-columns: 1fr 1fr; }
+  @media (max-width: 900px) { grid-template-columns: repeat(2, 1fr); }
 }
-.stat { padding: 20px; text-align: center; }
-.stat__value { font-family: var(--font-display); font-size: 2rem; font-weight: 800; color: var(--color-teal-900); }
-.stat__label { font-size: 0.78rem; color: var(--color-muted); margin-top: 4px; font-weight: 600; }
 
-.chart { padding: 22px; }
-.muted { color: var(--color-muted); }
+.stat {
+  padding: 16px;
+  text-align: center;
+  border: none;
+  font: inherit;
+  width: 100%;
+
+  &--clickable {
+    cursor: pointer;
+    transition: transform 0.12s, box-shadow 0.12s;
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(11, 79, 74, 0.12);
+    }
+  }
+
+  &__value {
+    font-family: var(--font-display);
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--color-teal-900);
+
+    &--mb { color: var(--color-mb); }
+    &--pb { color: var(--color-pb); }
+  }
+
+  &__label {
+    font-size: 0.72rem;
+    color: var(--color-muted);
+    margin-top: 4px;
+    font-weight: 600;
+  }
+
+  &__delta {
+    font-size: 0.68rem;
+    margin-top: 6px;
+    font-weight: 600;
+    color: var(--color-muted);
+
+    &--up { color: var(--color-mb); }
+    &--down { color: var(--color-teal-700); }
+  }
+}
+
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+
+  h2 {
+    font-size: 0.95rem;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+}
+
+.muted { color: var(--color-muted); font-size: 0.78rem; }
+
+.alerts {
+  padding: 18px 20px;
+  margin-bottom: 18px;
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+.alert {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-line);
+  background: var(--color-paper);
+  cursor: pointer;
+  font: inherit;
+  transition: background 0.12s;
+
+  &:hover { background: var(--color-teal-100); }
+
+  &--high {
+    border-left: 4px solid var(--color-mb);
+    .alert__icon { color: var(--color-mb); }
+  }
+  &--medium {
+    border-left: 4px solid var(--color-pb);
+    .alert__icon { color: var(--color-pb); }
+  }
+  &--info {
+    border-left: 4px solid var(--color-teal-700);
+    .alert__icon { color: var(--color-teal-700); }
+  }
+
+  &__icon { font-size: 1.1rem; }
+  &__body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    strong { font-size: 0.85rem; color: var(--color-teal-900); }
+    span { font-size: 0.78rem; color: var(--color-muted); }
+  }
+  &__count {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.1rem;
+    color: var(--color-teal-900);
+  }
+  &__action {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--color-teal-700);
+    white-space: nowrap;
+  }
+
+  @media (max-width: 640px) {
+    grid-template-columns: auto 1fr;
+    .alert__count, .alert__action { grid-column: 2; }
+  }
+}
+
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+
+  @media (max-width: 860px) { grid-template-columns: 1fr; }
+}
+
+.chart {
+  padding: 18px 20px;
+
+  &--wide { grid-column: 1 / -1; }
+}
 
 .bars {
   display: flex;
   align-items: flex-end;
   gap: 10px;
   height: 200px;
-  margin-top: 20px;
+  margin-top: 8px;
   border-bottom: 1px solid var(--color-line);
   padding-bottom: 4px;
 }
+
 .bar-col {
   display: flex;
   flex-direction: column;
@@ -30,49 +249,208 @@
   height: 100%;
   flex: 1;
   min-width: 28px;
-}
-.bar {
-  width: 100%;
-  max-width: 34px;
-  background: var(--color-teal-700);
-  border-radius: 4px 4px 0 0;
-  min-height: 3px;
-}
-.bar-label { font-size: 0.7rem; color: var(--color-muted); margin-top: 6px; }
-.bar-count { font-size: 0.7rem; font-weight: 700; color: var(--color-teal-900); }
+  position: relative;
+  background: none;
+  border: none;
+  font: inherit;
+  padding: 0;
 
-// ── Title bar: district + year selects disguised as plain title text ──────
-// Both p-select (district) and p-multiSelect (years) are stripped of their
-// default box/border chrome so the whole line reads like one heading:
-// "Ratnapura 2026 2025" - not two separate boxed dropdowns.
-// Replace your previous ".dashboard-title" + selector block entirely with
-// everything below.
-
-.dashboard-title {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin: 0 0 18px;
-
-  @media (max-width: 640px) {
-    gap: 6px;
+  &--interactive {
+    cursor: pointer;
+    border-radius: 6px 6px 0 0;
+    &:hover, &--active { background: rgba(16, 107, 99, 0.06); }
   }
 }
 
-// Attacking this via OUR OWN styleClass wrapper (district-title-select /
-// year-title-select), not PrimeNG's internal class names - those are
-// guesses that can be wrong or shift between versions, but the styleClass
-// we assign ourselves in the template is guaranteed to land on the
-// rendered root element regardless of PrimeNG's internals.
-//
-// This resets EVERYTHING - border, box-shadow, background, AND the
-// browser's native focus outline (a separate thing from PrimeNG's own
-// styling entirely - :focus-visible is the browser's default blue ring on
-// any focusable element, controlled purely by CSS outline, nothing to do
-// with any UI library).
+.bar-stack {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 36px;
+  min-height: 4px;
+  border-radius: 4px 4px 0 0;
+  overflow: hidden;
+}
+
+.bar {
+  width: 100%;
+  min-height: 2px;
+
+  &--mb { background: var(--color-mb); }
+  &--pb { background: var(--color-pb); }
+}
+
+.bar-label { font-size: 0.68rem; color: var(--color-muted); margin-top: 6px; }
+.bar-count { font-size: 0.68rem; font-weight: 700; color: var(--color-teal-900); }
+
+.bar-tooltip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-teal-900);
+  color: #fff;
+  font-size: 0.65rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.legend {
+  display: flex;
+  gap: 16px;
+  margin-top: 10px;
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  span { display: flex; align-items: center; gap: 6px; }
+}
+
+.dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  &--mb { background: var(--color-mb); }
+  &--pb { background: var(--color-pb); }
+}
+
+.split-panel {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.donut {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+
+  &__hole {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: var(--color-surface);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    strong { font-size: 1.1rem; color: var(--color-teal-900); }
+    span { font-size: 0.65rem; color: var(--color-muted); }
+  }
+}
+
+.split-panel__details {
+  flex: 1;
+  min-width: 140px;
+
+  hr {
+    border: none;
+    border-top: 1px solid var(--color-line);
+    margin: 8px 0;
+  }
+}
+
+.split-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.82rem;
+  padding: 4px 0;
+  width: 100%;
+  background: none;
+  border: none;
+  font: inherit;
+  color: inherit;
+
+  &--clickable {
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 4px 6px;
+    &:hover { background: var(--color-teal-100); }
+  }
+}
+
+.h-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.h-bar-row {
+  display: grid;
+  grid-template-columns: minmax(80px, 28%) 1fr auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: none;
+  border: none;
+  font: inherit;
+  text-align: left;
+  padding: 2px 0;
+  color: inherit;
+
+  &--clickable {
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 4px 6px;
+    &:hover, &--active { background: var(--color-teal-100); }
+  }
+}
+
+.h-bar-label {
+  font-size: 0.75rem;
+  color: var(--color-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.h-bar-track {
+  height: 10px;
+  background: var(--color-teal-100);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.h-bar-fill {
+  height: 100%;
+  background: var(--color-teal-700);
+  border-radius: 999px;
+  min-width: 2px;
+  transition: width 0.3s ease;
+
+  &--warn { background: var(--color-mb); }
+  &--moh { background: linear-gradient(90deg, var(--color-teal-700), #1a8a7f); }
+  &--phi { background: var(--color-pb); }
+}
+
+.h-bar-count {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-teal-900);
+  min-width: 48px;
+  text-align: right;
+}
+
+.empty-state {
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--color-muted);
+
+  i { font-size: 2rem; display: block; margin-bottom: 12px; color: var(--color-teal-700); }
+  p { margin: 0 0 12px; }
+}
+
+// Title bar selects (district + year)
 :host ::ng-deep .district-title-select,
-:host ::ng-deep .year-title-select {
+:host ::ng-deep .year-title-select,
+:host ::ng-deep .facility-select {
   display: inline-flex;
   align-items: baseline;
 
@@ -83,150 +461,26 @@
     font-weight: inherit !important;
     color: inherit !important;
     background: transparent !important;
-    background-color: transparent !important;
     border: none !important;
-    border-color: transparent !important;
     box-shadow: none !important;
     outline: none !important;
   }
 
-  &:focus,
-  &:focus-within,
-  &:focus-visible,
-  *:focus,
-  *:focus-within,
-  *:focus-visible {
-    outline: none !important;
-    box-shadow: none !important;
-    border-color: transparent !important;
-  }
-
-  // Placeholder text ("District", "+ years")
-  [class*="placeholder"] {
-    font-size: 1rem !important;
-    font-weight: 500 !important;
-    color: var(--color-muted) !important;
-    opacity: 0.8;
-  }
-
-  // Selected chips/tokens (years) and the selected district value both get
-  // the same "title" visual weight so the line reads consistently.
   [class*="chip"],
   [class*="token"] {
-    font-size: 1.4rem !important;
-    font-weight: 800 !important;
+    font-size: 0.85rem !important;
+    font-weight: 700 !important;
     color: var(--color-teal-900) !important;
     background: var(--color-teal-100) !important;
-    border-radius: 8px !important;
-    padding: 0 8px 0 12px !important;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  // Small dropdown trigger icon - kept quiet rather than removed entirely,
-  // so there's still a visible affordance that this is tappable.
-  [class*="dropdown-icon"],
-  [class*="trigger"] i {
-    font-size: 0.75rem !important;
-    color: var(--color-teal-700) !important;
+    border-radius: 6px !important;
+    padding: 2px 8px !important;
   }
 }
- 
-/*
-::ng-deep .district-title-select,
-::ng-deep .year-title-select {
-  display: inline-flex;
-  vertical-align: baseline;
 
-  .p-select,
-  .p-multiselect {
-    background: transparent;
-    border: none;
-    box-shadow: none;
-    padding: 0;
-
-    // No visible outline on focus either - keeps the "just text" illusion
-    // even when the control is focused/active, on both desktop and mobile.
-    &:focus,
-    &:focus-within,
-    &.p-focus {
-      box-shadow: none;
-      outline: none;
-    }
-  }
-
-  .p-select-label,
-  .p-multiselect-label {
-    font: inherit;
-    color: inherit;
-    padding: 0;
-    display: inline-flex;
-    align-items: baseline;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  // Placeholder text ("District", "+ years") - a visibly lighter/smaller
-  // prompt rather than full title-sized text, so an empty selection
-  // doesn't look like a giant blank heading.
-  .p-select-label.p-placeholder,
-  .p-multiselect-label.p-placeholder {
-    font-size: 1rem;
-    font-weight: 500;
-    color: var(--color-muted);
-    opacity: 0.8;
-  }
-
-  // Year chips - sized to match the surrounding h1 text.
-  .p-multiselect-chip-item,
-  .p-multiselect-token {
-    font: inherit;
-    font-size: 1.5rem;
-    font-weight: 800;
-    color: var(--color-teal-900);
-    background: var(--color-teal-100);
-    border-radius: 8px;
-    padding: 0 8px 0 12px;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    line-height: 1.6;
-  }
-  .p-multiselect-chip-icon,
-  .p-multiselect-token-icon {
-    font-size: 1rem;
-    opacity: 0.55;
-    cursor: pointer;
-    &:hover { opacity: 1; }
-  }
-
-  // Selected district value - same visual weight as a year chip, so both
-  // controls read consistently as "title" content once something's picked.
-  .p-select-label:not(.p-placeholder) {
-    font-size: 1.5rem;
-    font-weight: 800;
-    color: var(--color-teal-900);
-  }
-
-  // Dropdown trigger icons - small and quiet, not a full form-control arrow.
-  .p-select-dropdown,
-  .p-multiselect-trigger {
-    width: 1.3rem;
-    color: var(--color-teal-700);
-  }
-  .p-select-dropdown-icon,
-  .p-multiselect-dropdown-icon {
-    font-size: 0.8rem;
-  }
-
-  // Mobile: no border/outline anywhere, ever - this is meant to read as a
-  // page title bar, not a form, on small screens especially.
-  @media (max-width: 640px) {
-    .p-select,
-    .p-multiselect {
-      border: none !important;
-      box-shadow: none !important;
-    }
-  }
-}*/
+:host ::ng-deep .facility-select {
+  min-width: 160px;
+  border: 1px solid var(--color-line) !important;
+  border-radius: var(--radius-sm) !important;
+  padding: 4px 8px !important;
+  background: var(--color-surface) !important;
+}

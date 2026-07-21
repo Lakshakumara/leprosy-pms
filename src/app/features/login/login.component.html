@@ -17,8 +17,8 @@
 
         <!-- Mode toggle: username/password vs. DHIS2 access token -->
         <div class="login-mode-toggle" role="tablist">
-            <button type="button" role="tab" class="login-mode-tab" [class.login-mode-tab--active]="mode() === 'password'"
-                (click)="setMode('password')">
+            <button type="button" role="tab" class="login-mode-tab"
+                [class.login-mode-tab--active]="mode() === 'password'" (click)="setMode('password')">
                 <i class="pi pi-user"></i> Username & Password
             </button>
             <button type="button" role="tab" class="login-mode-tab" [class.login-mode-tab--active]="mode() === 'token'"
@@ -30,69 +30,69 @@
         <form class="login-form" (ngSubmit)="submit()" #loginForm="ngForm" novalidate>
 
             @if (mode() === 'password') {
-                <div class="field">
-                    <label for="login-username" class="field__label">Username</label>
-                    <div class="field__input-wrap" [class.field__input-wrap--error]="showErrors && !username">
-                        <i class="pi pi-user field__icon"></i>
-                        <input id="login-username" type="text" [(ngModel)]="username" name="username"
-                            autocomplete="username" placeholder="Enter your username" class="field__input" />
-                    </div>
-                    @if (showErrors && !username) {
-                        <span class="field__error">Username is required</span>
-                    }
+            <div class="field">
+                <label for="login-username" class="field__label">Username</label>
+                <div class="field__input-wrap" [class.field__input-wrap--error]="showErrors && !username">
+                    <i class="pi pi-user field__icon"></i>
+                    <input id="login-username" type="text" [(ngModel)]="username" name="username"
+                        autocomplete="username" placeholder="Enter your username" class="field__input" />
                 </div>
+                @if (showErrors && !username) {
+                <span class="field__error">Username is required</span>
+                }
+            </div>
 
-                <div class="field">
-                    <label for="login-password" class="field__label">Password</label>
-                    <div class="field__input-wrap" [class.field__input-wrap--error]="showErrors && !password">
-                        <i class="pi pi-lock field__icon"></i>
-                        <input id="login-password" [type]="showPassword ? 'text' : 'password'" [(ngModel)]="password"
-                            name="password" autocomplete="current-password" placeholder="Enter your password"
-                            class="field__input" />
-                        <button type="button" class="field__toggle" (click)="showPassword = !showPassword"
-                            [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'">
-                            <i class="pi" [class.pi-eye]="!showPassword" [class.pi-eye-slash]="showPassword"></i>
-                        </button>
-                    </div>
-                    @if (showErrors && !password) {
-                        <span class="field__error">Password is required</span>
-                    }
+            <div class="field">
+                <label for="login-password" class="field__label">Password</label>
+                <div class="field__input-wrap" [class.field__input-wrap--error]="showErrors && !password">
+                    <i class="pi pi-lock field__icon"></i>
+                    <input id="login-password" [type]="showPassword ? 'text' : 'password'" [(ngModel)]="password"
+                        name="password" autocomplete="current-password" placeholder="Enter your password"
+                        class="field__input" />
+                    <button type="button" class="field__toggle" (click)="showPassword = !showPassword"
+                        [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'">
+                        <i class="pi" [class.pi-eye]="!showPassword" [class.pi-eye-slash]="showPassword"></i>
+                    </button>
                 </div>
+                @if (showErrors && !password) {
+                <span class="field__error">Password is required</span>
+                }
+            </div>
 
-                <label class="remember-me">
-                    <input type="checkbox" [(ngModel)]="rememberMe" name="rememberMe" />
-                    <span>Remember me on this device</span>
-                </label>
+            <label class="remember-me">
+                <input type="checkbox" [(ngModel)]="rememberMe" name="rememberMe" />
+                <span>Remember me on this device</span>
+            </label>
             } @else {
-                <div class="field">
-                    <label for="login-token" class="field__label">DHIS2 Access Token</label>
-                    <div class="field__input-wrap" [class.field__input-wrap--error]="showErrors && !apiToken">
-                        <i class="pi pi-key field__icon"></i>
-                        <input id="login-token" type="password" [(ngModel)]="apiToken" name="apiToken"
-                            autocomplete="off" placeholder="d2pat_..." class="field__input" />
-                    </div>
-                    @if (showErrors && !apiToken) {
-                        <span class="field__error">Access token is required</span>
-                    }
-                    <p class="field__hint">Generate one from your DHIS2 profile → Personal Access Tokens.</p>
+            <div class="field">
+                <label for="login-token" class="field__label">DHIS2 Access Token</label>
+                <div class="field__input-wrap" [class.field__input-wrap--error]="showErrors && !apiToken">
+                    <i class="pi pi-key field__icon"></i>
+                    <input id="login-token" type="password" [(ngModel)]="apiToken" name="apiToken" autocomplete="off"
+                        placeholder="d2pat_..." class="field__input" />
                 </div>
+                @if (showErrors && !apiToken) {
+                <span class="field__error">Access token is required</span>
+                }
+                <p class="field__hint">Generate one from your DHIS2 profile → Personal Access Tokens.</p>
+            </div>
             }
 
             @if (error()) {
-                <div class="login-error" role="alert">
-                    <i class="pi pi-exclamation-triangle"></i>
-                    {{ error() }}
-                </div>
+            <div class="login-error" role="alert">
+                <i class="pi pi-exclamation-triangle"></i>
+                {{ error() }}
+            </div>
             }
 
             <button id="login-submit-btn" type="submit" class="login-btn" [class.login-btn--loading]="loading()"
                 [disabled]="loading()">
                 @if (loading()) {
-                    <i class="pi pi-spin pi-spinner"></i>
-                    <span>Signing in...</span>
+                <i class="pi pi-spin pi-spinner"></i>
+                <span>Signing in...</span>
                 } @else {
-                    <i class="pi pi-sign-in"></i>
-                    <span>Sign In</span>
+                <i class="pi pi-sign-in"></i>
+                <span>Sign In</span>
                 }
             </button>
         </form>

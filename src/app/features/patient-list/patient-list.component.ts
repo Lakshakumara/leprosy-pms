@@ -1,7 +1,7 @@
 import { Component, inject, computed, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -27,6 +27,7 @@ interface SelectOption { label: string; value: string; }
 })
 export class PatientListComponent implements OnInit {
     private readonly storage = inject(DeviceStorageService);
+    private readonly route = inject(ActivatedRoute);
     protected readonly patientService = inject(PatientService);
     protected readonly filter = signal<PatientFilter>({
         district: 'All',
@@ -84,11 +85,37 @@ export class PatientListComponent implements OnInit {
         return count;
     });
     async ngOnInit(): Promise<void> {
-        // Trigger DHIS2 pull on first visit (if online and no local data)
-        if (this.patientService.patients().length === 0) {
+        if (this.patientService.districtPatients().length === 0) {
             await this.patientService.pullFromServer();
         }
         await this.loadDistinctValues();
+        this.applyQueryParams(this.route.snapshot.queryParamMap);
+        this.route.queryParamMap.subscribe(params => this.applyQueryParams(params));
+    }
+
+    private applyQueryParams(params: { get: (key: string) => string | null }): void {
+        const patch: Partial<PatientFilter> = {};
+        const district = params.get('district');
+        const year = params.get('year');
+        const classification = params.get('classification');
+        const orgUnitId = params.get('orgUnitId');
+        const mohArea = params.get('mohArea');
+
+        if (district) patch.district = district;
+        if (classification) patch.classification = classification;
+        if (orgUnitId) patch.orgUnitId = orgUnitId;
+        if (mohArea) patch.mohArea = mohArea;
+    const alert = params.get('alert');
+    if (alert) patch.alert = alert;
+        if (year) {
+            patch.enrolledFrom = `${year}-01-01`;
+            patch.enrolledTo = `${year}-12-31`;
+        }
+
+        if (Object.keys(patch).length) {
+            this.filter.update(f => ({ ...f, ...patch }));
+            this.showFilters.set(true);
+        }
     }
     private async loadDistinctValues(): Promise<void> {
         this.filtersLoading.set(true);

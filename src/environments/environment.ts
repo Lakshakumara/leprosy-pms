@@ -103,10 +103,6 @@ export const environment = {
     FOOT_DROP:                      { uid: 'JCrTNTvDAWi', displayName: 'Lep - Foot drop' },
     FOOT_ULCER:                     { uid: 'hkCk03W7xWH', displayName: 'Lep - Foot ulcer' },
   } as const,
-
-  // --- Google Maps ---
-  // Get a key from https://console.cloud.google.com/google/maps-apis
-  googleMapsApiKey: 'AIzaSyASfzX-MbMu9lWERu0l2JVA0TAUH1_Mws4'
 };
 
 export type Dhis2Environment = typeof environment;

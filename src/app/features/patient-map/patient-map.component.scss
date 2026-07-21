@@ -1,9 +1,50 @@
 .page-head__sub { color: var(--color-muted); font-size: 0.85rem; margin: 0 0 16px; }
-.map-card { padding: 6px; overflow: hidden; }
+.map-card { padding: 6px; overflow: hidden; margin-top: 12px; }
 .map-container { height: 560px; width: 100%; border-radius: 10px; }
 .selected-info { margin-top: 14px; padding: 14px 18px; display: flex; flex-direction: column; gap: 4px; }
 .muted { color: var(--color-muted); font-size: 0.85rem; }
-.legend { margin-top: 14px; display: flex; gap: 18px; font-size: 0.82rem; color: var(--color-muted); }
-.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; }
-.dot--mb { background: var(--color-mb); }
-.dot--pb { background: var(--color-pb); }
+.notice { padding: 12px 16px; margin-bottom: 12px; border-left: 4px solid var(--color-pb); background: var(--color-pb-bg); }
+.legend { margin-top: 14px; display: flex; gap: 16px; flex-wrap: wrap; font-size: 0.82rem; color: var(--color-muted); }
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+// Explicit classes instead of inline styles - component-scoped CSS gets
+// Angular's own attribute-based encapsulation added automatically, which
+// is a sturdier way to win against whatever was overriding the inline
+// style attempts (a global reset, a library default, etc. - something
+// not visible from here). Colors match the marker palette in the .ts file.
+.dot--2026 { background-color: #1d4ed8; }
+.dot--2025 { background-color: #b5532c; }
+.dot--2024 { background-color: #b08900; }
+.dot--2023 { background-color: #0d9488; }
+.dot--2022 { background-color: #7c3aed; }
+
+// Leaflet's layer-control checkboxes are plain native browser checkboxes
+// by default (white box, OS-blue when checked). accent-color re-tints
+// them to match the app's palette without needing to fight Leaflet's
+// internal markup. Note: this colors ALL checkboxes the same brand teal -
+// giving each row a checkbox matching its OWN layer color (e.g. the 2026
+// checkbox tinted blue, 2025 tinted clay-red) isn't practical with
+// Leaflet's built-in control via CSS alone, since row order can shift
+// depending on which optional layers (district/MOH) actually loaded. A
+// fully custom-built layer control would be the way to get that level of
+// exact per-row color matching, if it's worth the extra effort later.
+:host ::ng-deep .leaflet-control-layers {
+  border-radius: 8px;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+
+  input[type="checkbox"] {
+    accent-color: var(--color-teal-700);
+    width: 14px;
+    height: 14px;
+    vertical-align: middle;
+    margin-right: 4px;
+  }
+}

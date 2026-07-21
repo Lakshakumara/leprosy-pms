@@ -100,6 +100,8 @@ export interface PatientFilter {
   gnDivision?: string;
   enrolledFrom?: string;
   enrolledTo?: string;
+  /** Dashboard drill-down: grade2 | relapse | defaulter | noContact | delayed | child | mb */
+  alert?: string;
 }
 
 export const createDefaultPatientFilter = (): PatientFilter => ({

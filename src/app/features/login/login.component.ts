@@ -83,7 +83,7 @@ export class LoginComponent implements OnInit {
 
       this.goToDashboard();
     } catch (err: any) {
-      this.error.set( 'Login failed. Please check your credentials and try again.');
+      this.error.set('Login failed. Please check your credentials and try again.');
     } finally {
       this.loading.set(false);
     }

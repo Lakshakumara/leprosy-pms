@@ -3,25 +3,37 @@ import { catchError, of } from 'rxjs';
 import { LocalStorageService } from './local-storage.service';
 import { Dhis2Service } from './dhis2.service';
 import { Patient, PatientFilter } from './patient.model';
+import {
+  hasDelayedDiagnosis,
+  hasGrade2Disability,
+  isChildCase,
+  isDefaulter,
+  isMb,
+  isRelapse,
+} from '../util/dashboard-analytics';
 
 @Injectable({ providedIn: 'root' })
 export class PatientService {
   private readonly localStorage = inject(LocalStorageService);
   private readonly dhis2 = inject(Dhis2Service);
-  
+
   /** Full in-memory cache of local records; source of truth for the UI. */
   private readonly _patients = signal<Patient[]>([]);
-  readonly patients = this._patients.asReadonly();
+  readonly allPatients = this._patients.asReadonly();
+   //readonly patients = this._patients.asReadonly();
   readonly isOnline = signal<boolean>(navigator.onLine);
   readonly isSyncing = signal(false);
   readonly lastPullError = signal<string | null>(null);
 
   readonly lastSyncedAt = signal<string | null>(null);
 
-  get districtPatients() {
-    return  this.patients().filter(p => p.patientDistrict === 'Ratnapura')
-  };
-
+  readonly districtPatients = computed(() => {
+    return this.allPatients().filter(p => p.patientDistrict === this.userDistricts());
+  });
+  
+  userDistricts() {
+    return this.dhis2.userDistricts();
+  }
   constructor() {
     window.addEventListener('online', () => this.isOnline.set(true));
     window.addEventListener('offline', () => this.isOnline.set(false));
@@ -38,6 +50,9 @@ export class PatientService {
   filtered(filter: PatientFilter): Patient[] {
     const ci = (s: string) => s.toLowerCase();
     return this._patients().filter(p => {
+      if (filter.district && filter.district !== 'ALL') {
+        if (p.patientDistrict !== filter.district) return false;
+      }
       // Free-text search: name, ALC#, NIC
       if (filter.search) {
         const q = ci(filter.search);
@@ -72,6 +87,13 @@ export class PatientService {
       // Enrolled date range
       if (filter.enrolledFrom && p.enrolledAt < filter.enrolledFrom) return false;
       if (filter.enrolledTo && p.enrolledAt > filter.enrolledTo) return false;
+      if (filter.alert === 'grade2' && !hasGrade2Disability(p)) return false;
+      if (filter.alert === 'relapse' && !isRelapse(p)) return false;
+      if (filter.alert === 'defaulter' && !isDefaulter(p)) return false;
+      if (filter.alert === 'noContact' && p.contactHistory) return false;
+      if (filter.alert === 'delayed' && !hasDelayedDiagnosis(p)) return false;
+      if (filter.alert === 'child' && !isChildCase(p)) return false;
+      if (filter.alert === 'mb' && !isMb(p)) return false;
       return true;
     })
       // Mandatory sort: newest enrolled patient first
@@ -98,11 +120,11 @@ export class PatientService {
     this.lastPullError.set(null);
     this.isSyncing.set(true);
     const source$ =
-    year != undefined
-      ? this.dhis2.fetchPatientsByLivingDistrictForYears([year])
-      : this.dhis2.fetchPatients();
- 
-  source$
+      year != undefined
+        ? this.dhis2.fetchPatientsByLivingDistrictForYears([year])
+        : this.dhis2.fetchPatients();
+
+    source$
       .pipe(
         catchError(err => {
           const message =
@@ -160,7 +182,7 @@ export class PatientService {
 
     let age = enrolled.getFullYear() - dob.getFullYear();
 
-console.log('map age', String(age) )
+    console.log('map age', String(age))
     return {
       ...p,
       patientAge: String(age)

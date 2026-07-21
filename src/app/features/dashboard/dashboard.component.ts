@@ -1,80 +1,200 @@
-import { Component, inject, computed, signal, OnInit } from '@angular/core';
+import { Component, inject, computed, model, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { PatientService } from '../../core/services/patient.service';
 import { Patient } from '../../core/services/patient.model';
-
 import { MultiSelectModule } from 'primeng/multiselect';
 import { SelectModule } from 'primeng/select';
-import { FormsModule } from '@angular/forms';
+import { TooltipModule } from 'primeng/tooltip';
 import { DISTRICT, STORAGE_KEYS } from '../../core/util/util';
-import { OrgScopeService } from '../../core/services/org-scope.service';
 import { DeviceStorageService } from '../../core/services/device-storage.service';
-import { Dhis2Service } from '../../core/services/dhis2.service';
+import {
+  buildAlerts,
+  countByField,
+  ehfDistribution,
+  enrollmentTrend,
+  hasDeformity,
+  hasDelayedDiagnosis,
+  hasGrade2Disability,
+  isChildCase,
+  isDefaulter,
+  isMb,
+  isPb,
+  isRelapse,
+  programIndicators,
+  yearOf,
+  type CountRow,
+  type DashboardAlert,
+} from '../../core/util/dashboard-analytics';
 
-interface CountRow { label: string; count: number; pct: number; }
+interface SelectOption {
+  label: string;
+  value: string;
+}
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, MultiSelectModule, SelectModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterLink,
+    MultiSelectModule,
+    SelectModule,
+    TooltipModule,
+  ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })
 export class DashboardComponent implements OnInit {
   private readonly storage = inject(DeviceStorageService);
-  private readonly scope = inject(OrgScopeService);
-  private readonly dhis2Service = inject(Dhis2Service);
-
-  ngOnInit(): void {}
-
+  private readonly router = inject(Router);
   protected readonly patientService = inject(PatientService);
 
   private readonly currentYear = new Date().getFullYear();
 
-  /** 2022 .. current year, descending (newest first). */
   protected readonly yearOptions = Array.from(
     { length: this.currentYear - 2022 + 1 },
     (_, i) => this.currentYear - i
   );
 
-  /** Empty selection = show all years (default state). */
-  protected readonly selectedYears = signal<number[]>([this.currentYear]);
+  protected readonly districtOptions: SelectOption[] = [
+    { label: 'Ratnapura', value: 'Ratnapura' },
+    { label: 'Nuwara Eliya', value: 'NuwaraEliya' },
+  ];
 
-  /**
-   * District options - fill this in on your end (e.g. from OrgScopeService
-   * assigned districts, or the full national list). Single-select, so
-   * selectedDistrict holds one value, not an array.
-   */
-  protected readonly districtOptions: { label: string; value: string }[] = [{'label': 'Ratnapura', 'value': 'Ratnapura'}, {'label': 'Nuwara Eliya', 'value': 'NuwaraEliya'}];
+  protected readonly selectedDistrict = model(DISTRICT);
+  protected readonly selectedYears = model<number[]>([this.currentYear]);
+  protected readonly selectedFacility = model<string>('ALL');
 
-  /** Defaults to the user's own district; still overridable via the dropdown. */
-  protected readonly selectedDistrict = signal<string>(DISTRICT);
+  protected readonly hoveredMoh = model<string | null>(null);
+  protected readonly hoveredYear = model<number | null>(null);
 
-  /**
-   * enrolledAt is stored as "yyyy-MM-dd". Pull the year straight out of the
-   * string rather than going through `new Date(...).getFullYear()` - avoids
-   * any timezone-driven off-by-one on date parsing.
-   */
-  private yearOf(enrolledAt: string | undefined | null): number | null {
-    if (!enrolledAt || enrolledAt.length < 4) return null;
-    const year = Number(enrolledAt.slice(0, 4));
-    return Number.isNaN(year) ? null : year;
-  }
+  protected readonly facilityOptions = computed<SelectOption[]>(() => {
+    const user = this.storage.getJSON<any>(STORAGE_KEYS.USER_DATA);
+    const facilities: SelectOption[] = [{ label: 'All facilities', value: 'ALL' }];
+    for (const f of user?.organisationUnits ?? []) {
+      facilities.push({ label: f.name, value: f.id });
+    }
+    return facilities;
+  });
 
-  /** Every other computed value below reads from this, not patientService.patients() directly. */
   protected readonly filteredPatients = computed<Patient[]>(() => {
-    const all = this.patientService.patients();
+    const all = this.patientService.allPatients();
     const years = this.selectedYears();
     const district = this.selectedDistrict();
+    const facility = this.selectedFacility();
 
-    return all.filter((p) => {
+    return all.filter(p => {
       if (district && p.patientDistrict !== district) return false;
-      if (years.length === 0) return true; // no year selection = all years
-      const year = this.yearOf(p.enrolledAt);
+      if (facility !== 'ALL' && p.orgUnitId !== facility) return false;
+      if (years.length === 0) return true;
+      const year = yearOf(p.enrolledAt);
       return year != null && years.includes(year);
     });
   });
+
+  protected readonly total = computed(() => this.filteredPatients().length);
+  protected readonly mbCount = computed(() => this.filteredPatients().filter(isMb).length);
+  protected readonly pbCount = computed(() => this.filteredPatients().filter(isPb).length);
+  protected readonly activeCount = computed(
+    () => this.filteredPatients().filter(p => p.enrollmentStatus === 'ACTIVE').length
+  );
+  protected readonly completedCount = computed(
+    () => this.filteredPatients().filter(p => p.enrollmentStatus === 'COMPLETED').length
+  );
+  protected readonly grade2Count = computed(
+    () => this.filteredPatients().filter(hasGrade2Disability).length
+  );
+  protected readonly childCount = computed(
+    () => this.filteredPatients().filter(isChildCase).length
+  );
+  protected readonly recentCount = computed(() => {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+    return this.filteredPatients().filter(p => p.enrolledAt && new Date(p.enrolledAt) >= cutoff).length;
+  });
+
+  protected readonly indicators = computed(() => programIndicators(this.filteredPatients()));
+  protected readonly alerts = computed<DashboardAlert[]>(() => buildAlerts(this.filteredPatients()));
+  protected readonly byYear = computed(() => enrollmentTrend(this.filteredPatients()));
+  protected readonly byHospital = computed<CountRow[]>(() =>
+    countByField(
+      this.filteredPatients(),
+      p =>
+        p.orgUnitName ||
+        (this.storage.getFacilities() ?? []).find((f: { id: string; name: string }) => f.id === p.orgUnitId)?.name ||
+        p.orgUnitId ||
+        'Unknown',
+      p => p.orgUnitId,
+      8
+    )
+  );
+  protected readonly byMoh = computed<CountRow[]>(() =>
+    countByField(this.filteredPatients(), p => p.patientMohArea || '(not recorded)', undefined, 10)
+  );
+  protected readonly byPhi = computed<CountRow[]>(() =>
+    countByField(this.filteredPatients(), p => p.patientPhiArea || '(not recorded)', undefined, 8)
+  );
+  protected readonly ehfDistribution = computed(() => ehfDistribution(this.filteredPatients()));
+
+  protected readonly sexSplit = computed(() => {
+    const patients = this.filteredPatients();
+    const male = patients.filter(p => p.patientSex?.toLowerCase().startsWith('m')).length;
+    const female = patients.filter(p => p.patientSex?.toLowerCase().startsWith('f')).length;
+    const other = patients.length - male - female;
+    const total = patients.length || 1;
+    return [
+      { label: 'Male', count: male, pct: Math.round((male / total) * 100) },
+      { label: 'Female', count: female, pct: Math.round((female / total) * 100) },
+      { label: 'Not recorded', count: other, pct: Math.round((other / total) * 100) },
+    ].filter(r => r.count > 0);
+  });
+
+  protected readonly deformityBreakdown = computed(() => {
+    const patients = this.filteredPatients();
+    const total = patients.length || 1;
+    const items = [
+      { label: 'Claw hand', count: patients.filter(p => p.clawHand).length },
+      { label: 'Foot drop', count: patients.filter(p => !!p.footDrop).length },
+      { label: 'Foot ulcer', count: patients.filter(p => !!p.footUlcer).length },
+      { label: 'Eye involvement', count: patients.filter(p => !!p.eyeInvolvement).length },
+      { label: 'Face involvement', count: patients.filter(p => !!p.faceInvolvement).length },
+    ];
+    return items
+      .filter(i => i.count > 0)
+      .map(i => ({ ...i, pct: Math.round((i.count / total) * 100) }));
+  });
+
+  protected readonly mbPbDonut = computed(() => {
+    const mb = this.mbCount();
+    const pb = this.pbCount();
+    const total = mb + pb || 1;
+    const mbPct = Math.round((mb / total) * 100);
+    return { mb, pb, mbPct, pbPct: 100 - mbPct };
+  });
+
+  protected readonly yearOverYearChange = computed(() => {
+    const trend = this.byYear();
+    if (trend.length < 2) return null;
+    const latest = trend[trend.length - 1];
+    const prev = trend[trend.length - 2];
+    if (!prev.count) return null;
+    return Math.round(((latest.count - prev.count) / prev.count) * 100);
+  });
+
+  protected readonly maxHospitalCount = computed(() =>
+    Math.max(1, ...this.byHospital().map(r => r.count))
+  );
+  protected readonly maxMohCount = computed(() => Math.max(1, ...this.byMoh().map(r => r.count)));
+
+  async ngOnInit(): Promise<void> {
+    console.log(this.patientService.userDistricts());
+    if (this.patientService.allPatients().length === 0) {
+      await this.patientService.pullFromServer();
+    }
+  }
 
   protected selectAllYears(): void {
     this.selectedYears.set([...this.yearOptions]);
@@ -84,114 +204,65 @@ export class DashboardComponent implements OnInit {
     this.selectedYears.set([]);
   }
 
-  // ── Totals ─────────────────────────────────────────────────────────────────
-  protected readonly total = computed(() => this.filteredPatients().length);
-
-  protected readonly mbCount = computed(() =>
-    this.filteredPatients().filter(p => p.treatmentClassification === 'MB (>5 lesions)').length
-  );
-  protected readonly pbCount = computed(() =>
-    this.filteredPatients().filter(p => p.treatmentClassification === 'PB (1-5 lesions)').length
-  );
-
-  protected readonly activeCount = computed(() =>
-    this.filteredPatients().filter(p => p.enrollmentStatus === 'ACTIVE').length
-  );
-  protected readonly completedCount = computed(() =>
-    this.filteredPatients().filter(p => p.enrollmentStatus === 'COMPLETED').length
-  );
-
-  protected readonly contactHistoryCount = computed(() =>
-    this.filteredPatients().filter(p => p.contactHistory).length
-  );
-  protected readonly relapseCount = computed(() =>
-    this.filteredPatients().filter(p => p.relapse && p.relapse !== 'false').length
-  );
-  protected readonly highEhfCount = computed(() =>
-    this.filteredPatients().filter(p => p.ehfScore >= 7).length
-  );
-  protected readonly grade2Count = computed(() =>
-    this.filteredPatients().filter(p => p.disabilityAtDiagnosis === '3').length
-  );
-
-  // Recent registrations (last 30 days) - within the currently filtered set
-  protected readonly recentCount = computed(() => {
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - 30);
-    return this.filteredPatients().filter(p => {
-      if (!p.enrolledAt) return false;
-      return new Date(p.enrolledAt) >= cutoff;
-    }).length;
-  });
-
-  protected readonly facilities = this.storage.getJSON<any>(STORAGE_KEYS.USER_DATA)?.organisationUnits;
-
-  // ── By hospital ─────────────────────────────────────────────────────────────
-  protected readonly byHospital = computed<CountRow[]>(() => {
-    const patients = this.filteredPatients();
-    if (!patients.length) return [];
-    const map = new Map<string, number>();
-    for (const p of patients) {
-      const name = p.orgUnitName || this.storage.getFacilities().find((f: any) => f.id === p.orgUnitId)?.name || p.orgUnitId || 'Unknown';
-      map.set(name, (map.get(name) ?? 0) + 1);
+  protected navigateWithFilter(queryParams: Record<string, string>): void {
+    const params: Record<string, string> = {
+      district: this.selectedDistrict(),
+      ...queryParams,
+    };
+    for (const key of Object.keys(params)) {
+      if (!params[key]) delete params[key];
     }
-    const total = patients.length;
-    return [...map.entries()]
-      .map(([label, count]) => ({ label, count, pct: Math.round(count / total * 100) }))
-      .sort((a, b) => b.count - a.count);
-  });
-
-  // ── By MOH area ─────────────────────────────────────────────────────────────
-  protected readonly byMoh = computed<CountRow[]>(() => {
-    const patients = this.filteredPatients();
-    if (!patients.length) return [];
-    const map = new Map<string, number>();
-    for (const p of patients) {
-      const key = p.patientMohArea || '(not recorded)';
-      map.set(key, (map.get(key) ?? 0) + 1);
+    if (this.selectedYears().length === 1) {
+      params['year'] = String(this.selectedYears()[0]);
     }
-    const total = patients.length;
-    return [...map.entries()]
-      .map(([label, count]) => ({ label, count, pct: Math.round(count / total * 100) }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 10);
-  });
+    void this.router.navigate(['/patients'], { queryParams: params });
+  }
 
-  // ── EHF score distribution ───────────────────────────────────────────────────
-  protected readonly ehfDistribution = computed<CountRow[]>(() => {
-    const patients = this.filteredPatients();
-    if (!patients.length) return [];
-    const groups = [
-      { label: 'Grade 0 (EHF 0)', min: 0, max: 0 },
-      { label: 'Grade 1 (EHF 1–3)', min: 1, max: 3 },
-      { label: 'Grade 2 (EHF 4–6)', min: 4, max: 6 },
-      { label: 'Grade 2+ (EHF 7–12)', min: 7, max: 12 },
-    ];
-    const total = patients.length;
-    return groups.map(g => {
-      const count = patients.filter(p => p.ehfScore >= g.min && p.ehfScore <= g.max).length;
-      return { label: g.label, count, pct: Math.round(count / total * 100) };
+  protected drillDownMoh(row: CountRow): void {
+    if (row.label === '(not recorded)') return;
+    this.navigateWithFilter({ mohArea: row.label });
+  }
+
+  protected drillDownHospital(row: CountRow): void {
+    if (row.id) {
+      this.navigateWithFilter({ orgUnitId: row.id });
+    }
+  }
+
+  protected drillDownClassification(type: 'MB' | 'PB'): void {
+    this.navigateWithFilter({
+      classification: type === 'MB' ? 'MB (>5 lesions)' : 'PB (1-5 lesions)',
     });
-  });
+  }
 
-  // ── Trend: enrollments by year ───────────────────────────────────────────────
-  protected readonly byYear = computed<{ year: number; count: number; pct: number }[]>(() => {
+  protected alertPatients(alert: DashboardAlert): Patient[] {
     const patients = this.filteredPatients();
-    if (!patients.length) return [];
-    const map = new Map<number, number>();
-    for (const p of patients) {
-      const year = this.yearOf(p.enrolledAt);
-      if (year == null) continue;
-      map.set(year, (map.get(year) ?? 0) + 1);
+    switch (alert.icon) {
+      case 'pi-exclamation-triangle':
+        return patients.filter(hasGrade2Disability);
+      case 'pi-replay':
+        return patients.filter(isRelapse);
+      case 'pi-clock':
+        return patients.filter(isDefaulter);
+      case 'pi-users':
+        return patients.filter(p => !p.contactHistory);
+      case 'pi-calendar-times':
+        return patients.filter(hasDelayedDiagnosis);
+      case 'pi-heart':
+        return patients.filter(isChildCase);
+      case 'pi-search':
+        return patients.filter(isMb);
+      default:
+        return patients;
     }
-    const max = Math.max(1, ...map.values());
-    return [...map.entries()]
-      .sort((a, b) => a[0] - b[0])
-      .map(([year, count]) => ({ year, count, pct: Math.round(count / max * 100) }));
-  });
+  }
 
-  // ── Max for bar normalisation ────────────────────────────────────────────────
-  protected readonly maxHospitalCount = computed(() =>
-    Math.max(1, ...this.byHospital().map(r => r.count))
-  );
+  protected openAlert(alert: DashboardAlert): void {
+    const specific = this.alertPatients(alert);
+    if (specific.length === 1) {
+      void this.router.navigate(['/patients', specific[0].id]);
+      return;
+    }
+    this.navigateWithFilter(alert.queryParams);
+  }
 }
