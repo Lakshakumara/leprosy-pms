@@ -86,10 +86,12 @@ export class Dhis2Service {
   private readonly orgScope = inject(OrgScopeService);
   private readonly base = environment.dhis2.baseUrl;
 
-  userDistricts(){
-   return  this.orgScope.healthDistricts()[0].trim();
+  userDistricts() {
+    return this.orgScope.healthDistricts()[0].trim();
   }
-  
+  healthDistricts() {
+    return this.orgScope.healthDistrictsNew();
+  }
   /**
    * Fetch all patients under the given org unit, or - if none is passed -
    * across every district the logged-in user is assigned to.
@@ -196,7 +198,7 @@ export class Dhis2Service {
       return of([]);
     }
     if (years.length === 0) {
-     return of([]);
+      return of([]);
     }
 
     // One request per (year x org unit) combination - typically just
@@ -279,7 +281,7 @@ export class Dhis2Service {
       .set('orgUnit', orgUnitId)
       .set('ouMode', 'DESCENDANTS')
       .set('fields', fields)
-      .set('pageSize', '500')
+      .set('pageSize', '2000')
       .set('page', String(page))
       .set('attribute', A.PATIENT_NAME.uid);
 
@@ -371,7 +373,7 @@ export class Dhis2Service {
       nameOfMO: dvMap.get(D.NAME_OF_MO.uid) ?? '',
       patientReferredBy: dvMap.get(D.PATIENT_REFERRED_BY.uid) ?? '',
 
-      clawHand: dvMap.get(D.CLAW_HAND.uid) === 'true',
+      clawHand: dvMap.get(D.CLAW_HAND.uid) ?? '',
       footDrop: dvMap.get(D.FOOT_DROP.uid) ?? '',
       footUlcer: dvMap.get(D.FOOT_ULCER.uid) ?? '',
       eyeInvolvement: dvMap.get(D.EYE_INVOLVEMENT.uid) ?? '',
@@ -390,33 +392,30 @@ export class Dhis2Service {
  * Splice these methods into your existing Dhis2Service class.
  */
 
-/** Fetch a single org unit's boundary geometry (e.g. a district). */
-fetchOrgUnitGeometry(orgUnitId: string): Observable<OrgUnitGeometry> {
-  console.log('is this ok' , this.http.get<OrgUnitGeometry>(`${this.base}/organisationUnits/${orgUnitId}.json`, {
-    params: { fields: 'id,name,geometry' } }));
+  /** Fetch a single org unit's boundary geometry (e.g. a district). */
+  fetchOrgUnitGeometry(orgUnitId: string): Observable<OrgUnitGeometry> {
+    return this.http.get<OrgUnitGeometry>(`${this.base}/organisationUnits/${orgUnitId}.json`, {
+      params: { fields: 'id,name,geometry' }
+    });
+    //curl -i "https://dhis2-proxy.lakshakumara.workers.dev/dhis2-api/organisationUnits/Sa955F8q271?fields=id,name,geometry"
+  }
 
-  return this.http.get<OrgUnitGeometry>(`${this.base}/organisationUnits/${orgUnitId}.json`, {
-    params: { fields: 'id,name,geometry' }
-  });
-  //curl -i "https://dhis2-proxy.lakshakumara.workers.dev/dhis2-api/organisationUnits/Sa955F8q271?fields=id,name,geometry"
-}
-
-/**
- * Fetch every direct child of a given org unit (e.g. all MOH areas under
- * a district), with geometry if present. Many may come back with
- * geometry: null if PHSMIS hasn't had polygon data loaded for that level -
- * callers should handle that gracefully rather than assuming it's there.
- */
-fetchChildOrgUnitsWithGeometry(parentOrgUnitId: string): Observable<OrgUnitGeometry[]> {
-  return this.http
-    .get<{ organisationUnits: OrgUnitGeometry[] }>(`${this.base}/organisationUnits`, {
-      params: {
-        filter: `parent.id:eq:${parentOrgUnitId}`,
-        fields: 'id,name,geometry',
-        paging: 'false'
-      }
-    })
-    .pipe(map((res) => res.organisationUnits ?? []));
-}
+  /**
+   * Fetch every direct child of a given org unit (e.g. all MOH areas under
+   * a district), with geometry if present. Many may come back with
+   * geometry: null if PHSMIS hasn't had polygon data loaded for that level -
+   * callers should handle that gracefully rather than assuming it's there.
+   */
+  fetchChildOrgUnitsWithGeometry(parentOrgUnitId: string): Observable<OrgUnitGeometry[]> {
+    return this.http
+      .get<{ organisationUnits: OrgUnitGeometry[] }>(`${this.base}/organisationUnits`, {
+        params: {
+          filter: `parent.id:eq:${parentOrgUnitId}`,
+          fields: 'id,name,geometry',
+          paging: 'false'
+        }
+      })
+      .pipe(map((res) => res.organisationUnits ?? []));
+  }
 
 }

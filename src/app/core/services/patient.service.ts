@@ -14,6 +14,9 @@ import {
 
 @Injectable({ providedIn: 'root' })
 export class PatientService {
+clearError() {
+throw new Error('Method not implemented.');
+}
   private readonly localStorage = inject(LocalStorageService);
   private readonly dhis2 = inject(Dhis2Service);
 
@@ -33,6 +36,9 @@ export class PatientService {
   
   userDistricts() {
     return this.dhis2.userDistricts();
+  }
+  healthDistricts() {
+    return this.dhis2.healthDistricts();
   }
   constructor() {
     window.addEventListener('online', () => this.isOnline.set(true));

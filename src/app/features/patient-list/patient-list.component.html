@@ -1,6 +1,6 @@
 <div class="page-head">
     <div>
-        <h1>Patient Registry</h1>
+        <h1>Patient Register</h1>
         <p class="page-head__sub">
             {{ rows().length }} of {{ rows().length }} patients shown
             @if (activeFilterCount() > 0) {
@@ -48,21 +48,6 @@
     </div>
     <div class="filters-grid">
         <div class="filter-field">
-            <label>District</label>
-            <p-select [options]="districtOptions()" optionLabel="label" optionValue="value"
-                [ngModel]="filter().district" (ngModelChange)="updateFilter('district', $event)"
-                [loading]="filtersLoading()" id="district-select">
-            </p-select>
-        </div>
-        <div class="filter-field filter-field--wide">
-            <label for="search-input">Search</label>
-            <div class="input-wrap">
-                <i class="pi pi-search input-icon"></i>
-                <input id="search-input" pInputText type="text" placeholder="Name, ALC number or NIC…"
-                    [ngModel]="filter().search" (ngModelChange)="updateFilter('search', $event)" />
-            </div>
-        </div>
-        <div class="filter-field">
             <label>Classification</label>
             <p-select [options]="classificationOptions" optionLabel="label" optionValue="value"
                 [ngModel]="filter().classification" (ngModelChange)="updateFilter('classification', $event)"
@@ -75,12 +60,7 @@
                 (ngModelChange)="updateFilter('orgUnitId', $event)" id="hospital-select">
             </p-select>
         </div>
-        <div class="filter-field">
-            <label>MOH Area</label>
-            <p-select [options]="mohAreaOptions()" optionLabel="label" optionValue="value" [ngModel]="filter().mohArea"
-                (ngModelChange)="updateFilter('mohArea', $event)" [loading]="filtersLoading()" id="moh-select">
-            </p-select>
-        </div>
+
         <div class="filter-field">
             <label>PHI Area</label>
             <p-select [options]="phiAreaOptions()" optionLabel="label" optionValue="value" [ngModel]="filter().phiArea"
@@ -126,6 +106,33 @@
     } @else {
     <p-table [value]="rows()" [paginator]="true" [rows]="20" dataKey="id" responsiveLayout="scroll" [rowHover]="true"
         styleClass="p-datatable-sm">
+
+
+        <ng-template pTemplate="caption">
+            <div class="table-caption">
+                <div class="caption-info">
+                    <div class="filter-field filter-field--wide">
+                        <div class="input-wrap">
+                            <i class="pi pi-search input-icon"></i>
+                            <input id="search-input" pInputText type="text" placeholder="Name, ALC number or NIC…"
+                                [ngModel]="filter().search" (ngModelChange)="updateFilter('search', $event)" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="caption-filters">
+                    <p-select [options]="districtOptions()" optionLabel="label" optionValue="value"
+                        [ngModel]="filter().district" (ngModelChange)="updateFilter('district', $event)"
+                        [loading]="filtersLoading()" id="district-select">
+                    </p-select>
+                    <p-select [options]="mohAreaOptions()" optionLabel="label" optionValue="value"
+                        [ngModel]="filter().mohArea" (ngModelChange)="updateFilter('mohArea', $event)"
+                        [loading]="filtersLoading()" id="moh-select">
+                    </p-select>
+                </div>
+            </div>
+        </ng-template>
+
         <ng-template pTemplate="header">
             <tr>
                 <th class="num-col">#</th>
@@ -165,7 +172,7 @@
                 </td>
                 <td>
                     {{ p.patientSex || '—' }}
-                    @if (p.patientAge) { · {{ p.patientAge }} yrs }
+                    @if (p.patientAge) { - {{ p.patientAge }} y }
                     @if (isChildCase(p)) {
                     <span class="badge badge--child">Child</span>
                     }
@@ -188,7 +195,6 @@
                 </td>
                 <td>
                     {{ p.enrolledAt | date:'yyyy-MM-dd' }}
-                    <div class="sub-text">{{ enrolledDaysAgo(p.enrolledAt) }} days ago</div>
                 </td>
                 <td class="actions">
                     <a [routerLink]="['/patients', p.id]" pButton icon="pi pi-eye" class="p-button-text p-button-sm"
@@ -215,7 +221,92 @@
     </p-table>
     }
 </div>
+
 <!-- ── Mobile card list ──────────────────────────────────────────────────────── -->
+<div class="mobile-cards mobile-only">
+    @if (patientService.isSyncing() && patientService.districtPatients().length === 0) {
+    @for (_ of [1,2,3]; track $index) {
+    <div class="patient-card patient-card--skeleton">
+        <p-skeleton width="100%" height="1.1rem" />
+        <p-skeleton width="60%" height="0.85rem" styleClass="mt-2" />
+        <p-skeleton width="80%" height="0.85rem" styleClass="mt-1" />
+    </div>
+    }
+    } @else if (rows().length === 0) {
+    <div class="mobile-empty">
+        <i class="pi pi-inbox"></i>
+        <p>No patients found. {{ patientService.isOnline() ? '' : 'Go online to sync.' }}</p>
+    </div>
+    } @else {
+    @for (p of rows(); track p.id; let i = $index) {
+    <div class="patient-card" [class]="priorityClass(p)" [class.patient-card--outer-district]="isOuterDistrict(p)"
+        (click)="goToPatient(p.id)">
+
+        <!-- Row 1: name only, one line -->
+        <div class="patient-card__name-row">
+            <span class="patient-card__index">{{ rows().length - i }}</span>
+            <span class="alc-num">{{ p.alcNum }}</span>
+            <span class="patient-card__name">{{ p.patientName }}</span>
+            @if (isChildCase(p)) {
+            <span class="badge badge--child">Child</span>
+            }
+        </div>
+
+        <!-- Row 2: index + address (left) · alcNum/classification/caseType (right) -->
+        <div class="patient-card__top">
+            <div class="patient-card__main">
+                <div class="patient-card__address"
+                    [class.patient-card__address--expanded]="expandedAddresses().has(p.id)"
+                    (click)="toggleAddress(p.id, $event)">
+                    {{ p.patientHomeAddress }}
+                </div>
+            </div>
+
+            <div class="patient-card__right">
+                @if (p.treatmentClassification) {
+                <span class="badge" [class]="classBadge(p.treatmentClassification)">
+                    {{ p.treatmentClassification }}
+                </span>
+                }
+                @if (p.caseType && !isDefaultCaseType(p.caseType)) {
+                <span class="tag" [class]="caseTypeBadge(p.caseType)">{{ p.caseType }}</span>
+                }
+            </div>
+        </div>
+
+        @if (p.mobileNum || p.telNum) {
+        <div class="patient-card__contact">
+            @if (p.mobileNum) {
+            <a class="contact-chip" href="tel:{{ p.mobileNum }}" (click)="$event.stopPropagation()">
+                <i class="pi pi-mobile"></i> {{ p.mobileNum }}
+            </a>
+            <a class="contact-chip contact-chip--whatsapp" [href]="whatsappLink(p.mobileNum)" target="_blank"
+                (click)="$event.stopPropagation()">
+                <i class="pi pi-comments"></i> WhatsApp
+            </a>
+            }
+            @if (p.telNum) {
+            <a class="contact-chip" href="tel:{{ p.telNum }}" (click)="$event.stopPropagation()">
+                <i class="pi pi-phone"></i> {{ p.telNum }}
+            </a>
+            }
+        </div>
+        }
+
+        <div class="patient-card__meta">
+            <span><i class="pi pi-building"></i> {{ p.orgUnitName || '—' }}</span>
+            <span><i class="pi pi-map-marker"></i> {{ p.patientMohArea || '—' }}</span>
+            <span><i class="pi pi-calendar"></i> {{ p.enrolledAt | date:'yyyy-MM-dd' }}</span>
+            <span>EHF: <strong class="ehf-badge" [class.ehf-high]="p.ehfScore >= 7"
+                    [class.ehf-mid]="p.ehfScore >= 4 && p.ehfScore < 7">{{ p.ehfScore }}</strong></span>
+        </div>
+    </div>
+    }
+    }
+
+
+
+    <!-- ── Mobile card list ──────────────────────────────────────────────────────── 
 <div class="mobile-cards mobile-only">
     @if (patientService.isSyncing() && patientService.districtPatients().length === 0) {
     @for (_ of [1,2,3]; track $index) {
@@ -260,4 +351,4 @@
     </a>
     }
     }
-</div>
+</div>-->

@@ -1,4 +1,4 @@
-import { Component, inject, computed, model, OnInit } from '@angular/core';
+import { Component, inject, computed, model, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -12,7 +12,7 @@ import { DeviceStorageService } from '../../core/services/device-storage.service
 import {
   buildAlerts,
   countByField,
-  ehfDistribution,
+  deformityDistribution,
   enrollmentTrend,
   hasDelayedDiagnosis,
   hasGrade2Disability,
@@ -57,8 +57,14 @@ export class DashboardComponent implements OnInit {
     { length: this.currentYear - 2022 + 1 },
     (_, i) => this.currentYear - i
   );
+  protected readonly disabilityText = [
+    { label: 'Grade 2', value: '3' },
+    { label: 'Grade 1', value: '2' },
+    { label: 'Grade 0', value: '1' },
+  ];
 
-  protected readonly districtOptions: SelectOption[] = [
+  protected readonly districtOptions: SelectOption[] = this.patientService.healthDistricts();
+  /*protected readonly districtOptions: SelectOption[] = [
     { label: 'Ampara', value: 'Ampara' },
     { label: 'Anuradhapura', value: 'Anuradhapura' },
     { label: 'Badulla', value: 'Badulla' },
@@ -86,14 +92,56 @@ export class DashboardComponent implements OnInit {
     { label: 'Ratnapura', value: 'Ratnapura' },
     { label: 'Trincomalee', value: 'Trincomalee' },
     { label: 'Vavuniya', value: 'Vavuniya' },
-  ];
+  ];*/
 
-  protected readonly selectedDistrict = model(this.patientService.userDistricts());
+  protected readonly selectedDistrict = model(this.patientService.healthDistricts()[0].value);
   protected readonly selectedYears = model<number[]>([this.currentYear]);
   protected readonly selectedFacility = model<string>('ALL');
 
   protected readonly hoveredMoh = model<string | null>(null);
   protected readonly hoveredYear = model<number | null>(null);
+
+
+
+
+  // Add near your other model()/signal() declarations:
+
+  /** Controls the collapsible filter panel - collapsed by default on mobile. */
+  protected readonly showFilters = signal(false);
+
+  /**
+   * PLACEHOLDER population figure for NCDR (New Case Detection Rate).
+   * Replace with a real per-district population lookup once available -
+   * until then, every district's NCDR uses this same national-ish estimate,
+   * which will be inaccurate for district-level comparison. The pTooltip
+   * and population-note in the template both flag this to whoever's reading
+   * the dashboard, so it isn't mistaken for a validated figure.
+   */
+  protected readonly populationEstimate = signal(1_200_000);
+
+  /**
+   * New Case Detection Rate per 100,000 population - the standard WHO/
+   * national leprosy program indicator. Uses `total()` (registered cases
+   * within the current filter selection) as the case count.
+   */
+  protected readonly ncdr = computed(() => {
+    const population = this.populationEstimate();
+    if (!population) return 0;
+    return Math.round((this.total() / population) * 100000 * 10) / 10; // one decimal place
+  });
+
+  /** How many of district/years/facility are actively narrowing the view - drives the filter count badge. */
+  protected readonly activeFilterCount = computed(() => {
+    let count = 0;
+    if (this.selectedDistrict()) count++;
+    if (this.selectedYears().length > 0 && this.selectedYears().length < this.yearOptions.length) count++;
+    if (this.selectedFacility() !== 'ALL') count++;
+    return count;
+  });
+
+
+
+
 
   protected readonly facilityOptions = computed<SelectOption[]>(() => {
     const user = this.storage.getJSON<any>(STORAGE_KEYS.USER_DATA);
@@ -109,11 +157,10 @@ export class DashboardComponent implements OnInit {
     const years = this.selectedYears();
     const district = this.selectedDistrict();
     const facility = this.selectedFacility();
-
     return all.filter(p => {
       if (district && p.patientDistrict !== district) return false;
       if (facility !== 'ALL' && p.orgUnitId !== facility) return false;
-      if (years.length === 0) return true;
+      if (years === null || years.length === 0) return true;
       const year = yearOf(p.enrolledAt);
       return year != null && years.includes(year);
     });
@@ -161,7 +208,7 @@ export class DashboardComponent implements OnInit {
   protected readonly byPhi = computed<CountRow[]>(() =>
     countByField(this.filteredPatients(), p => p.patientPhiArea || '(not recorded)', undefined, 8)
   );
-  protected readonly ehfDistribution = computed(() => ehfDistribution(this.filteredPatients()));
+  protected readonly deformityDistribution = computed(() => deformityDistribution(this.filteredPatients()));
 
   protected readonly sexSplit = computed(() => {
     const patients = this.filteredPatients();
@@ -214,7 +261,6 @@ export class DashboardComponent implements OnInit {
   protected readonly maxMohCount = computed(() => Math.max(1, ...this.byMoh().map(r => r.count)));
 
   async ngOnInit(): Promise<void> {
-    console.log(this.patientService.userDistricts());
     if (this.patientService.allPatients().length === 0) {
       await this.patientService.pullFromServer();
     }

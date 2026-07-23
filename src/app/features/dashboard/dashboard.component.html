@@ -1,39 +1,59 @@
 <header class="dash-header">
-  <div class="dash-header__title">
-    <h1>
-      <p-select
-        [options]="districtOptions"
-        [(ngModel)]="selectedDistrict"
-        optionLabel="label"
-        optionValue="value"
-        styleClass="district-title-select"
-      ></p-select>
-      Leprosy Control Dashboard
-    </h1>
-    <p class="dash-header__subtitle">
-      Decision support for Active Case Finding.</p>
+  <div class="dash-header__top">
+    <div class="dash-header__title">
+      <h1>Leprosy Control Dashboard</h1>
+      <p class="dash-header__subtitle">Decision support for Active Case Finding.</p>
+    </div>
+    <button type="button" class="btn-filter" (click)="showFilters.set(!showFilters())">
+      <i class="pi pi-filter"></i>
+      Filters
+      @if (activeFilterCount() > 0) {
+        <span class="count-pill">{{ activeFilterCount() }}</span>
+      }
+    </button>
   </div>
 
-  <div class="dash-header__filters">
-    <p-multiSelect
-      [options]="yearOptions"
-      [(ngModel)]="selectedYears"
-      display="chip"
-      placeholder="All years"
-      [showClear]="true"
-      styleClass="year-title-select"
-    ></p-multiSelect>
-    <p-select
-      [options]="facilityOptions()"
-      [(ngModel)]="selectedFacility"
-      optionLabel="label"
-      optionValue="value"
-      placeholder="Facility"
-      styleClass="facility-select"
-    ></p-select>
-    <button type="button" class="link-btn" (click)="selectAllYears()">All years</button>
-    <button type="button" class="link-btn" (click)="clearYears()">Clear</button>
-  </div>
+  @if (showFilters()) {
+    <div class="dash-header__filters">
+      <label class="filter-field">
+        <span>District</span>
+        <p-select
+          [options]="districtOptions"
+          [(ngModel)]="selectedDistrict"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="District"
+        ></p-select>
+      </label>
+      <label class="filter-field">
+        <span>Years</span>
+        <p-multiSelect
+          [options]="yearOptions"
+          [(ngModel)]="selectedYears"
+          display="chip"
+          placeholder="All years"
+          [showClear]="true"
+        ></p-multiSelect>
+      </label>
+      <label class="filter-field">
+        <span>Facility</span>
+        <p-select
+          [options]="facilityOptions()"
+          [(ngModel)]="selectedFacility"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Facility"
+        ></p-select>
+      </label>
+      <div class="filter-field filter-field--actions">
+        <span>&nbsp;</span>
+        <div class="filter-actions">
+          <button type="button" class="link-btn" (click)="selectAllYears()">All years</button>
+          <button type="button" class="link-btn" (click)="clearYears()">Clear</button>
+        </div>
+      </div>
+    </div>
+  }
 </header>
 
 @if (filteredPatients().length === 0) {
@@ -46,17 +66,21 @@
 
 <!-- Program indicators strip -->
 <section class="indicator-strip">
+  <div class="indicator" pTooltip="New Case Detection Rate per 100,000 population — population figure is a PLACEHOLDER (1,200,000), update once real per-district population data is available">
+    <span class="indicator__value">{{ ncdr() }}</span>
+    <span class="indicator__label">NCDR /100k*</span>
+  </div>
   <div class="indicator" pTooltip="Multibacillary to paucibacillary ratio — target monitoring for transmission">
     <span class="indicator__value">{{ indicators().mbPbRatio }}</span>
     <span class="indicator__label">MB:PB ratio</span>
   </div>
-  <div class="indicator" pTooltip="Grade 2+ disability at diagnosis (EHF ≥ 4)">
+  <div class="indicator" pTooltip="Grade 2 disability at diagnosis">
     <span class="indicator__value">{{ indicators().grade2Rate }}%</span>
-    <span class="indicator__label">Grade 2+ rate</span>
+    <span class="indicator__label">Grade 2</span>
   </div>
   <div class="indicator" pTooltip="Cases with documented contact history">
-    <span class="indicator__value">{{ indicators().contactScreeningRate }}%</span>
-    <span class="indicator__label">Contact screened</span>
+    <span class="indicator__value">{{ indicators().contactHistoryRate }}%</span>
+    <span class="indicator__label">Contact History</span>
   </div>
   <div class="indicator" pTooltip="Completed treatment enrollments">
     <span class="indicator__value">{{ indicators().completionRate }}%</span>
@@ -71,6 +95,7 @@
     <span class="indicator__label">Delayed diagnosis</span>
   </div>
 </section>
+<p class="population-note">* NCDR uses a placeholder population of {{ populationEstimate() | number }} — replace with real per-district figures once available.</p>
 
 <!-- KPI cards -->
 <section class="stats">
@@ -101,7 +126,7 @@
   </div>
   <div class="card stat">
     <div class="stat__value">{{ grade2Count() }}</div>
-    <div class="stat__label">Grade 2+ (EHF ≥ 4)</div>
+    <div class="stat__label">Grade 2</div>
   </div>
   <div class="card stat">
     <div class="stat__value">{{ recentCount() }}</div>
@@ -206,14 +231,14 @@
     </div>
   </section>
 
-  <!-- EHF distribution -->
+  <!-- Deformity distribution -->
   <section class="card chart">
     <div class="section-head">
-      <h2>Disability grade (EHF)</h2>
+      <h2>Disability grade </h2>
       <span class="muted">Prevention of disability monitoring</span>
     </div>
     <div class="h-bars">
-      @for (row of ehfDistribution(); track row.label) {
+      @for (row of deformityDistribution(); track row.label) {
         <div class="h-bar-row">
           <span class="h-bar-label">{{ row.label }}</span>
           <div class="h-bar-track">

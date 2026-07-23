@@ -7,9 +7,15 @@
   margin-bottom: 20px;
   flex-wrap: wrap;
 
-  h1 { margin-bottom: 4px; }
+  h1 {
+    margin-bottom: 4px;
+  }
 
-  &__sub { color: var(--color-muted); font-size: 0.88rem; margin: 0; }
+  &__sub {
+    color: var(--color-muted);
+    font-size: 0.88rem;
+    margin: 0;
+  }
 
   &__actions {
     display: flex;
@@ -25,6 +31,7 @@
   justify-content: center;
   text-align: center;
 }
+
 .filter-badge {
   background: var(--color-teal-100);
   color: var(--color-teal-700);
@@ -35,7 +42,8 @@
 }
 
 // ── Buttons ───────────────────────────────────────────────────────────────────
-.btn-filter, .btn-sync {
+.btn-filter,
+.btn-sync {
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -47,7 +55,9 @@
   border: none;
   transition: background 0.15s, opacity 0.15s;
 
-  i { font-size: 0.9rem; }
+  i {
+    font-size: 0.9rem;
+  }
 }
 
 .btn-filter {
@@ -56,15 +66,23 @@
   color: var(--color-ink);
   position: relative;
 
-  &:hover { background: var(--color-teal-100); }
+  &:hover {
+    background: var(--color-teal-100);
+  }
 }
 
 .btn-sync {
   background: var(--color-teal-700);
   color: #fff;
 
-  &:hover:not(:disabled) { background: var(--color-teal-900); }
-  &:disabled { opacity: 0.55; cursor: default; }
+  &:hover:not(:disabled) {
+    background: var(--color-teal-900);
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
 }
 
 .count-pill {
@@ -92,10 +110,18 @@
     color: var(--color-mb);
     border: 1px solid #e7c0b0;
 
-    i { font-size: 1.1rem; margin-top: 1px; flex-shrink: 0; }
+    i {
+      font-size: 1.1rem;
+      margin-top: 1px;
+      flex-shrink: 0;
+    }
   }
 
-  &__hint { color: #8b3a1e; margin-top: 4px; font-size: 0.82rem; }
+  &__hint {
+    color: #8b3a1e;
+    margin-top: 4px;
+    font-size: 0.82rem;
+  }
 }
 
 // ── Filter panel ──────────────────────────────────────────────────────────────
@@ -122,8 +148,15 @@
 }
 
 @keyframes slideDown {
-  from { opacity: 0; transform: translateY(-8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .btn-clear {
@@ -139,7 +172,11 @@
   color: var(--color-muted);
   transition: all 0.15s;
 
-  &:hover { background: var(--color-mb-bg); color: var(--color-mb); border-color: var(--color-mb); }
+  &:hover {
+    background: var(--color-mb-bg);
+    color: var(--color-mb);
+    border-color: var(--color-mb);
+  }
 }
 
 .filters-grid {
@@ -147,7 +184,9 @@
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 14px;
 
-  @media (max-width: 600px) { grid-template-columns: 1fr; }
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
 }
 
 .filter-field {
@@ -155,15 +194,31 @@
   flex-direction: column;
   gap: 6px;
 
-  &--wide { grid-column: span 2; @media (max-width: 600px) { grid-column: span 1; } }
+  &--wide {
+    grid-column: span 2;
 
-  label { font-size: 0.78rem; font-weight: 600; color: var(--color-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    @media (max-width: 600px) {
+      grid-column: span 1;
+    }
+  }
 
-  input, p-select { width: 100%; }
+  label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--color-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  input,
+  p-select {
+    width: 100%;
+  }
 }
 
 .input-wrap {
   position: relative;
+
   .input-icon {
     position: absolute;
     left: 11px;
@@ -174,20 +229,41 @@
     pointer-events: none;
     z-index: 1;
   }
-  input { padding-left: 32px !important; width: 100%; }
+
+  input {
+    padding-left: 32px !important;
+    width: 100%;
+  }
 }
 
 // ── Table card ────────────────────────────────────────────────────────────────
 .table-card {
   overflow: hidden;
 
-  .sub-text { font-size: 0.75rem; color: var(--color-muted); margin-top: 2px; }
-  .text-muted { color: var(--color-muted); }
+  .sub-text {
+    font-size: 0.75rem;
+    color: var(--color-muted);
+    margin-top: 2px;
+  }
+
+  .text-muted {
+    color: var(--color-muted);
+  }
 }
 
 // Skeleton rows
-.skeleton-rows { padding: 16px 20px; display: flex; flex-direction: column; gap: 16px; }
-.skeleton-row  { display: flex; gap: 24px; align-items: center; }
+.skeleton-rows {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.skeleton-row {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+}
 
 // ALC cell
 .alc-cell .alc-num {
@@ -201,7 +277,11 @@
   font-weight: 600;
   color: var(--color-ink);
   text-decoration: none;
-  &:hover { color: var(--color-teal-700); text-decoration: underline; }
+
+  &:hover {
+    color: var(--color-teal-700);
+    text-decoration: underline;
+  }
 }
 
 // EHF score badge
@@ -216,12 +296,22 @@
   background: #e8f4f2;
   color: #3d7a72;
 
-  &.ehf-mid { background: #ee6940; color: #fd0303; }
-  &.ehf-high { background: var(--color-mb-bg); color: var(--color-mb); }
+  &.ehf-mid {
+    background: #ee6940;
+    color: #fd0303;
+  }
+
+  &.ehf-high {
+    background: var(--color-mb-bg);
+    color: var(--color-mb);
+  }
 }
 
 // Actions column
-.actions { white-space: nowrap; text-align: right; }
+.actions {
+  white-space: nowrap;
+  text-align: right;
+}
 
 // Empty state
 .empty-state {
@@ -229,13 +319,26 @@
   padding: 48px 24px !important;
   color: var(--color-muted);
 }
-.empty-icon { font-size: 2.5rem; display: block; margin-bottom: 12px; opacity: 0.4; }
+
+.empty-icon {
+  font-size: 2.5rem;
+  display: block;
+  margin-bottom: 12px;
+  opacity: 0.4;
+}
+
 .link-btn {
-  background: none; border: none;
+  background: none;
+  border: none;
   color: var(--color-teal-700);
-  font-weight: 600; cursor: pointer;
+  font-weight: 600;
+  cursor: pointer;
   text-decoration: underline;
-  &:disabled { opacity: 0.5; cursor: default; }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
 }
 
 // ── Mobile cards ──────────────────────────────────────────────────────────────
@@ -250,7 +353,10 @@
   transition: box-shadow 0.15s, border-color 0.15s;
   margin-bottom: 10px;
 
-  &:hover { box-shadow: var(--shadow-card); border-color: #c5dad7; }
+  &:hover {
+    box-shadow: var(--shadow-card);
+    border-color: #c5dad7;
+  }
 
   &__top {
     display: flex;
@@ -260,8 +366,17 @@
     margin-bottom: 10px;
   }
 
-  &__name { font-weight: 700; font-size: 0.95rem; margin-bottom: 2px; }
-  &__alc  { font-size: 0.78rem; color: var(--color-muted); font-family: monospace; }
+  &__name {
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-bottom: 2px;
+  }
+
+  &__alc {
+    font-size: 0.78rem;
+    color: var(--color-muted);
+    font-family: monospace;
+  }
 
   &__meta {
     display: flex;
@@ -270,23 +385,50 @@
     font-size: 0.78rem;
     color: var(--color-muted);
 
-    span { display: flex; align-items: center; gap: 5px; }
-    i { font-size: 0.75rem; }
+    span {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    i {
+      font-size: 0.75rem;
+    }
   }
 
-  &--skeleton { padding: 20px; }
+  &--skeleton {
+    padding: 20px;
+  }
 }
 
 .mobile-empty {
   text-align: center;
   padding: 48px 24px;
   color: var(--color-muted);
-  i { font-size: 2.5rem; display: block; margin-bottom: 12px; opacity: 0.4; }
+
+  i {
+    font-size: 2.5rem;
+    display: block;
+    margin-bottom: 12px;
+    opacity: 0.4;
+  }
 }
 
 // ── Responsive visibility ─────────────────────────────────────────────────────
-.desktop-only { @media (max-width: 700px) { display: none; } }
-.mobile-only  { display: none; @media (max-width: 700px) { display: block; } }
+.desktop-only {
+  @media (max-width: 700px) {
+    display: none;
+  }
+}
+
+.mobile-only {
+  display: none;
+
+  @media (max-width: 700px) {
+    display: block;
+  }
+}
+
 // Append these to your existing patient-list.component.scss
 
 // ── Row numbering column ─────────────────────────────────────────────────
@@ -302,7 +444,9 @@
 tr.row--outer-district {
   background: #fdf1f1;
 
-  &:hover { background: #fbe4e4 !important; }
+  &:hover {
+    background: #fbe4e4 !important;
+  }
 }
 
 // Mobile card
@@ -316,10 +460,12 @@ tr.row--outer-district {
   background: var(--color-mb-bg, #f7e6de);
   color: var(--color-mb, #b5532c);
 }
+
 .badge--pb {
   background: var(--color-pb-bg, #f6edd2);
   color: var(--color-pb, #b08900);
 }
+
 .badge--unknown {
   background: #eceef0;
   color: #6b7280;
@@ -332,4 +478,238 @@ tr.row--outer-district {
   margin-left: 6px;
   font-size: 0.68rem;
   vertical-align: middle;
+}
+
+.patient-card__main {
+  flex: 1;
+  min-width: 0; // allows text truncation to work inside a flex child
+}
+
+// Case type tag (New / Relapse / Defaulter / Treatment restart)
+.patient-card__tags {
+  margin-top: 6px;
+}
+
+.tag--new {
+  background: var(--color-teal-100);
+  color: var(--color-teal-700);
+}
+
+.tag--relapse {
+  background: var(--color-mb-bg);
+  color: var(--color-mb);
+}
+
+.tag--defaulter {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.tag--other {
+  background: #eceef0;
+  color: #6b7280;
+}
+
+// Clickable phone number chips - tap to call directly
+.patient-card__contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+// Append to your existing patient-list.component.scss
+
+// ── Priority left-border, reusing the same severity logic as the
+// dashboard's alert cards - highest severity wins per patient.
+.patient-card {
+  border-left: 4px solid transparent;
+
+  &.priority--grade2 {
+    border-left-color: var(--color-mb);
+  }
+
+  &.priority--relapse {
+    border-left-color: #b91c1c;
+  }
+
+  &.priority--defaulter {
+    border-left-color: #ea580c;
+  }
+
+  &.priority--delayed {
+    border-left-color: var(--color-pb);
+  }
+}
+
+// Row 1: name only, one line, no competition for space
+.patient-card__name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.patient-card__name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--color-teal-900);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// Row 2 layout: index + address (flexible) + right-side identifier cluster
+.patient-card__top {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.patient-card__index {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--color-teal-100);
+  color: var(--color-teal-900);
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  margin-top: 1px;
+}
+
+.patient-card__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.patient-card__address {
+  font-size: 0.8rem;
+  color: var(--color-muted);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  overflow-wrap: break-word;
+
+  &--expanded {
+    -webkit-line-clamp: unset;
+    overflow: visible;
+  }
+}
+
+// Right-side cluster: ALC number, classification badge, case-type tag
+.patient-card__right {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.alc-num {
+
+  font-size: 0.9rem;
+  font-weight: 900;
+  color: var(--color-teal-900);
+  white-space: nowrap;
+}
+
+.tag {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.tag--relapse {
+  background: var(--color-mb-bg);
+  color: var(--color-mb);
+}
+
+.tag--defaulter {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.tag--other {
+  background: #eceef0;
+  color: #6b7280;
+}
+
+// Clickable phone/WhatsApp chips
+.patient-card__contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.contact-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-teal-700);
+  background: var(--color-teal-100);
+  padding: 5px 10px;
+  border-radius: 999px;
+  text-decoration: none;
+
+  i {
+    font-size: 0.75rem;
+  }
+
+  &:active {
+    background: var(--color-teal-700);
+    color: #fff;
+  }
+
+  &--whatsapp {
+    color: #15803d;
+    background: #dcfce7;
+
+    &:active {
+      background: #15803d;
+      color: #fff;
+    }
+  }
+}
+
+
+
+
+
+
+.table-caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #f8fafc;
+
+  .caption-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    color: #64748b;
+
+    .caption-filters {
+      background: #f0fdfa;
+      color: #0f766e;
+      padding: 2px 10px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 600;
+      
+    }
+  }
 }

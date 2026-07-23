@@ -1,4 +1,222 @@
 {
+    "pager": {
+        "page": 1,
+        "total": 138,
+        "pageSize": 50,
+        "nextPage": "https://phsmis.health.gov.lk/api/dataElements.json?page=2&feils=id%2Cname%2CdisplayName%2CvalueType%2CaggregationType%2CcategoryCombo",
+        "pageCount": 3
+    },
+    "dataElements": [
+        {
+            "displayName": "ALC|1_Adult cases colour code_MOH",
+            "id": "zZVy6NksFa9"
+        },
+        {
+            "displayName": "ALC|2_Child cases colour code_MOH",
+            "id": "DovKmGOtQHP"
+        },
+        {
+            "displayName": "ALC|3_Total cases colour code_MOH",
+            "id": "hvPMoz7r37w"
+        },
+        {
+            "displayName": "Lep - Case type",
+            "id": "WyQFv86DRDm"
+        },
+        {
+            "displayName": "Lep - Change of treatment type ",
+            "id": "o18RSOmhyi4"
+        },
+        {
+            "displayName": "Lep - Claw hand ",
+            "id": "CNme2qNFYpn"
+        },
+        {
+            "displayName": "Lep - Contact history yes or NO ",
+            "id": "hEJbywu7U6T"
+        },
+        {
+            "displayName": "Lep - Date of 10th dose  ",
+            "id": "MJY4wcQLvsG"
+        },
+        {
+            "displayName": "Lep - Date of 11th dose  ",
+            "id": "FELbL4uIrz4"
+        },
+        {
+            "displayName": "Lep - Date of 12th dose  ",
+            "id": "xw1t4z8CXvF"
+        },
+        {
+            "displayName": "Lep - Date of 2nd dose  ",
+            "id": "y0uVnTRHsPs"
+        },
+        {
+            "displayName": "Lep - Date of 3rd dose  ",
+            "id": "iUmTtQ7Ns2e"
+        },
+        {
+            "displayName": "Lep - Date of 4th dose",
+            "id": "Q9yfNalp7Zx"
+        },
+        {
+            "displayName": "Lep - Date of 5th dose  ",
+            "id": "OrjHDf1HxkM"
+        },
+        {
+            "displayName": "Lep - Date of 6th dose  ",
+            "id": "Aqbn33c8zhC"
+        },
+        {
+            "displayName": "Lep - Date of 7th dose  ",
+            "id": "gZYy0bxCe4z"
+        },
+        {
+            "displayName": "Lep - Date of 8th dose  ",
+            "id": "cT00vhW7acW"
+        },
+        {
+            "displayName": "Lep - Date of 9th dose  ",
+            "id": "V0wKlPaB5Tl"
+        },
+        {
+            "displayName": "Lep - Date of extended doses  ",
+            "id": "PFTHGl4Qvwd"
+        },
+        {
+            "displayName": "Lep - Defaulter restarting treatment ",
+            "id": "UGYkKdtiW3L"
+        },
+        {
+            "displayName": "Lep - Disability at diagnosis ",
+            "id": "ijKomxeLSWM"
+        },
+        {
+            "displayName": "Lep - EHF Score",
+            "id": "i3RUk9EeSaZ"
+        },
+        {
+            "displayName": "Lep - Eye involvement ",
+            "id": "OUWZVXF3zty"
+        },
+        {
+            "displayName": "Lep - Face involvement ",
+            "id": "IYtg3pRjQk6"
+        },
+        {
+            "displayName": "Lep - Follow up - Side effects",
+            "id": "crK4irTmIgV"
+        },
+        {
+            "displayName": "Lep - Follow up visit number",
+            "id": "Jszyb0KKKX0"
+        },
+        {
+            "displayName": "Lep - Foot drop",
+            "id": "JCrTNTvDAWi"
+        },
+        {
+            "displayName": "Lep - Foot ulcer ",
+            "id": "hkCk03W7xWH"
+        },
+        {
+            "displayName": "Lep - Grade 1 delete",
+            "id": "bdXQgU3ct93"
+        },
+        {
+            "displayName": "Lep - Grade 2 delete",
+            "id": "rePlL3GjTJ7"
+        },
+        {
+            "displayName": "Lep - Name of Consultant ",
+            "id": "XLvfoGQFPs7"
+        },
+        {
+            "displayName": "Lep - Name of MO",
+            "id": "pJVd9qUrc82"
+        },
+        {
+            "displayName": "Lep - Other Treatment Type",
+            "id": "SkH1beczIBn"
+        },
+        {
+            "displayName": "Lep - Patient District ",
+            "id": "iB1RHZOqhhb"
+        },
+        {
+            "displayName": "Lep - Patient GN Division ",
+            "id": "tkCFwCc74QL"
+        },
+        {
+            "displayName": "Lep - Patient GPS Co ordinates ",
+            "id": "gm91XYLCpsS"
+        },
+        {
+            "displayName": "Lep - Patient Home Address",
+            "id": "zGdT30K7Gf2"
+        },
+        {
+            "displayName": "Lep - Patient MOH area ",
+            "id": "RsUDxHKh2w4"
+        },
+        {
+            "displayName": "Lep - Patient PHI Area ",
+            "id": "PgVeByg4SgG"
+        },
+        {
+            "displayName": "Lep - Patient Referred by ",
+            "id": "JGChabLUuiU"
+        },
+        {
+            "displayName": "Lep - Population",
+            "id": "TrZm9vL0gHs"
+        },
+        {
+            "displayName": "Lep - Previous treatment type ",
+            "id": "cBm44wyUsJ6"
+        },
+        {
+            "displayName": "Lep - Reaction",
+            "id": "wO4A0MXJC14"
+        },
+        {
+            "displayName": "Lep - Reaction treatment - Clofazimine",
+            "id": "sVlhFiNlhVF"
+        },
+        {
+            "displayName": "Lep - Reaction treatment - Steroid",
+            "id": "y2YkX9Gkq7y"
+        },
+        {
+            "displayName": "Lep - Reaction treatment - Thalidomide",
+            "id": "nvOCKQo1BtN"
+        },
+        {
+            "displayName": "Lep - Reaction Type 1 - Inflammation of lesions",
+            "id": "rwOfYocLr9g"
+        },
+        {
+            "displayName": "Lep - Reaction Type 1 - Nerve palsy",
+            "id": "VYg4cEP2UlG"
+        },
+        {
+            "displayName": "Lep - Reaction Type 1 - Neuritis",
+            "id": "u4ohXXWGxVD"
+        },
+        {
+            "displayName": "Lep - Reaction Type 2 - Erythema Nodosum Lerosum",
+            "id": "EccX2lYdt06"
+        }
+    ]
+}
+
+
+
+
+
+
+
+{
     "organisationUnits": [
         {
             "name": "Ampara RDHS",

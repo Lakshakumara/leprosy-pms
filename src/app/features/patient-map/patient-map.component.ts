@@ -15,7 +15,7 @@ import { HttpClient } from '@angular/common/http';
  *  - District boundary (real polygon geometry pulled live from DHIS2 -
  *    confirmed Ratnapura RDHS has this; other districts may or may not,
  *    handled gracefully if geometry is missing)
- *  - MOH/DS area layer - attempts to fetch geometry per MOH-area org unit
+ *  - MOH area layer - attempts to fetch geometry per MOH-area org unit
  *    under the district. If DHIS2 doesn't have polygon data for these yet,
  *    this layer is simply empty (no error) - manualDsGeoJson below is the
  *    slot for dropping in real boundary data later from any source
@@ -50,7 +50,7 @@ export class PatientMapComponent implements OnInit, AfterViewInit {
   );
 
   /**
-   * SLOT FOR MANUALLY-SUPPLIED MOH/DS BOUNDARY DATA.
+   * SLOT FOR MANUALLY-SUPPLIED MOH BOUNDARY DATA.
    * If DHIS2 doesn't have MOH-area geometry yet, paste real GeoJSON
    * FeatureCollection here (each Feature needs a `name` property) and it
    * will render exactly like DHIS2-sourced boundaries would. Leave as null
@@ -113,11 +113,11 @@ export class PatientMapComponent implements OnInit, AfterViewInit {
       districtLayer.addTo(this.map);
     }
 
-    // ── MOH / DS area layer (DHIS2 geometry if available, else manual) ──
+    // ── MOH area layer (DHIS2 geometry if available, else manual) ──
     const dsLayer = await this.loadDsAreaLayer(L);
     if (dsLayer) {
       const dot = `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background-color:#4f46e5;margin-right:6px;vertical-align:middle;"></span>`;
-      overlays[`${dot}MOH / DS areas`] = dsLayer;
+      overlays[`${dot}MOH areas`] = dsLayer;
       dsLayer.addTo(this.map);
     }
     const mohLayer = await this.loadMOHAreaLayer(L);
@@ -236,7 +236,7 @@ export class PatientMapComponent implements OnInit, AfterViewInit {
       this.manualDsGeoJson.features.forEach((f, i) => {
         const color = this.dsAreaPalette[i % this.dsAreaPalette.length];
         L.geoJSON(f, { style: { color, weight: 1.5, fillColor: color, fillOpacity: 0.15 } })
-          .bindTooltip((f.properties as any)?.['name'] ?? 'DS area')
+          .bindTooltip((f.properties as any)?.['name'] ?? 'MOH area')
           .addTo(group);
       });
     }
@@ -285,7 +285,7 @@ export class PatientMapComponent implements OnInit, AfterViewInit {
         L.geoJSON(geo, {
           style: { color, weight: 1.5, fillColor: color, fillOpacity: 0.15 }
         })
-          .bindTooltip((f.properties as any)?.['adm3_name'] || (f.properties as any)?.['name'] || 'DS area')
+          .bindTooltip((f.properties as any)?.['adm3_name'] || (f.properties as any)?.['name'] || 'MOH area')
           .addTo(group);
       });
     }

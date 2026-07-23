@@ -1,0 +1,1292 @@
+<div class="page-head">
+    <div>
+        <h1>Patient Registry</h1>
+        <p class="page-head__sub">
+            {{ rows().length }} of {{ rows().length }} patients shown
+            @if (activeFilterCount() > 0) {
+            · <span class="filter-badge">{{ activeFilterCount() }} filter{{ activeFilterCount() > 1 ? 's' : '' }}
+                active</span>
+            }
+        </p>
+    </div>
+    <div class="page-head__actions">
+        <button class="btn-filter" (click)="showFilters.set(!showFilters())" id="toggle-filters-btn">
+            <i class="pi pi-filter"></i>
+            Filters
+            @if (activeFilterCount() > 0) {
+            <span class="count-pill">{{ activeFilterCount() }}</span>
+            }
+        </button>
+        <button class="btn-sync" (click)="syncNow()"
+            [disabled]="!patientService.isOnline() || patientService.isSyncing()" id="sync-btn">
+            <i class="pi" [class.pi-refresh]="!patientService.isSyncing()" [class.pi-spin]="patientService.isSyncing()"
+                [class.pi-spinner]="patientService.isSyncing()"></i>
+            {{ patientService.isSyncing() ? 'Syncing…' : 'Deep Sync DHIS2' }}
+        </button>
+    </div>
+</div>
+<!-- ── Error banner ──────────────────────────────────────────────────────────── -->
+@if (patientService.lastPullError(); as err) {
+<div class="alert alert--error" role="alert">
+    <i class="pi pi-exclamation-triangle"></i>
+    <div>
+        <strong>Could not load from DHIS2:</strong> {{ err }}
+        <div class="alert__hint">Showing locally cached data. Check F12 → Console for details.</div>
+    </div>
+</div>
+}
+<!-- ── Filter panel ──────────────────────────────────────────────────────────── -->
+@if (showFilters()) {
+<div class="filters-panel card" id="filters-panel">
+    <div class="filters-panel__header">
+        <span class="filters-panel__title"><i class="pi pi-filter"></i> Filter Patients</span>
+        @if (activeFilterCount() > 0) {
+        <button class="btn-clear" (click)="clearFilters()" id="clear-filters-btn">
+            <i class="pi pi-times"></i> Clear all
+        </button>
+        }
+    </div>
+    <div class="filters-grid">
+        <div class="filter-field">
+            <label>District</label>
+            <p-select [options]="districtOptions()" optionLabel="label" optionValue="value"
+                [ngModel]="filter().district" (ngModelChange)="updateFilter('district', $event)"
+                [loading]="filtersLoading()" id="district-select">
+            </p-select>
+        </div>
+        <div class="filter-field filter-field--wide">
+            <label for="search-input">Search</label>
+            <div class="input-wrap">
+                <i class="pi pi-search input-icon"></i>
+                <input id="search-input" pInputText type="text" placeholder="Name, ALC number or NIC…"
+                    [ngModel]="filter().search" (ngModelChange)="updateFilter('search', $event)" />
+            </div>
+        </div>
+        <div class="filter-field">
+            <label>Classification</label>
+            <p-select [options]="classificationOptions" optionLabel="label" optionValue="value"
+                [ngModel]="filter().classification" (ngModelChange)="updateFilter('classification', $event)"
+                id="classification-select">
+            </p-select>
+        </div>
+        <div class="filter-field">
+            <label>Hospital</label>
+            <p-select [options]="hospitalOptions" optionLabel="label" optionValue="value" [ngModel]="filter().orgUnitId"
+                (ngModelChange)="updateFilter('orgUnitId', $event)" id="hospital-select">
+            </p-select>
+        </div>
+        <div class="filter-field">
+            <label>MOH Area</label>
+            <p-select [options]="mohAreaOptions()" optionLabel="label" optionValue="value" [ngModel]="filter().mohArea"
+                (ngModelChange)="updateFilter('mohArea', $event)" [loading]="filtersLoading()" id="moh-select">
+            </p-select>
+        </div>
+        <div class="filter-field">
+            <label>PHI Area</label>
+            <p-select [options]="phiAreaOptions()" optionLabel="label" optionValue="value" [ngModel]="filter().phiArea"
+                (ngModelChange)="updateFilter('phiArea', $event)" [loading]="filtersLoading()" id="phi-select">
+            </p-select>
+        </div>
+        <div class="filter-field">
+            <label>GN Division</label>
+            <p-select [options]="gnDivisionOptions()" optionLabel="label" optionValue="value"
+                [ngModel]="filter().gnDivision" (ngModelChange)="updateFilter('gnDivision', $event)"
+                [loading]="filtersLoading()" id="gn-select">
+            </p-select>
+        </div>
+        <div class="filter-field">
+            <label for="enrolled-from">Enrolled from</label>
+            <input id="enrolled-from" pInputText type="date" [ngModel]="filter().enrolledFrom"
+                (ngModelChange)="updateFilter('enrolledFrom', $event)" />
+        </div>
+        <div class="filter-field">
+            <label for="enrolled-to">Enrolled to</label>
+            <input id="enrolled-to" pInputText type="date" [ngModel]="filter().enrolledTo"
+                (ngModelChange)="updateFilter('enrolledTo', $event)" />
+        </div>
+    </div>
+</div>
+}
+<!-- ── Desktop table ─────────────────────────────────────────────────────────── -->
+<div class="card table-card desktop-only">
+    @if (patientService.isSyncing() && patientService.districtPatients().length === 0) {
+    <div class="skeleton-rows">
+        @for (_ of [1,2,3,4,5,6]; track $index) {
+        <div class="skeleton-row">
+            <p-skeleton width="8rem" height="1rem" />
+            <p-skeleton width="14rem" height="1rem" />
+            <p-skeleton width="5rem" height="1rem" />
+            <p-skeleton width="5rem" height="1.4rem" styleClass="border-radius:999px" />
+            <p-skeleton width="10rem" height="1rem" />
+            <p-skeleton width="7rem" height="1rem" />
+            <p-skeleton width="6rem" height="1rem" />
+        </div>
+        }
+    </div>
+    } @else {
+    <p-table [value]="rows()" [paginator]="true" [rows]="20" dataKey="id" responsiveLayout="scroll" [rowHover]="true"
+        styleClass="p-datatable-sm">
+        <ng-template pTemplate="header">
+            <tr>
+                <th class="num-col">#</th>
+                <th>ALC #</th>
+                <th>Patient Name</th>
+                <th>Address</th>
+                <th>Sex / Age</th>
+                <th>Classification</th>
+                <th>Hospital</th>
+                <th>MOH Area</th>
+                <th>Enrolled</th>
+                <th></th>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-p let-rowIndex="rowIndex">
+            <tr [class.row--outer-district]="isOuterDistrict(p)">
+                <td class="num-col">{{ rowNumber(rowIndex) }}</td>
+                <td class="alc-cell">
+                    <span class="alc-num">{{ p.alcNum || '—' }}</span>
+                    @if (p.clinicNum) {
+                    <div class="sub-text">{{ p.clinicNum }}</div>
+                    }
+                </td>
+                <td>
+                    <a [routerLink]="['/patients', p.id]" class="patient-name-link">
+                        {{ p.patientName || '(no name)' }}
+                    </a>
+                    @if (p.mobileNum) {
+                    <div class="sub-text">{{ p.mobileNum }}</div>
+                    }
+                    @if (p.telNum) {
+                    <div class="sub-text">{{ p.telNum }}</div>
+                    }
+                </td>
+                <td>
+                    {{ p.patientHomeAddress }}
+                </td>
+                <td>
+                    {{ p.patientSex || '—' }}
+                    @if (p.patientAge) { · {{ p.patientAge }} yrs }
+                    @if (isChildCase(p)) {
+                    <span class="badge badge--child">Child</span>
+                    }
+                </td>
+                <td>
+                    @if (p.treatmentClassification) {
+                    <span class="badge" [class]="classBadge(p.treatmentClassification)">
+                        {{ p.treatmentClassification }}
+                    </span>
+                    } @else {
+                    <span class="text-muted">—</span>
+                    }
+                </td>
+                <td>{{ p.orgUnitName || '—' }}</td>
+                <td>
+                    {{ p.patientMohArea || '—' }}
+                    @if (p.patientPhiArea) {
+                    <div class="sub-text">PHI: {{ p.patientPhiArea }}</div>
+                    }
+                </td>
+                <td>
+                    {{ p.enrolledAt | date:'yyyy-MM-dd' }}
+                    <div class="sub-text">{{ enrolledDaysAgo(p.enrolledAt) }} days ago</div>
+                </td>
+                <td class="actions">
+                    <a [routerLink]="['/patients', p.id]" pButton icon="pi pi-eye" class="p-button-text p-button-sm"
+                        title="View details"></a>
+                </td>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+            <tr>
+                <td colspan="10" class="empty-state">
+                    <i class="pi pi-inbox empty-icon"></i>
+                    @if (patientService.districtPatients().length === 0) {
+                    <p>No patients in local cache yet.<br>
+                        <button class="link-btn" (click)="syncNow()" [disabled]="!patientService.isOnline()">
+                            Sync from DHIS2
+                        </button> to load records.
+                    </p>
+                    } @else {
+                    <p>No patients match the current filters.</p>
+                    }
+                </td>
+            </tr>
+        </ng-template>
+    </p-table>
+    }
+</div>
+
+<!-- ── Mobile card list ──────────────────────────────────────────────────────── -->
+<div class="mobile-cards mobile-only">
+    @if (patientService.isSyncing() && patientService.districtPatients().length === 0) {
+    @for (_ of [1,2,3]; track $index) {
+    <div class="patient-card patient-card--skeleton">
+        <p-skeleton width="100%" height="1.1rem" />
+        <p-skeleton width="60%" height="0.85rem" styleClass="mt-2" />
+        <p-skeleton width="80%" height="0.85rem" styleClass="mt-1" />
+    </div>
+    }
+    } @else if (rows().length === 0) {
+    <div class="mobile-empty">
+        <i class="pi pi-inbox"></i>
+        <p>No patients found. {{ patientService.isOnline() ? '' : 'Go online to sync.' }}</p>
+    </div>
+    } @else {
+    @for (p of rows(); track p.id; let i = $index) {
+    <div class="patient-card" [class]="priorityClass(p)" [class.patient-card--outer-district]="isOuterDistrict(p)"
+        (click)="goToPatient(p.id)">
+
+        <!-- Row 1: name only, one line -->
+        <div class="patient-card__name-row">
+            <span class="patient-card__index">{{ rows().length - i }}</span>
+            <span class="patient-card__name">{{ p.patientName }}</span>
+            @if (isChildCase(p)) {
+            <span class="badge badge--child">Child</span>
+            }
+        </div>
+
+        <!-- Row 2: index + address (left) · alcNum/classification/caseType (right) -->
+        <div class="patient-card__top">
+            <div class="patient-card__main">
+                <div class="patient-card__address"
+                    [class.patient-card__address--expanded]="expandedAddresses().has(p.id)"
+                    (click)="toggleAddress(p.id, $event)">
+                    {{ p.patientHomeAddress }}
+                </div>
+            </div>
+
+            <div class="patient-card__right">
+                <span class="alc-num">{{ p.alcNum }}</span>
+                @if (p.treatmentClassification) {
+                <span class="badge" [class]="classBadge(p.treatmentClassification)">
+                    {{ p.treatmentClassification }}
+                </span>
+                }
+                @if (p.caseType && !isDefaultCaseType(p.caseType)) {
+                <span class="tag" [class]="caseTypeBadge(p.caseType)">{{ p.caseType }}</span>
+                }
+            </div>
+        </div>
+
+        @if (p.mobileNum || p.telNum) {
+        <div class="patient-card__contact">
+            @if (p.mobileNum) {
+            <a class="contact-chip" href="tel:{{ p.mobileNum }}" (click)="$event.stopPropagation()">
+                <i class="pi pi-mobile"></i> {{ p.mobileNum }}
+            </a>
+            <a class="contact-chip contact-chip--whatsapp" [href]="whatsappLink(p.mobileNum)" target="_blank"
+                (click)="$event.stopPropagation()">
+                <i class="pi pi-comments"></i> WhatsApp
+            </a>
+            }
+            @if (p.telNum) {
+            <a class="contact-chip" href="tel:{{ p.telNum }}" (click)="$event.stopPropagation()">
+                <i class="pi pi-phone"></i> {{ p.telNum }}
+            </a>
+            }
+        </div>
+        }
+
+        <div class="patient-card__meta">
+            <span><i class="pi pi-building"></i> {{ p.orgUnitName || '—' }}</span>
+            <span><i class="pi pi-map-marker"></i> {{ p.patientMohArea || '—' }}</span>
+            <span><i class="pi pi-calendar"></i> {{ p.enrolledAt | date:'yyyy-MM-dd' }}</span>
+            <span>EHF: <strong class="ehf-badge" [class.ehf-high]="p.ehfScore >= 7"
+                    [class.ehf-mid]="p.ehfScore >= 4 && p.ehfScore < 7">{{ p.ehfScore }}</strong></span>
+        </div>
+    </div>
+    }
+    }
+</div>
+
+<!-- ── Mobile card list ──────────────────────────────────────────────────────── 
+<div class="mobile-cards mobile-only">
+    @if (patientService.isSyncing() && patientService.districtPatients().length === 0) {
+    @for (_ of [1,2,3]; track $index) {
+    <div class="patient-card patient-card--skeleton">
+        <p-skeleton width="100%" height="1.1rem" />
+        <p-skeleton width="60%" height="0.85rem" styleClass="mt-2" />
+        <p-skeleton width="80%" height="0.85rem" styleClass="mt-1" />
+    </div>
+    }
+    } @else if (rows().length === 0) {
+    <div class="mobile-empty">
+        <i class="pi pi-inbox"></i>
+        <p>No patients found. {{ patientService.isOnline() ? '' : 'Go online to sync.' }}</p>
+    </div>
+    } @else {
+    @for (p of rows(); track p.id; let i = $index) {
+    <a class="patient-card" [class.patient-card--outer-district]="isOuterDistrict(p)" [routerLink]="['/patients', p.id]">
+        <div class="patient-card__top">
+            <div>
+                <div class="patient-card__name">
+                    #{{ rows().length - i }}. {{ p.patientName }} - {{ p.alcNum }}
+                    @if (isChildCase(p)) {
+                    <span class="badge badge--child">Child</span>
+                    }
+                </div>
+                <div class="patient-card__alc"> {{ p.patientHomeAddress }}</div>
+                <div class="patient-card__alc"> {{ p.telNum }}, {{ p.mobileNum }}</div>
+            </div>
+            @if (p.treatmentClassification) {
+            <span class="badge" [class]="classBadge(p.treatmentClassification)">
+                {{ p.treatmentClassification }}
+            </span>
+            }
+        </div>
+        <div class="patient-card__meta">
+            <span><i class="pi pi-building"></i> {{ p.orgUnitName || '—' }}</span>
+            <span><i class="pi pi-map-marker"></i> {{ p.patientMohArea || '—' }}</span>
+            <span><i class="pi pi-calendar"></i> {{ p.enrolledAt | date:'yyyy-MM-dd' }}</span>
+            <span>EHF: <strong class="ehf-badge" [class.ehf-high]="p.ehfScore >= 7"
+                    [class.ehf-mid]="p.ehfScore >= 4 && p.ehfScore < 7">{{ p.ehfScore }}</strong></span>
+        </div>
+    </a>
+    }
+    }
+</div>-->
+
+
+
+
+
+
+
+// ── Page header ───────────────────────────────────────────────────────────────
+.page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+
+  h1 { margin-bottom: 4px; }
+
+  &__sub { color: var(--color-muted); font-size: 0.88rem; margin: 0; }
+
+  &__actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-shrink: 0;
+  }
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.filter-badge {
+  background: var(--color-teal-100);
+  color: var(--color-teal-700);
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+// ── Buttons ───────────────────────────────────────────────────────────────────
+.btn-filter, .btn-sync {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s, opacity 0.15s;
+
+  i { font-size: 0.9rem; }
+}
+
+.btn-filter {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  color: var(--color-ink);
+  position: relative;
+
+  &:hover { background: var(--color-teal-100); }
+}
+
+.btn-sync {
+  background: var(--color-teal-700);
+  color: #fff;
+
+  &:hover:not(:disabled) { background: var(--color-teal-900); }
+  &:disabled { opacity: 0.55; cursor: default; }
+}
+
+.count-pill {
+  background: var(--color-teal-700);
+  color: #fff;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  line-height: 1.4;
+}
+
+// ── Alert banner ──────────────────────────────────────────────────────────────
+.alert {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
+  font-size: 0.88rem;
+
+  &--error {
+    background: var(--color-mb-bg);
+    color: var(--color-mb);
+    border: 1px solid #e7c0b0;
+
+    i { font-size: 1.1rem; margin-top: 1px; flex-shrink: 0; }
+  }
+
+  &__hint { color: #8b3a1e; margin-top: 4px; font-size: 0.82rem; }
+}
+
+// ── Filter panel ──────────────────────────────────────────────────────────────
+.filters-panel {
+  padding: 20px;
+  margin-bottom: 20px;
+  animation: slideDown 0.2s ease;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+  }
+
+  &__title {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--color-teal-900);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.btn-clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  padding: 5px 12px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  color: var(--color-muted);
+  transition: all 0.15s;
+
+  &:hover { background: var(--color-mb-bg); color: var(--color-mb); border-color: var(--color-mb); }
+}
+
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+
+  @media (max-width: 600px) { grid-template-columns: 1fr; }
+}
+
+.filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  &--wide { grid-column: span 2; @media (max-width: 600px) { grid-column: span 1; } }
+
+  label { font-size: 0.78rem; font-weight: 600; color: var(--color-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+
+  input, p-select { width: 100%; }
+}
+
+.input-wrap {
+  position: relative;
+  .input-icon {
+    position: absolute;
+    left: 11px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-muted);
+    font-size: 0.85rem;
+    pointer-events: none;
+    z-index: 1;
+  }
+  input { padding-left: 32px !important; width: 100%; }
+}
+
+// ── Table card ────────────────────────────────────────────────────────────────
+.table-card {
+  overflow: hidden;
+
+  .sub-text { font-size: 0.75rem; color: var(--color-muted); margin-top: 2px; }
+  .text-muted { color: var(--color-muted); }
+}
+
+// Skeleton rows
+.skeleton-rows { padding: 16px 20px; display: flex; flex-direction: column; gap: 16px; }
+.skeleton-row  { display: flex; gap: 24px; align-items: center; }
+
+// ALC cell
+.alc-cell .alc-num {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-teal-700);
+}
+
+.patient-name-link {
+  font-weight: 600;
+  color: var(--color-ink);
+  text-decoration: none;
+  &:hover { color: var(--color-teal-700); text-decoration: underline; }
+}
+
+// EHF score badge
+.ehf-badge {
+  display: inline-block;
+  min-width: 28px;
+  text-align: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: #e8f4f2;
+  color: #3d7a72;
+
+  &.ehf-mid { background: #ee6940; color: #fd0303; }
+  &.ehf-high { background: var(--color-mb-bg); color: var(--color-mb); }
+}
+
+// Actions column
+.actions { white-space: nowrap; text-align: right; }
+
+// Empty state
+.empty-state {
+  text-align: center;
+  padding: 48px 24px !important;
+  color: var(--color-muted);
+}
+.empty-icon { font-size: 2.5rem; display: block; margin-bottom: 12px; opacity: 0.4; }
+.link-btn {
+  background: none; border: none;
+  color: var(--color-teal-700);
+  font-weight: 600; cursor: pointer;
+  text-decoration: underline;
+  &:disabled { opacity: 0.5; cursor: default; }
+}
+
+// ── Mobile cards ──────────────────────────────────────────────────────────────
+.patient-card {
+  display: block;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  text-decoration: none;
+  color: var(--color-ink);
+  transition: box-shadow 0.15s, border-color 0.15s;
+  margin-bottom: 10px;
+
+  &:hover { box-shadow: var(--shadow-card); border-color: #c5dad7; }
+
+  &__top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  &__name { font-weight: 700; font-size: 0.95rem; margin-bottom: 2px; }
+  &__alc  { font-size: 0.78rem; color: var(--color-muted); font-family: monospace; }
+
+  &__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    font-size: 0.78rem;
+    color: var(--color-muted);
+
+    span { display: flex; align-items: center; gap: 5px; }
+    i { font-size: 0.75rem; }
+  }
+
+  &--skeleton { padding: 20px; }
+}
+
+.mobile-empty {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--color-muted);
+  i { font-size: 2.5rem; display: block; margin-bottom: 12px; opacity: 0.4; }
+}
+
+// ── Responsive visibility ─────────────────────────────────────────────────────
+.desktop-only { @media (max-width: 700px) { display: none; } }
+.mobile-only  { display: none; @media (max-width: 700px) { display: block; } }
+// Append these to your existing patient-list.component.scss
+
+// ── Row numbering column ─────────────────────────────────────────────────
+.num-col {
+  width: 40px;
+  text-align: center;
+  color: var(--color-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+// ── Outer-district highlight (light red background) ─────────────────────
+// Desktop table row
+tr.row--outer-district {
+  background: #fdf1f1;
+
+  &:hover { background: #fbe4e4 !important; }
+}
+
+// Mobile card
+.patient-card.patient-card--outer-district {
+  background: #fdf1f1;
+  border-color: #f3caca;
+}
+
+// ── Classification badges - distinct colors per class ────────────────────
+.badge--mb {
+  background: var(--color-mb-bg, #f7e6de);
+  color: var(--color-mb, #b5532c);
+}
+.badge--pb {
+  background: var(--color-pb-bg, #f6edd2);
+  color: var(--color-pb, #b08900);
+}
+.badge--unknown {
+  background: #eceef0;
+  color: #6b7280;
+}
+
+// ── Child case indicator ──────────────────────────────────────────────────
+.badge--child {
+  background: #e0edff;
+  color: #1d4ed8;
+  margin-left: 6px;
+  font-size: 0.68rem;
+  vertical-align: middle;
+}
+
+
+// Append to your existing patient-list.component.scss
+
+
+
+.patient-card__main {
+  flex: 1;
+  min-width: 0; // allows text truncation to work inside a flex child
+}
+
+// Case type tag (New / Relapse / Defaulter / Treatment restart)
+.patient-card__tags {
+  margin-top: 6px;
+}
+
+.tag--new { background: var(--color-teal-100); color: var(--color-teal-700); }
+.tag--relapse { background: var(--color-mb-bg); color: var(--color-mb); }
+.tag--defaulter { background: #fef2f2; color: #b91c1c; }
+.tag--other { background: #eceef0; color: #6b7280; }
+
+// Clickable phone number chips - tap to call directly
+.patient-card__contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+// Append to your existing patient-list.component.scss
+
+// ── Priority left-border, reusing the same severity logic as the
+// dashboard's alert cards - highest severity wins per patient.
+.patient-card {
+  border-left: 4px solid transparent;
+
+  &.priority--grade2   { border-left-color: var(--color-mb); }
+  &.priority--relapse  { border-left-color: #b91c1c; }
+  &.priority--defaulter{ border-left-color: #ea580c; }
+  &.priority--delayed  { border-left-color: var(--color-pb); }
+}
+
+// Row 1: name only, one line, no competition for space
+.patient-card__name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.patient-card__name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--color-teal-900);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// Row 2 layout: index + address (flexible) + right-side identifier cluster
+.patient-card__top {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.patient-card__index {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--color-teal-100);
+  color: var(--color-teal-900);
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  margin-top: 1px;
+}
+
+.patient-card__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.patient-card__address {
+  font-size: 0.8rem;
+  color: var(--color-muted);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  overflow-wrap: break-word;
+
+  &--expanded {
+    -webkit-line-clamp: unset;
+    overflow: visible;
+  }
+}
+
+// Right-side cluster: ALC number, classification badge, case-type tag
+.patient-card__right {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.alc-num {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-teal-900);
+  white-space: nowrap;
+}
+
+.tag {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.tag--relapse { background: var(--color-mb-bg); color: var(--color-mb); }
+.tag--defaulter { background: #fef2f2; color: #b91c1c; }
+.tag--other { background: #eceef0; color: #6b7280; }
+
+// Clickable phone/WhatsApp chips
+.patient-card__contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.contact-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-teal-700);
+  background: var(--color-teal-100);
+  padding: 5px 10px;
+  border-radius: 999px;
+  text-decoration: none;
+
+  i { font-size: 0.75rem; }
+  &:active { background: var(--color-teal-700); color: #fff; }
+
+  &--whatsapp {
+    color: #15803d;
+    background: #dcfce7;
+    &:active { background: #15803d; color: #fff; }
+  }
+}
+
+
+
+
+
+
+
+
+import { Component, inject, computed, signal, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { TableModule } from 'primeng/table';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { SelectModule } from 'primeng/select';
+import { TagModule } from 'primeng/tag';
+import { SkeletonModule } from 'primeng/skeleton';
+import { PatientService } from '../../core/services/patient.service';
+import { Patient, PatientFilter } from '../../core/services/patient.model';
+import { STORAGE_KEYS } from '../../core/util/util';
+import { DeviceStorageService } from '../../core/services/device-storage.service';
+import {
+  hasGrade2Disability,
+  isRelapse,
+  isDefaulter,
+  hasDelayedDiagnosis,
+} from '../../core/util/dashboard-analytics';
+interface SelectOption { label: string; value: string; }
+@Component({
+    selector: 'app-patient-list',
+    standalone: true,
+    imports: [
+        CommonModule, FormsModule, RouterLink,
+        TableModule, ButtonModule, InputTextModule,
+        SelectModule, TagModule, SkeletonModule,
+    ],
+    templateUrl: './patient-list.component.html',
+    styleUrl: './patient-list.component.scss',
+})
+export class PatientListComponent implements OnInit {
+    private readonly storage = inject(DeviceStorageService);
+    private readonly router = inject(Router);
+    private readonly route = inject(ActivatedRoute);
+    //private readonly orgScope = inject(OrgScopeService);
+    protected readonly patientService = inject(PatientService);
+    protected readonly filter = signal<PatientFilter>({
+        district: this.patientService.userDistricts(),
+        search: '',
+        classification: 'ALL',
+        orgUnitId: 'ALL',
+        mohArea: 'ALL',
+        phiArea: 'ALL',
+        gnDivision: 'ALL',
+        ...this.defaultDateRange(),
+    });
+    private defaultDateRange(): { enrolledFrom: string; enrolledTo: string } {
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        return {
+            enrolledFrom: `${yyyy}-01-01`,
+            enrolledTo: `${yyyy}-${mm}-${dd}`,
+        };
+    }
+    protected readonly showFilters = signal(false);
+    protected readonly filtersLoading = signal(true);
+    // ── Static filter options ─────────────────────────────────────────────────
+    protected readonly classificationOptions: SelectOption[] = [
+        { label: 'All classifications', value: 'ALL' },
+        { label: 'MB — Multibacillary', value: 'MB (>5 lesions)' },
+        { label: 'PB — Paucibacillary', value: 'PB (1-5 lesions)' },
+    ];
+    protected readonly user = this.storage.getJSON<any>(STORAGE_KEYS.USER_DATA);
+    protected readonly hospitalOptions: SelectOption[] = [
+        { label: 'All hospitals', value: 'ALL' },
+        // ...environment.FACILITIES.map(f => ({ label: f.displayName, value: f.id })),
+        ...this.user.organisationUnits.map((f: any) => ({ label: f.name, value: f.id })),
+    ];
+    // ── Dynamic filter options (from IndexedDB distinct values) ───────────────
+    protected mohAreaOptions = signal<SelectOption[]>([{ label: 'All MOH areas', value: 'ALL' }]);
+    protected phiAreaOptions = signal<SelectOption[]>([{ label: 'All PHI areas', value: 'ALL' }]);
+    protected gnDivisionOptions = signal<SelectOption[]>([{ label: 'All GN divisions', value: 'ALL' }]);
+    protected districtOptions = signal<SelectOption[]>([{ label: 'All District', value: 'ALL' }]);
+    // ── Filtered rows ─────────────────────────────────────────────────────────
+    protected readonly rows = computed(() => this.patientService.filtered(this.filter()));
+    protected readonly activeFilterCount = computed(() => {
+        const f = this.filter();
+        let count = 0;
+        if (f.district) count++;
+        if (f.search) count++;
+        if (f.classification && f.classification !== 'ALL') count++;
+        if (f.orgUnitId && f.orgUnitId !== 'ALL') count++;
+        if (f.mohArea && f.mohArea !== 'ALL') count++;
+        if (f.phiArea && f.phiArea !== 'ALL') count++;
+        if (f.gnDivision && f.gnDivision !== 'ALL') count++;
+        if (f.enrolledFrom) count++;
+        if (f.enrolledTo) count++;
+        return count;
+    });
+    async ngOnInit(): Promise<void> {
+        if (this.patientService.districtPatients().length === 0) {
+            await this.patientService.pullFromServer();
+        }
+        await this.loadDistinctValues();
+        this.applyQueryParams(this.route.snapshot.queryParamMap);
+        this.route.queryParamMap.subscribe(params => this.applyQueryParams(params));
+    }
+
+    private applyQueryParams(params: { get: (key: string) => string | null }): void {
+        const patch: Partial<PatientFilter> = {};
+        const district = params.get('district');
+        const year = params.get('year');
+        const classification = params.get('classification');
+        const orgUnitId = params.get('orgUnitId');
+        const mohArea = params.get('mohArea');
+
+        if (district) patch.district = district;
+        if (classification) patch.classification = classification;
+        if (orgUnitId) patch.orgUnitId = orgUnitId;
+        if (mohArea) patch.mohArea = mohArea;
+        const alert = params.get('alert');
+        if (alert) patch.alert = alert;
+        if (year) {
+            patch.enrolledFrom = `${year}-01-01`;
+            patch.enrolledTo = `${year}-12-31`;
+        }
+
+        if (Object.keys(patch).length) {
+            this.filter.update(f => ({ ...f, ...patch }));
+            this.showFilters.set(true);
+        }
+    }
+    private async loadDistinctValues(): Promise<void> {
+        this.filtersLoading.set(true);
+        const [moh, phi, gn, district] = await Promise.all([
+            this.patientService.getDistinctValues('patientMohArea'),
+            this.patientService.getDistinctValues('patientPhiArea'),
+            this.patientService.getDistinctValues('patientGnDivision'),
+            this.patientService.getDistinctValues('patientDistrict')
+        ]);
+        this.districtOptions.set([
+            { label: 'All District', value: 'ALL' },
+            ...district.map(v => ({ label: v, value: v })),
+        ]);
+        this.mohAreaOptions.set([
+            { label: 'All MOH areas', value: 'ALL' },
+            ...moh.map(v => ({ label: v, value: v })),
+        ]);
+        this.phiAreaOptions.set([
+            { label: 'All PHI areas', value: 'ALL' },
+            ...phi.map(v => ({ label: v, value: v })),
+        ]);
+        this.gnDivisionOptions.set([
+            { label: 'All GN divisions', value: 'ALL' },
+            ...gn.map(v => ({ label: v, value: v })),
+        ]);
+        this.filtersLoading.set(false);
+    }
+    protected updateFilter<K extends keyof PatientFilter>(key: K, value: PatientFilter[K]): void {
+        this.filter.update(f => ({ ...f, [key]: value }));
+    }
+    protected clearFilters(): void {
+        this.filter.set({
+            district: this.patientService.userDistricts(),
+            search: '',
+            classification: 'ALL',
+            orgUnitId: 'ALL',
+            mohArea: 'ALL',
+            phiArea: 'ALL',
+            gnDivision: 'ALL',
+            ...this.defaultDateRange(),
+        });
+    }
+
+    protected async syncNow(): Promise<void> {
+        await this.patientService.pullFromServer();
+        await this.loadDistinctValues();
+    }
+
+    /*protected classBadge(cls: string): string {
+        if (!cls) return 'badge--unknown';
+        return cls.toUpperCase() === 'MB (>5 lesions)' ? 'badge--mb' : 'badge--pb';
+    } */
+    protected enrolledDaysAgo(enrolledAt: string): number {
+        if (!enrolledAt) return 0;
+        const ms = Date.now() - new Date(enrolledAt).getTime();
+        return Math.floor(ms / (1000 * 60 * 60 * 24));
+    }
+    /**
+ * Splice these into your existing PatientListComponent class, replacing
+ * the old classBadge() method.
+ */
+
+    /**
+     * FIXED: previously compared an uppercased full string against a
+     * lowercase-in-part literal ("MB (>5 lesions)"), which could never match
+     * since .toUpperCase() also uppercases "lesions". Now only checks the
+     * MB/PB prefix, case-insensitively, ignoring the parenthetical detail -
+     * works regardless of exact DHIS2 option-set wording.
+     */
+    protected classBadge(cls: string): string {
+        if (!cls) return 'badge--unknown';
+        const upper = cls.trim().toUpperCase();
+        if (upper.startsWith('MB')) return 'badge--mb';
+        if (upper.startsWith('PB')) return 'badge--pb';
+        return 'badge--unknown';
+    }
+
+    /**
+     * True if this patient was enrolled at a facility OUTSIDE your own
+     * hospitalOptions list (i.e. an "outer district" registration you're
+     * seeing via the living-district cross-search, not your own catchment).
+     * Assumes hospitalOptions items have `.value` matching p.orgUnitId -
+     * adjust the field name here if your actual hospitalOptions shape differs.
+     */
+    protected isOuterDistrict(p: Patient): boolean {
+        if (!p.orgUnitId) return false;
+        return !this.hospitalOptions.some((h: any) => h.value === p.orgUnitId);
+    }
+
+    /** True if this is a pediatric case (under 15) worth flagging visually. */
+    protected isChildCase(p: Patient): boolean {
+        const age = Number(p.patientAge);
+        return !Number.isNaN(age) && age < 15;
+    }
+
+    /**
+     * Bottom-to-top numbering across the WHOLE filtered dataset (not just the
+     * current page). PrimeNG's p-table body template exposes `rowIndex` as the
+     * absolute 0-based index accounting for pagination offset - pass it in
+     * from the template as `let-rowIndex="rowIndex"`.
+     */
+    protected rowNumber(rowIndex: number): number {
+        return this.rows().length - rowIndex;
+    }
+
+/*
+
+protected goToPatient(id: string): void {
+  this.router.navigate(['/patients', id]);
+}
+
+protected caseTypeBadge(caseType: string): string {
+  if (!caseType) return 'tag--other';
+  const v = caseType.trim().toLowerCase();
+  if (v.includes('relapse')) return 'tag--relapse';
+  if (v.includes('default')) return 'tag--defaulter';
+  if (v.includes('restart')) return 'tag--defaulter';
+  if (v.includes('new')) return 'tag--new';
+  return 'tag--other';
+}*/
+
+// Add this import alongside your existing ones:
+
+
+// Add this signal alongside your other component state:
+protected readonly expandedAddresses = signal(new Set<string>());
+
+/**
+ * Highest-severity priority wins if a patient matches more than one -
+ * reuses the exact same classification functions the dashboard's alert
+ * cards use, so "what counts as high priority" stays consistent in one
+ * place across the app. Drives the card's left-border color.
+ */
+protected priorityClass(p: Patient): string {
+  if (hasGrade2Disability(p)) return 'priority--grade2';
+  if (isRelapse(p)) return 'priority--relapse';
+  if (isDefaulter(p)) return 'priority--defaulter';
+  if (hasDelayedDiagnosis(p)) return 'priority--delayed';
+  return '';
+}
+
+/**
+ * "New" is the default/common case (~95% of records per your estimate) -
+ * suppressing it from display keeps the case-type tag reserved for the
+ * exceptions actually worth flagging (Relapse, Defaulter, Restart, etc.).
+ */
+protected isDefaultCaseType(caseType: string): boolean {
+  return caseType?.trim().toLowerCase() === 'new';
+}
+
+protected caseTypeBadge(caseType: string): string {
+  if (!caseType) return 'tag--other';
+  const v = caseType.trim().toLowerCase();
+  if (v.includes('relapse')) return 'tag--relapse';
+  if (v.includes('default')) return 'tag--defaulter';
+  if (v.includes('restart')) return 'tag--defaulter';
+  return 'tag--other';
+}
+
+/** Normalizes a local (0771234567) or already-international number for wa.me. */
+protected whatsappLink(phone: string): string {
+  const digits = phone.replace(/\D/g, '');
+  if (digits.startsWith('94')) return `https://wa.me/${digits}`;
+  return `https://wa.me/94${digits.replace(/^0/, '')}`;
+}
+
+protected toggleAddress(id: string, event: Event): void {
+  event.stopPropagation();
+  const next = new Set(this.expandedAddresses());
+  if (next.has(id)) next.delete(id);
+  else next.add(id);
+  this.expandedAddresses.set(next);
+}
+
+protected goToPatient(id: string): void {
+  this.router.navigate(['/patients', id]);
+}
+}
+
+
+
+
+
+/**
+ @if (viewMode() === 'cards') {
+    <div class="cards-container">
+      @if (patientService.isSyncing() && patientService.districtPatients().length === 0) {
+        @for (_ of [1,2,3,4,5,6]; track $index) {
+          <div class="patient-card-skeleton">
+            <p-skeleton width="60%" height="1.2rem" />
+            <p-skeleton width="80%" height="0.9rem" styleClass="mt-2" />
+            <p-skeleton width="40%" height="0.9rem" styleClass="mt-1" />
+            <div class="skeleton-meta">
+              <p-skeleton width="8rem" height="0.8rem" />
+              <p-skeleton width="8rem" height="0.8rem" />
+              <p-skeleton width="8rem" height="0.8rem" />
+            </div>
+          </div>
+        }
+      } @else if (rows().length === 0) {
+        <div class="empty-state-cards">
+          <i class="pi pi-inbox empty-icon"></i>
+          <h3>No patients found</h3>
+          <p>{{ patientService.isOnline() ? 'Try adjusting your filters.' : 'Go online to sync data.' }}</p>
+        </div>
+      } @else {
+        @for (p of rows(); track p.id; let i = $index) {
+          <div class="patient-card" 
+               [class.card-outer]="isOuterDistrict(p)"
+               [class]="priorityClass(p)"
+               (click)="goToPatient(p.id)">
+            
+            <!-- Header -->
+            <div class="card-header">
+              <div class="card-index">{{ rows().length - i }}</div>
+              <div class="card-name-group">
+                <span class="card-name">{{ p.patientName || 'Unnamed' }}</span>
+                @if (isChildCase(p)) {
+                  <span class="badge-child">Child</span>
+                }
+                @if (p.alcNum) {
+                  <span class="card-alc">#{{ p.alcNum }}</span>
+                }
+              </div>
+              <div class="card-status">
+                @if (p.treatmentClassification) {
+                  <span class="badge-class" 
+                        [class.badge-mb]="classBadge(p.treatmentClassification) === 'badge--mb'"
+                        [class.badge-pb]="classBadge(p.treatmentClassification) === 'badge--pb'"
+                        [class.badge-unknown]="classBadge(p.treatmentClassification) === 'badge--unknown'">
+                    {{ p.treatmentClassification }}
+                  </span>
+                }
+                @if (!isDefaultCaseType(p.caseType)) {
+                  <span class="case-tag" [class]="caseTypeBadge(p.caseType)">
+                    {{ p.caseType }}
+                  </span>
+                }
+              </div>
+            </div>
+
+            <!-- Body -->
+            <div class="card-body">
+              <div class="card-address">
+                <i class="pi pi-map-marker"></i>
+                <span [class.address-expanded]="expandedAddresses().has(p.id)"
+                      (click)="toggleAddress(p.id, $event)">
+                  {{ p.patientHomeAddress || 'No address' }}
+                </span>
+              </div>
+              
+              <div class="card-details">
+                <div class="detail-item">
+                  <i class="pi pi-building"></i>
+                  <span>{{ p.orgUnitName || '—' }}</span>
+                </div>
+                <div class="detail-item">
+                  <i class="pi pi-map"></i>
+                  <span>{{ p.patientMohArea || '—' }}</span>
+                </div>
+                <div class="detail-item">
+                  <i class="pi pi-calendar"></i>
+                  <span>{{ p.enrolledAt | date:'yyyy-MM-dd' }}</span>
+                </div>
+                <div class="detail-item">
+                  <i class="pi pi-user"></i>
+                  <span>{{ p.patientSex || '—' }} · {{ p.patientAge || '?' }} yrs</span>
+                </div>
+                <div class="detail-item detail-ehf">
+                  <span>EHF</span>
+                  <span class="ehf-score" 
+                        [class.ehf-high]="p.ehfScore >= 7"
+                        [class.ehf-mid]="p.ehfScore >= 4 && p.ehfScore < 7">
+                    {{ p.ehfScore || 0 }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Contact -->
+              @if (p.mobileNum || p.telNum) {
+                <div class="card-contact" (click)="$event.stopPropagation()">
+                  @if (p.mobileNum) {
+                    <a href="tel:{{ p.mobileNum }}" class="contact-btn contact-phone">
+                      <i class="pi pi-mobile"></i> {{ p.mobileNum }}
+                    </a>
+                    <a [href]="whatsappLink(p.mobileNum)" target="_blank" class="contact-btn contact-whatsapp">
+                      <i class="pi pi-whatsapp"></i> WhatsApp
+                    </a>
+                  }
+                  @if (p.telNum) {
+                    <a href="tel:{{ p.telNum }}" class="contact-btn contact-phone">
+                      <i class="pi pi-phone"></i> {{ p.telNum }}
+                    </a>
+                  }
+                </div>
+              }
+            </div>
+
+            <!-- Footer -->
+            <div class="card-footer">
+              <span class="footer-text">
+                <!-- <i class="pi pi-clock"></i> {{ enrolledDaysAgo(p.enrolledAt) }} days -->
+              </span>
+              <span class="footer-text" [class.text-outer]="isOuterDistrict(p)">
+                <i class="pi" [class.pi-check-circle]="!isOuterDistrict(p)" 
+                   [class.pi-exclamation-circle]="isOuterDistrict(p)"></i>
+                {{ isOuterDistrict(p) ? 'Outer District' : 'Local' }}
+              </span>
+            </div>
+          </div>
+        }
+      }
+    </div>
+  }
+

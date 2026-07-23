@@ -48,6 +48,20 @@ export class OrgScopeService {
       ?? [];
   });
 
+  readonly healthDistrictsNew = computed(() => {
+    const suffixPattern = /\s+(RDHS|RD)\s*$/i;
+    const dis = this._scope()?.assignedDistricts
+      .map((d) => {
+        const value =d.name.replace(suffixPattern, '').trim();
+        return {
+          label: this.DISTRICT_NAME_OVERRIDES[d.name.replace(suffixPattern, '').trim()] ?? value, 
+          value: value,
+        } 
+      }) ?? [];
+
+    return dis;
+  });
+  
   private districtLevelCache: number | null = null;
 
   restoreFromCache(): boolean {

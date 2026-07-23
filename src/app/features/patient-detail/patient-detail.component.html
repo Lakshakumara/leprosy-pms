@@ -1,186 +1,217 @@
 <!-- ── Loading ───────────────────────────────────────────────────────────────── -->
 @if (loading()) {
-  <div class="detail-loading">
-    <i class="pi pi-spin pi-spinner"></i> Loading patient…
-  </div>
+<div class="detail-loading">
+  <i class="pi pi-spin pi-spinner"></i> Loading patient…
+</div>
 }
 
 <!-- ── Not found ─────────────────────────────────────────────────────────────── -->
 @if (!loading() && notFound()) {
-  <div class="not-found card">
-    <i class="pi pi-exclamation-circle"></i>
-    <p>Patient not found in local cache. <a routerLink="/patients">Back to list</a></p>
-  </div>
+<div class="not-found card">
+  <i class="pi pi-exclamation-circle"></i>
+  <p>Patient not found in local cache. <a routerLink="/patients">Back to list</a></p>
+</div>
 }
 
 <!-- ── Patient record ─────────────────────────────────────────────────────────── -->
 @if (!loading() && patient(); as p) {
-  <div class="detail-layout">
+<div class="detail-layout">
 
-    <!-- ── Header ──────────────────────────────────────────────────────────── -->
-    <div class="detail-header">
-      <a routerLink="/patients" class="back-link">
-        <i class="pi pi-arrow-left"></i> Back to list
-      </a>
-      <div class="detail-title-row">
-        <div>
-          <h1 class="detail-patient-name">{{ p.patientName || '(no name)' }}</h1>
-          <div class="detail-ids">
-            @if (p.alcNum) { <span class="id-badge id-badge--alc">ALC: {{ p.alcNum }}</span> }
-            @if (p.clinicNum) { <span class="id-badge">Clinic: {{ p.clinicNum }}</span> }
-            @if (p.nicNum) { <span class="id-badge">NIC: {{ p.nicNum }}</span> }
-          </div>
-        </div>
-        <div class="header-tags">
-          @if (p.treatmentClassification) {
-            <span class="badge badge-lg"
-                  [class.badge--mb]="p.treatmentClassification === 'MB'"
-                  [class.badge--pb]="p.treatmentClassification === 'PB'">
-              {{ p.treatmentClassification }}
-            </span>
-          }
-          <span class="status-tag" [class.status-tag--active]="p.enrollmentStatus === 'ACTIVE'"
-                                   [class.status-tag--completed]="p.enrollmentStatus === 'COMPLETED'">
-            {{ p.enrollmentStatus || 'Unknown' }}
-          </span>
+  <!-- ── Header ──────────────────────────────────────────────────────────── -->
+  <div class="detail-header">
+    <a routerLink="/patients" class="back-link">
+      <i class="pi pi-arrow-left"></i> Back to list
+    </a>
+    <div class="detail-title-row">
+      <div>
+        <h1 class="detail-patient-name">{{ p.patientName || '(no name)' }}</h1>
+        <div class="detail-ids">
+          @if (p.alcNum) { <span class="id-badge id-badge--alc">ALC: {{ p.alcNum }}</span> }
+          @if (p.clinicNum) { <span class="id-badge">Clinic: {{ p.clinicNum }}</span> }
+          @if (p.nicNum) { <span class="id-badge">NIC: {{ p.nicNum }}</span> }
         </div>
       </div>
+      <div class="header-tags">
+        @if (p.treatmentClassification) {
+        <span class="badge badge-lg" [class.badge--mb]="p.treatmentClassification === 'MB'"
+          [class.badge--pb]="p.treatmentClassification === 'PB'">
+          {{ p.treatmentClassification }}
+        </span>
+        }
+        <span class="status-tag" [class.status-tag--active]="p.enrollmentStatus === 'ACTIVE'"
+          [class.status-tag--completed]="p.enrollmentStatus === 'COMPLETED'">
+          {{ p.enrollmentStatus || 'Unknown' }}
+        </span>
+      </div>
     </div>
+  </div>
 
-    <!-- ── Grid sections ────────────────────────────────────────────────────── -->
-    <div class="sections-grid">
+  <!-- ── Grid sections ────────────────────────────────────────────────────── -->
+  <div class="sections-grid">
 
-      <!-- Demographics -->
-      <section class="detail-card">
-        <h2 class="section-title"><i class="pi pi-user"></i> Demographics</h2>
-        <dl class="detail-dl">
-          <dt>Patient Name</dt><dd>{{ p.patientName || '—' }}</dd>
-          <dt>Sex</dt><dd>{{ p.patientSex || '—' }}</dd>
-          <dt>Age</dt><dd>{{ p.patientAge || '—' }}</dd>
-          <dt>Ethnic Group</dt><dd>{{ p.ethnicGroup || '—' }}</dd>
-          <dt>Mobile</dt><dd>{{ p.mobileNum || '—' }}</dd>
-          <dt>Guardian</dt><dd>{{ p.guardianName || '—' }}</dd>
-        </dl>
-      </section>
-
-      <!-- Enrollment -->
-      <section class="detail-card">
-        <h2 class="section-title"><i class="pi pi-building"></i> Enrollment</h2>
-        <dl class="detail-dl">
-          <dt>Hospital</dt><dd>{{ p.orgUnitName || facilityName(p.orgUnitId) }}</dd>
-          <dt>Enrolled Date</dt><dd>{{ p.enrolledAt | date:'dd MMMM yyyy' }}</dd>
-          <dt>Status</dt><dd>{{ p.enrollmentStatus || '—' }}</dd>
-          <dt>Referred by</dt><dd>{{ p.patientReferredBy || '—' }}</dd>
-          <dt>Consultant</dt><dd>{{ p.nameOfConsultant || '—' }}</dd>
-          <dt>MO</dt><dd>{{ p.nameOfMO || '—' }}</dd>
-        </dl>
-      </section>
-
-      <!-- Clinical -->
-      <section class="detail-card">
-        <h2 class="section-title"><i class="pi pi-heart"></i> Clinical Details</h2>
-        <dl class="detail-dl">
-          <dt>Classification</dt>
-          <dd>
-            @if (p.treatmentClassification) {
-              <span class="badge" [class.badge--mb]="p.treatmentClassification === 'MB'"
-                                  [class.badge--pb]="p.treatmentClassification === 'PB'">
-                {{ p.treatmentClassification }}
-              </span>
-            } @else { — }
-          </dd>
-          <dt>Treatment Type</dt><dd>{{ p.treatmentType || '—' }}</dd>
-          <dt>Case Type</dt><dd>{{ p.caseType || '—' }}</dd>
-          <dt>EHF Score</dt>
-          <dd>
-            <span class="ehf-score"
-                  [class.ehf-high]="p.ehfScore >= 7"
-                  [class.ehf-mid]="p.ehfScore >= 4 && p.ehfScore < 7">
-              {{ p.ehfScore }}/12
-            </span>
-          </dd>
-          <dt>Disability at Diagnosis</dt><dd>{{ p.disabilityAtDiagnosis || '—' }}</dd>
-          <dt>Time Since Onset</dt><dd>{{ p.timeSinceOnsetMonths ? p.timeSinceOnsetMonths + ' months' : '—' }}</dd>
-          <dt>Contact History</dt><dd>{{ p.contactHistory ? 'Yes' : 'No' }}</dd>
-          @if (p.contactHistory && p.contactHistorySource) {
-            <dt>Contact Source</dt><dd>{{ p.contactHistorySource }}</dd>
+    <!-- Demographics -->
+    <section class="detail-card">
+      <h2 class="section-title"><i class="pi pi-user"></i> Demographics</h2>
+      <dl class="detail-dl">
+        <dt>Patient Name</dt>
+        <dd>{{ p.patientName || '—' }}</dd>
+        <dt>Sex</dt>
+        <dd>{{ p.patientSex || '—' }}</dd>
+        <dt>Age</dt>
+        <dd>{{ p.patientAge || '—' }}</dd>
+        <dt>Ethnic Group</dt>
+        <dd>{{ p.ethnicGroup || '—' }}</dd>
+        <dt>Mobile</dt>
+        <dd>{{ p.telNum || '—' }}</dd>
+        @if(p.mobileNum){
+        <<dt>Mobile 2</dt>
+          <dd>{{ p.mobileNum || '—' }}</dd>
           }
-          <dt>Relapse</dt><dd>{{ p.relapse || '—' }}</dd>
-          <dt>Defaulter Restarting</dt><dd>{{ p.defaulterRestartingTreatment || '—' }}</dd>
-          <dt>Previous Treatment</dt><dd>{{ p.previousTreatmentType || '—' }}</dd>
-          <dt>Year of Completion</dt><dd>{{ p.yearOfTreatmentCompletion || '—' }}</dd>
-        </dl>
-      </section>
+          @if(p.guardianName){
+          <dt>Guardian</dt>
+          <dd>{{ p.guardianName || '—' }}</dd>
+          }
+      </dl>
+    </section>
 
-      <!-- Deformity -->
-      <section class="detail-card">
-        <h2 class="section-title"><i class="pi pi-chart-bar"></i> Deformity Details</h2>
-        <div class="deformity-grid">
-          <div class="deformity-item" [class.deformity-item--yes]="p.clawHand">
-            <i class="pi" [class.pi-check-circle]="p.clawHand" [class.pi-times-circle]="!p.clawHand"></i>
-            Claw Hand
-          </div>
-          <div class="deformity-item" [class.deformity-item--yes]="p.footDrop === 'true' || p.footDrop === 'Yes'">
-            <i class="pi" [class.pi-check-circle]="p.footDrop === 'true' || p.footDrop === 'Yes'"
-                          [class.pi-times-circle]="p.footDrop !== 'true' && p.footDrop !== 'Yes'"></i>
-            Foot Drop
-          </div>
-          <div class="deformity-item" [class.deformity-item--yes]="p.footUlcer === 'true' || p.footUlcer === 'Yes'">
-            <i class="pi" [class.pi-check-circle]="p.footUlcer === 'true' || p.footUlcer === 'Yes'"
-                          [class.pi-times-circle]="p.footUlcer !== 'true' && p.footUlcer !== 'Yes'"></i>
-            Foot Ulcer
-          </div>
-          <div class="deformity-item" [class.deformity-item--yes]="p.eyeInvolvement === 'true' || p.eyeInvolvement === 'Yes'">
-            <i class="pi" [class.pi-check-circle]="p.eyeInvolvement === 'true' || p.eyeInvolvement === 'Yes'"
-                          [class.pi-times-circle]="p.eyeInvolvement !== 'true' && p.eyeInvolvement !== 'Yes'"></i>
-            Eye Involvement
-          </div>
-          <div class="deformity-item" [class.deformity-item--yes]="p.faceInvolvement === 'true' || p.faceInvolvement === 'Yes'">
-            <i class="pi" [class.pi-check-circle]="p.faceInvolvement === 'true' || p.faceInvolvement === 'Yes'"
-                          [class.pi-times-circle]="p.faceInvolvement !== 'true' && p.faceInvolvement !== 'Yes'"></i>
-            Face Involvement
-          </div>
+    <!-- Enrollment -->
+    <section class="detail-card">
+      <h2 class="section-title"><i class="pi pi-building"></i> Enrollment</h2>
+      <dl class="detail-dl">
+        <dt>Hospital</dt>
+        <dd>{{ p.orgUnitName || facilityName(p.orgUnitId) }}</dd>
+        <dt>Enrolled Date</dt>
+        <dd>{{ p.enrolledAt | date:'dd MMMM yyyy' }}</dd>
+        <dt>Status</dt>
+        <dd>{{ p.enrollmentStatus || '—' }}</dd>
+        <dt>Referred by</dt>
+        <dd>{{ p.patientReferredBy || '—' }}</dd>
+        <dt>Consultant</dt>
+        <dd>{{ p.nameOfConsultant || '—' }}</dd>
+        <dt>MO</dt>
+        <dd>{{ p.nameOfMO || '—' }}</dd>
+      </dl>
+    </section>
+
+    <!-- Clinical -->
+    <section class="detail-card">
+      <h2 class="section-title"><i class="pi pi-heart"></i> Clinical Details</h2>
+      <dl class="detail-dl">
+        <dt>Classification</dt>
+        <dd>
+          @if (p.treatmentClassification) {
+          <span class="badge" [class.badge--mb]="p.treatmentClassification === 'MB'"
+            [class.badge--pb]="p.treatmentClassification === 'PB'">
+            {{ p.treatmentClassification }}
+          </span>
+          } @else { — }
+        </dd>
+        <dt>Treatment Type</dt>
+        <dd>{{ p.treatmentType || '—' }}</dd>
+        <dt>EHF Score</dt>
+        <dd>
+          <span class="ehf-score" [class.ehf-high]="p.ehfScore >= 7"
+            [class.ehf-mid]="p.ehfScore >= 4 && p.ehfScore < 7">
+            {{ p.ehfScore }}/12
+          </span>
+        </dd>
+        <dt>Disability at Diagnosis</dt>
+        <dd>{{ p.disabilityAtDiagnosis || '—' }}</dd>
+        <dt>Time Since Onset</dt>
+        <dd>{{ p.timeSinceOnsetMonths ? p.timeSinceOnsetMonths + ' months' : '—' }}</dd>
+        <dt>Contact History</dt>
+        <dd>{{ p.contactHistory ? 'Yes' : 'No' }}</dd>
+        @if (p.contactHistory && p.contactHistorySource) {
+        <dt>Contact Source</dt>
+        <dd>{{ p.contactHistorySource }}</dd>
+        }
+        <dt>Case Type</dt>
+        <dd>{{ p.caseType || '—' }}</dd>
+        <dt>Defaulter Restarting</dt>
+        <dd>{{ p.defaulterRestartingTreatment || '—' }}</dd>
+        <dt>Previous Treatment</dt>
+        <dd>{{ p.previousTreatmentType || '—' }}</dd>
+        <dt>Year of Completion</dt>
+        <dd>{{ p.yearOfTreatmentCompletion || '—' }}</dd>
+      </dl>
+    </section>
+
+    <!-- Deformity -->
+    <section class="detail-card">
+      <h2 class="section-title"><i class="pi pi-chart-bar"></i> Deformity Details</h2>
+      <div class="deformity-grid">
+        <div class="deformity-item" [class.deformity-item--yes]="p.clawHand">
+          <i class="pi" [class.pi-check-circle]="p.clawHand" [class.pi-times-circle]="!p.clawHand"></i>
+          Claw Hand
         </div>
-        @if (p.disabilityAtDiagnosis) {
-          <div class="disability-note">
-            <i class="pi pi-info-circle"></i> {{ p.disabilityAtDiagnosis }}
-          </div>
-        }
-      </section>
+        <div class="deformity-item" [class.deformity-item--yes]="p.footDrop === 'true' || p.footDrop === 'Yes'">
+          <i class="pi" [class.pi-check-circle]="p.footDrop === 'true' || p.footDrop === 'Yes'"
+            [class.pi-times-circle]="p.footDrop !== 'true' && p.footDrop !== 'Yes'"></i>
+          Foot Drop
+        </div>
+        <div class="deformity-item" [class.deformity-item--yes]="p.footUlcer === 'true' || p.footUlcer === 'Yes'">
+          <i class="pi" [class.pi-check-circle]="p.footUlcer === 'true' || p.footUlcer === 'Yes'"
+            [class.pi-times-circle]="p.footUlcer !== 'true' && p.footUlcer !== 'Yes'"></i>
+          Foot Ulcer
+        </div>
+        <div class="deformity-item"
+          [class.deformity-item--yes]="p.eyeInvolvement === 'true' || p.eyeInvolvement === 'Yes'">
+          <i class="pi" [class.pi-check-circle]="p.eyeInvolvement === 'true' || p.eyeInvolvement === 'Yes'"
+            [class.pi-times-circle]="p.eyeInvolvement !== 'true' && p.eyeInvolvement !== 'Yes'"></i>
+          Eye Involvement
+        </div>
+        <div class="deformity-item"
+          [class.deformity-item--yes]="p.faceInvolvement === 'true' || p.faceInvolvement === 'Yes'">
+          <i class="pi" [class.pi-check-circle]="p.faceInvolvement === 'true' || p.faceInvolvement === 'Yes'"
+            [class.pi-times-circle]="p.faceInvolvement !== 'true' && p.faceInvolvement !== 'Yes'"></i>
+          Face Involvement
+        </div>
+      </div>
+      @if (p.disabilityAtDiagnosis) {
+      <div class="disability-note">
+        <i class="pi pi-info-circle"></i> {{ p.disabilityAtDiagnosis }}
+      </div>
+      }
+    </section>
 
-      <!-- Location -->
-      <section class="detail-card detail-card--location">
-        <h2 class="section-title"><i class="pi pi-map-marker"></i> Location</h2>
-        <dl class="detail-dl">
-          <dt>District</dt><dd>{{ p.patientDistrict || '—' }}</dd>
-          <dt>MOH Area</dt><dd>{{ p.patientMohArea || '—' }}</dd>
-          <dt>PHI Area</dt><dd>{{ p.patientPhiArea || '—' }}</dd>
-          <dt>GN Division</dt><dd>{{ p.patientGnDivision || '—' }}</dd>
-          <dt>Home Address</dt><dd>{{ p.patientHomeAddress || '—' }}</dd>
-          @if (p.latitude && p.longitude) {
-            <dt>GPS</dt><dd>{{ p.latitude | number:'1.5-5' }}, {{ p.longitude | number:'1.5-5' }}</dd>
-          }
-        </dl>
+    <!-- Location -->
+    <section class="detail-card detail-card--location">
+      <h2 class="section-title"><i class="pi pi-map-marker"></i> Location</h2>
+      <dl class="detail-dl">
+        <dt>District</dt>
+        <dd>{{ p.patientDistrict || '—' }}</dd>
+        <dt>MOH Area</dt>
+        <dd>{{ p.patientMohArea || '—' }}</dd>
+        <dt>PHI Area</dt>
+        <dd>{{ p.patientPhiArea || '—' }}</dd>
+        <dt>GN Division</dt>
+        <dd>{{ p.patientGnDivision || '—' }}</dd>
+        <dt>Home Address</dt>
+        <dd>{{ p.patientHomeAddress || '—' }}</dd>
         @if (p.latitude && p.longitude) {
-          <a class="map-link"
-             [href]="'https://maps.google.com/?q=' + p.latitude + ',' + p.longitude"
-             target="_blank" rel="noopener">
-            <i class="pi pi-external-link"></i> View on Google Maps
-          </a>
+        <dt>GPS</dt>
+        <dd>{{ p.latitude | number:'1.5-5' }}, {{ p.longitude | number:'1.5-5' }}</dd>
         }
-      </section>
-
-    </div><!-- /sections-grid -->
-
-    <div class="detail-footer">
-      <span class="sync-note">
-        <i class="pi pi-cloud"></i>
-        Source: DHIS2 · Last cached {{ p.updatedAt | date:'dd MMM yyyy HH:mm' }}
-      </span>
-      <a routerLink="/patients" class="btn-back">
-        <i class="pi pi-arrow-left"></i> Back to Patient List
+      </dl>
+      @if (p.latitude && p.longitude) {
+      <a class="map-link" [href]="'https://maps.google.com/?q=' + p.latitude + ',' + p.longitude" target="_blank"
+        rel="noopener">
+        <i class="pi pi-external-link"></i> View on Google Maps
       </a>
-    </div>
+      }
+    </section>
 
-  </div><!-- /detail-layout -->
+  </div><!-- /sections-grid -->
+
+  <div class="detail-footer">
+    <span class="sync-note">
+      <i class="pi pi-cloud"></i>
+      Source: DHIS2 · Last cached {{ p.updatedAt | date:'dd MMM yyyy HH:mm' }}
+    </span>
+    <a routerLink="/patients" class="btn-back">
+      <i class="pi pi-arrow-left"></i> Back to Patient List
+    </a>
+  </div>
+
+</div><!-- /detail-layout -->
 }

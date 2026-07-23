@@ -28,7 +28,7 @@ export interface DashboardAlert {
 export interface ProgramIndicators {
   mbPbRatio: string;
   grade2Rate: number;
-  contactScreeningRate: number;
+  contactHistoryRate: number;
   completionRate: number;
   childCaseRate: number;
   delayedDiagnosisRate: number;
@@ -55,7 +55,7 @@ export function isChildCase(p: Patient): boolean {
 }
 
 export function hasGrade2Disability(p: Patient): boolean {
-  return p.ehfScore >= 4;
+  return p.disabilityAtDiagnosis === '3';
 }
 
 export function hasDelayedDiagnosis(p: Patient): boolean {
@@ -65,7 +65,7 @@ export function hasDelayedDiagnosis(p: Patient): boolean {
 
 export function hasDeformity(p: Patient): boolean {
   return (
-    p.clawHand ||
+    !!p.clawHand ||
     !!p.footDrop ||
     !!p.footUlcer ||
     !!p.eyeInvolvement ||
@@ -74,15 +74,16 @@ export function hasDeformity(p: Patient): boolean {
 }
 
 export function isRelapse(p: Patient): boolean {
-  const v = (p.relapse ?? '').trim().toLowerCase();
-  return v === 'yes' || v === 'true' || v === '1';
+  return (p.caseType === 'Relapse');
 }
 
 export function isDefaulter(p: Patient): boolean {
   const v = (p.defaulterRestartingTreatment ?? '').trim().toLowerCase();
   return v === 'yes' || v === 'true' || v === '1';
 }
-
+export function isContactHistory(p: Patient): boolean {
+  return (p.contactHistory === false);
+}
 export function countByField(
   patients: Patient[],
   getKey: (p: Patient) => string,
@@ -133,17 +134,15 @@ export function enrollmentTrend(patients: Patient[]): YearTrend[] {
     }));
 }
 
-export function ehfDistribution(patients: Patient[]): CountRow[] {
-  if (!patients.length) return [];
+export function deformityDistribution(patients: Patient[]): CountRow[] {
   const groups = [
-    { label: 'Grade 0 (EHF 0)', min: 0, max: 0 },
-    { label: 'Grade 1 (EHF 1–3)', min: 1, max: 3 },
-    { label: 'Grade 2 (EHF 4–6)', min: 4, max: 6 },
-    { label: 'Grade 2+ (EHF 7–12)', min: 7, max: 12 },
+    { label: 'Grade 2', value: '3'},
+    { label: 'Grade 1', value: '2'},
+    { label: 'Grade 0', value: '1'},
   ];
   const total = patients.length;
   return groups.map(g => {
-    const count = patients.filter(p => p.ehfScore >= g.min && p.ehfScore <= g.max).length;
+    const count = patients.filter(p => p.disabilityAtDiagnosis === g.value).length;
     return { label: g.label, count, pct: Math.round((count / total) * 100) };
   });
 }
@@ -153,7 +152,7 @@ export function programIndicators(patients: Patient[]): ProgramIndicators {
   const mb = patients.filter(isMb).length;
   const pb = patients.filter(isPb).length;
   const grade2 = patients.filter(hasGrade2Disability).length;
-  const contact = patients.filter(p => p.contactHistory).length;
+  const contactHistory = patients.filter(p => p.contactHistory).length;
   const completed = patients.filter(p => p.enrollmentStatus === 'COMPLETED').length;
   const children = patients.filter(isChildCase).length;
   const delayed = patients.filter(hasDelayedDiagnosis).length;
@@ -162,7 +161,7 @@ export function programIndicators(patients: Patient[]): ProgramIndicators {
   return {
     mbPbRatio: pb > 0 ? (mb / pb).toFixed(1) : mb > 0 ? `${mb}:0` : '—',
     grade2Rate: Math.round((grade2 / total) * 100),
-    contactScreeningRate: Math.round((contact / total) * 100),
+    contactHistoryRate: Math.round((contactHistory / total) * 100),
     completionRate: Math.round((completed / total) * 100),
     childCaseRate: Math.round((children / total) * 100),
     delayedDiagnosisRate: Math.round((delayed / total) * 100),
@@ -186,8 +185,8 @@ export function buildAlerts(patients: Patient[]): DashboardAlert[] {
       severity: 'high',
       icon: 'pi-search',
       title: 'Intensify contact tracing',
-      detail: `${top.label} has ${top.count} MB case(s) — prioritise household/contact screening.`,
-      count: mbHotspots.reduce((s, r) => s + r.count, 0),
+      detail: `${top.label} has ${top.pct}% MB case(s) — prioritise household/contact screening.`,
+      count: top.count,//mbHotspots.reduce((s, r) => s + r.count, 0),
       actionLabel: 'View MB cases',
       queryParams: { classification: 'MB (>5 lesions)', mohArea: top.label === '(not recorded)' ? '' : top.label },
     });
@@ -232,12 +231,12 @@ export function buildAlerts(patients: Patient[]): DashboardAlert[] {
     });
   }
 
-  const noContact = patients.filter(p => !p.contactHistory);
+  const noContact = patients.filter(isContactHistory);
   if (noContact.length) {
     alerts.push({
       severity: 'medium',
       icon: 'pi-users',
-      title: 'Incomplete contact screening',
+      title: 'Contact History not found',
       detail: `${noContact.length} case(s) without documented contact history — complete field investigation.`,
       count: noContact.length,
       actionLabel: 'View cases',

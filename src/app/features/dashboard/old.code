@@ -1,0 +1,822 @@
+<header class="dash-header">
+  <div class="dash-header__title">
+    <h1>
+      <p-select
+        [options]="districtOptions"
+        [(ngModel)]="selectedDistrict"
+        optionLabel="label"
+        optionValue="value"
+        styleClass="district-title-select"
+      ></p-select>
+      Leprosy Control Dashboard
+    </h1>
+    <p class="dash-header__subtitle">
+      Decision support for Active Case Finding.</p>
+  </div>
+
+  <div class="dash-header__filters">
+    <p-multiSelect
+      [options]="yearOptions"
+      [(ngModel)]="selectedYears"
+      display="chip"
+      placeholder="All years"
+      [showClear]="true"
+      styleClass="year-title-select"
+    ></p-multiSelect>
+    <p-select
+      [options]="facilityOptions()"
+      [(ngModel)]="selectedFacility"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="Facility"
+      styleClass="facility-select"
+    ></p-select>
+    <button type="button" class="link-btn" (click)="selectAllYears()">All years</button>
+    <button type="button" class="link-btn" (click)="clearYears()">Clear</button>
+  </div>
+</header>
+
+@if (filteredPatients().length === 0) {
+  <div class="card empty-state">
+    <i class="pi pi-chart-bar"></i>
+    <p>No patient data for the selected filters.</p>
+    <a routerLink="/patients">Open patient registry</a> or sync from DHIS2 using the sidebar.
+  </div>
+} @else {
+
+<!-- Program indicators strip -->
+<section class="indicator-strip">
+  <div class="indicator" pTooltip="Multibacillary to paucibacillary ratio — target monitoring for transmission">
+    <span class="indicator__value">{{ indicators().mbPbRatio }}</span>
+    <span class="indicator__label">MB:PB ratio</span>
+  </div>
+  <div class="indicator" pTooltip="Grade 2+ disability at diagnosis (EHF ≥ 4)">
+    <span class="indicator__value">{{ indicators().grade2Rate }}%</span>
+    <span class="indicator__label">Grade 2+ rate</span>
+  </div>
+  <div class="indicator" pTooltip="Cases with documented contact history">
+    <span class="indicator__value">{{ indicators().contactScreeningRate }}%</span>
+    <span class="indicator__label">Index case Traced</span>
+  </div>
+  <div class="indicator" pTooltip="Completed treatment enrollments">
+    <span class="indicator__value">{{ indicators().completionRate }}%</span>
+    <span class="indicator__label">Treatment completed</span>
+  </div>
+  <div class="indicator" pTooltip="Cases under 15 years — family contact exam priority">
+    <span class="indicator__value">{{ indicators().childCaseRate }}%</span>
+    <span class="indicator__label">Child cases</span>
+  </div>
+  <div class="indicator" pTooltip="Symptom onset &gt; 12 months before diagnosis">
+    <span class="indicator__value">{{ indicators().delayedDiagnosisRate }}%</span>
+    <span class="indicator__label">Delayed diagnosis</span>
+  </div>
+</section>
+
+<!-- KPI cards -->
+<section class="stats">
+  <button type="button" class="card stat stat--clickable" (click)="navigateWithFilter({})">
+    <div class="stat__value">{{ total() }}</div>
+    <div class="stat__label">Registered cases</div>
+    @if (yearOverYearChange() !== null) {
+      <div class="stat__delta" [class.stat__delta--up]="yearOverYearChange()! > 0" [class.stat__delta--down]="yearOverYearChange()! < 0">
+        {{ yearOverYearChange()! > 0 ? '+' : '' }}{{ yearOverYearChange() }}% vs prior year
+      </div>
+    }
+  </button>
+  <button type="button" class="card stat stat--clickable" (click)="drillDownClassification('MB')">
+    <div class="stat__value stat__value--mb">{{ mbCount() }}</div>
+    <div class="stat__label">MB — multibacillary</div>
+  </button>
+  <button type="button" class="card stat stat--clickable" (click)="drillDownClassification('PB')">
+    <div class="stat__value stat__value--pb">{{ pbCount() }}</div>
+    <div class="stat__label">PB — paucibacillary</div>
+  </button>
+  <div class="card stat">
+    <div class="stat__value">{{ activeCount() }}</div>
+    <div class="stat__label">Active on treatment</div>
+  </div>
+  <div class="card stat">
+    <div class="stat__value">{{ completedCount() }}</div>
+    <div class="stat__label">Completed</div>
+  </div>
+  <div class="card stat">
+    <div class="stat__value">{{ grade2Count() }}</div>
+    <div class="stat__label">Grade 2+ (EHF ≥ 4)</div>
+  </div>
+  <div class="card stat">
+    <div class="stat__value">{{ recentCount() }}</div>
+    <div class="stat__label">New (30 days)</div>
+  </div>
+  <div class="card stat">
+    <div class="stat__value">{{ childCount() }}</div>
+    <div class="stat__label">Child cases (&lt;15)</div>
+  </div>
+</section>
+
+<!-- Action alerts -->
+@if (alerts().length) {
+  <section class="card alerts">
+    <div class="section-head">
+      <h2><i class="pi pi-flag"></i> Priority actions</h2>
+      <span class="muted">Click an alert to drill into the patient list</span>
+    </div>
+    <div class="alerts__list">
+      @for (alert of alerts(); track alert.title) {
+        <button
+          type="button"
+          class="alert alert--{{ alert.severity }}"
+          (click)="openAlert(alert)"
+        >
+          <span class="alert__icon"><i class="pi" [ngClass]="alert.icon"></i></span>
+          <span class="alert__body">
+            <strong>{{ alert.title }}</strong>
+            <span>{{ alert.detail }}</span>
+          </span>
+          <span class="alert__count">{{ alert.count }}</span>
+          <span class="alert__action">{{ alert.actionLabel }} <i class="pi pi-arrow-right"></i></span>
+        </button>
+      }
+    </div>
+  </section>
+}
+
+<div class="dash-grid">
+  <!-- Enrollment trend -->
+  <section class="card chart chart--wide">
+    <div class="section-head">
+      <h2>Case detection trend</h2>
+      <span class="muted">Enrollments by year — hover for MB/PB split</span>
+    </div>
+    <div class="bars bars--trend">
+      @for (entry of byYear(); track entry.year) {
+        <button
+          type="button"
+          class="bar-col bar-col--interactive"
+          (mouseenter)="hoveredYear.set(entry.year)"
+          (mouseleave)="hoveredYear.set(null)"
+          (click)="navigateWithFilter({ year: '' + entry.year })"
+          [class.bar-col--active]="hoveredYear() === entry.year"
+        >
+          <div class="bar-stack" [style.height.%]="entry.pct">
+            <div class="bar bar--mb" [style.flex]="entry.mb || 0.01"></div>
+            <div class="bar bar--pb" [style.flex]="entry.pb || 0.01"></div>
+          </div>
+          <div class="bar-label">{{ entry.year }}</div>
+          <div class="bar-count">{{ entry.count }}</div>
+          @if (hoveredYear() === entry.year) {
+            <div class="bar-tooltip">MB {{ entry.mb }} · PB {{ entry.pb }}</div>
+          }
+        </button>
+      }
+    </div>
+    <div class="legend">
+      <span><i class="dot dot--mb"></i> MB</span>
+      <span><i class="dot dot--pb"></i> PB</span>
+    </div>
+  </section>
+
+  <!-- MB/PB donut + sex -->
+  <section class="card chart">
+    <div class="section-head"><h2>Classification &amp; sex</h2></div>
+    <div class="split-panel">
+      <div
+        class="donut"
+        [style.background]="'conic-gradient(var(--color-mb) 0 ' + mbPbDonut().mbPct + '%, var(--color-pb) ' + mbPbDonut().mbPct + '% 100%)'"
+      >
+        <div class="donut__hole">
+          <strong>{{ mbPbDonut().mbPct }}%</strong>
+          <span>MB</span>
+        </div>
+      </div>
+      <div class="split-panel__details">
+        <button type="button" class="split-row split-row--clickable" (click)="drillDownClassification('MB')">
+          <span class="dot dot--mb"></span> MB <strong>{{ mbCount() }}</strong>
+        </button>
+        <button type="button" class="split-row split-row--clickable" (click)="drillDownClassification('PB')">
+          <span class="dot dot--pb"></span> PB <strong>{{ pbCount() }}</strong>
+        </button>
+        <hr />
+        @for (s of sexSplit(); track s.label) {
+          <div class="split-row">
+            <span>{{ s.label }}</span>
+            <strong>{{ s.count }} ({{ s.pct }}%)</strong>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- EHF distribution -->
+  <section class="card chart">
+    <div class="section-head">
+      <h2>Disability grade (EHF)</h2>
+      <span class="muted">Prevention of disability monitoring</span>
+    </div>
+    <div class="h-bars">
+      @for (row of ehfDistribution(); track row.label) {
+        <div class="h-bar-row">
+          <span class="h-bar-label">{{ row.label }}</span>
+          <div class="h-bar-track">
+            <div class="h-bar-fill" [style.width.%]="row.pct"></div>
+          </div>
+          <span class="h-bar-count">{{ row.count }} ({{ row.pct }}%)</span>
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- Deformities -->
+  <section class="card chart">
+    <div class="section-head">
+      <h2>Visible deformities</h2>
+      <span class="muted">{{ indicators().deformityRate }}% with any deformity flag</span>
+    </div>
+    @if (deformityBreakdown().length === 0) {
+      <p class="muted">No deformity flags recorded in this selection.</p>
+    } @else {
+      <div class="h-bars">
+        @for (row of deformityBreakdown(); track row.label) {
+          <div class="h-bar-row">
+            <span class="h-bar-label">{{ row.label }}</span>
+            <div class="h-bar-track">
+              <div class="h-bar-fill h-bar-fill--warn" [style.width.%]="row.pct"></div>
+            </div>
+            <span class="h-bar-count">{{ row.count }}</span>
+          </div>
+        }
+      </div>
+    }
+  </section>
+
+  <!-- By facility -->
+  <section class="card chart">
+    <div class="section-head">
+      <h2>By treatment facility</h2>
+      <span class="muted">Click a bar to filter patients</span>
+    </div>
+    <div class="h-bars">
+      @for (row of byHospital(); track row.label) {
+        <button type="button" class="h-bar-row h-bar-row--clickable" (click)="drillDownHospital(row)">
+          <span class="h-bar-label" [title]="row.label">{{ row.label }}</span>
+          <div class="h-bar-track">
+            <div class="h-bar-fill" [style.width.%]="(row.count / maxHospitalCount()) * 100"></div>
+          </div>
+          <span class="h-bar-count">{{ row.count }}</span>
+        </button>
+      }
+    </div>
+  </section>
+
+  <!-- MOH hotspots -->
+  <section class="card chart chart--wide">
+    <div class="section-head">
+      <h2>MOH area hotspots</h2>
+      <span class="muted">Geographic priority for field supervision &amp; contact tracing</span>
+    </div>
+    <div class="h-bars">
+      @for (row of byMoh(); track row.label) {
+        <button
+          type="button"
+          class="h-bar-row h-bar-row--clickable"
+          (mouseenter)="hoveredMoh.set(row.label)"
+          (mouseleave)="hoveredMoh.set(null)"
+          (click)="drillDownMoh(row)"
+          [class.h-bar-row--active]="hoveredMoh() === row.label"
+        >
+          <span class="h-bar-label" [title]="row.label">{{ row.label }}</span>
+          <div class="h-bar-track">
+            <div class="h-bar-fill h-bar-fill--moh" [style.width.%]="(row.count / maxMohCount()) * 100"></div>
+          </div>
+          <span class="h-bar-count">{{ row.count }} ({{ row.pct }}%)</span>
+        </button>
+      }
+    </div>
+  </section>
+
+  <!-- PHI areas -->
+  @if (byPhi().length) {
+    <section class="card chart">
+      <div class="section-head"><h2>PHI area distribution</h2></div>
+      <div class="h-bars">
+        @for (row of byPhi(); track row.label) {
+          <div class="h-bar-row">
+            <span class="h-bar-label" [title]="row.label">{{ row.label }}</span>
+            <div class="h-bar-track">
+              <div class="h-bar-fill h-bar-fill--phi" [style.width.%]="row.pct"></div>
+            </div>
+            <span class="h-bar-count">{{ row.count }}</span>
+          </div>
+        }
+      </div>
+    </section>
+  }
+</div>
+
+}
+
+
+
+
+
+
+
+
+
+
+.dash-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+
+  h1 {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 1.35rem;
+    margin: 0;
+  }
+
+  &__subtitle {
+    margin: 6px 0 0;
+    font-size: 0.85rem;
+    color: var(--color-muted);
+    max-width: 520px;
+  }
+
+  &__filters {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--color-teal-700);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 6px;
+  &:hover { text-decoration: underline; }
+}
+
+.indicator-strip {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+
+  @media (max-width: 1100px) { grid-template-columns: repeat(3, 1fr); }
+  @media (max-width: 560px) { grid-template-columns: repeat(2, 1fr); }
+}
+
+.indicator {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  text-align: center;
+  cursor: help;
+
+  &__value {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--color-teal-900);
+  }
+
+  &__label {
+    display: block;
+    font-size: 0.68rem;
+    color: var(--color-muted);
+    font-weight: 600;
+    margin-top: 2px;
+    line-height: 1.2;
+  }
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 18px;
+
+  @media (max-width: 900px) { grid-template-columns: repeat(2, 1fr); }
+}
+
+.stat {
+  padding: 16px;
+  text-align: center;
+  border: none;
+  font: inherit;
+  width: 100%;
+
+  &--clickable {
+    cursor: pointer;
+    transition: transform 0.12s, box-shadow 0.12s;
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(11, 79, 74, 0.12);
+    }
+  }
+
+  &__value {
+    font-family: var(--font-display);
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--color-teal-900);
+
+    &--mb { color: var(--color-mb); }
+    &--pb { color: var(--color-pb); }
+  }
+
+  &__label {
+    font-size: 0.72rem;
+    color: var(--color-muted);
+    margin-top: 4px;
+    font-weight: 600;
+  }
+
+  &__delta {
+    font-size: 0.68rem;
+    margin-top: 6px;
+    font-weight: 600;
+    color: var(--color-muted);
+
+    &--up { color: var(--color-mb); }
+    &--down { color: var(--color-teal-700); }
+  }
+}
+
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+
+  h2 {
+    font-size: 0.95rem;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+}
+
+.muted { color: var(--color-muted); font-size: 0.78rem; }
+
+.alerts {
+  padding: 18px 20px;
+  margin-bottom: 18px;
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+.alert {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-line);
+  background: var(--color-paper);
+  cursor: pointer;
+  font: inherit;
+  transition: background 0.12s;
+
+  &:hover { background: var(--color-teal-100); }
+
+  &--high {
+    border-left: 4px solid var(--color-mb);
+    .alert__icon { color: var(--color-mb); }
+  }
+  &--medium {
+    border-left: 4px solid var(--color-pb);
+    .alert__icon { color: var(--color-pb); }
+  }
+  &--info {
+    border-left: 4px solid var(--color-teal-700);
+    .alert__icon { color: var(--color-teal-700); }
+  }
+
+  &__icon { font-size: 1.1rem; }
+  &__body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    strong { font-size: 0.85rem; color: var(--color-teal-900); }
+    span { font-size: 0.78rem; color: var(--color-muted); }
+  }
+  &__count {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.1rem;
+    color: var(--color-teal-900);
+  }
+  &__action {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--color-teal-700);
+    white-space: nowrap;
+  }
+
+  @media (max-width: 640px) {
+    grid-template-columns: auto 1fr;
+    .alert__count, .alert__action { grid-column: 2; }
+  }
+}
+
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+
+  @media (max-width: 860px) { grid-template-columns: 1fr; }
+}
+
+.chart {
+  padding: 18px 20px;
+
+  &--wide { grid-column: 1 / -1; }
+}
+
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  height: 200px;
+  margin-top: 8px;
+  border-bottom: 1px solid var(--color-line);
+  padding-bottom: 4px;
+}
+
+.bar-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  flex: 1;
+  min-width: 28px;
+  position: relative;
+  background: none;
+  border: none;
+  font: inherit;
+  padding: 0;
+
+  &--interactive {
+    cursor: pointer;
+    border-radius: 6px 6px 0 0;
+    &:hover, &--active { background: rgba(16, 107, 99, 0.06); }
+  }
+}
+
+.bar-stack {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 36px;
+  min-height: 4px;
+  border-radius: 4px 4px 0 0;
+  overflow: hidden;
+}
+
+.bar {
+  width: 100%;
+  min-height: 2px;
+
+  &--mb { background: var(--color-mb); }
+  &--pb { background: var(--color-pb); }
+}
+
+.bar-label { font-size: 0.68rem; color: var(--color-muted); margin-top: 6px; }
+.bar-count { font-size: 0.68rem; font-weight: 700; color: var(--color-teal-900); }
+
+.bar-tooltip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-teal-900);
+  color: #fff;
+  font-size: 0.65rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.legend {
+  display: flex;
+  gap: 16px;
+  margin-top: 10px;
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  span { display: flex; align-items: center; gap: 6px; }
+}
+
+.dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  &--mb { background: var(--color-mb); }
+  &--pb { background: var(--color-pb); }
+}
+
+.split-panel {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.donut {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+
+  &__hole {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: var(--color-surface);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    strong { font-size: 1.1rem; color: var(--color-teal-900); }
+    span { font-size: 0.65rem; color: var(--color-muted); }
+  }
+}
+
+.split-panel__details {
+  flex: 1;
+  min-width: 140px;
+
+  hr {
+    border: none;
+    border-top: 1px solid var(--color-line);
+    margin: 8px 0;
+  }
+}
+
+.split-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.82rem;
+  padding: 4px 0;
+  width: 100%;
+  background: none;
+  border: none;
+  font: inherit;
+  color: inherit;
+
+  &--clickable {
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 4px 6px;
+    &:hover { background: var(--color-teal-100); }
+  }
+}
+
+.h-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.h-bar-row {
+  display: grid;
+  grid-template-columns: minmax(80px, 28%) 1fr auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: none;
+  border: none;
+  font: inherit;
+  text-align: left;
+  padding: 2px 0;
+  color: inherit;
+
+  &--clickable {
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 4px 6px;
+    &:hover, &--active { background: var(--color-teal-100); }
+  }
+}
+
+.h-bar-label {
+  font-size: 0.75rem;
+  color: var(--color-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.h-bar-track {
+  height: 10px;
+  background: var(--color-teal-100);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.h-bar-fill {
+  height: 100%;
+  background: var(--color-teal-700);
+  border-radius: 999px;
+  min-width: 2px;
+  transition: width 0.3s ease;
+
+  &--warn { background: var(--color-mb); }
+  &--moh { background: linear-gradient(90deg, var(--color-teal-700), #1a8a7f); }
+  &--phi { background: var(--color-pb); }
+}
+
+.h-bar-count {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-teal-900);
+  min-width: 48px;
+  text-align: right;
+}
+
+.empty-state {
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--color-muted);
+
+  i { font-size: 2rem; display: block; margin-bottom: 12px; color: var(--color-teal-700); }
+  p { margin: 0 0 12px; }
+}
+
+// Title bar selects (district + year)
+:host ::ng-deep .district-title-select,
+:host ::ng-deep .year-title-select,
+:host ::ng-deep .facility-select {
+  display: inline-flex;
+  align-items: baseline;
+
+  &,
+  * {
+    font-size: inherit !important;
+    font-family: inherit !important;
+    font-weight: inherit !important;
+    color: inherit !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+  }
+
+  [class*="chip"],
+  [class*="token"] {
+    font-size: 0.85rem !important;
+    font-weight: 700 !important;
+    color: var(--color-teal-900) !important;
+    background: var(--color-teal-100) !important;
+    border-radius: 6px !important;
+    padding: 2px 8px !important;
+  }
+}
+
+:host ::ng-deep .facility-select {
+  min-width: 160px;
+  border: 1px solid var(--color-line) !important;
+  border-radius: var(--radius-sm) !important;
+  padding: 4px 8px !important;
+  background: var(--color-surface) !important;
+}
+
+
+
+
+
+
+
+
+
+
+

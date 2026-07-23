@@ -484,3 +484,173 @@
   padding: 4px 8px !important;
   background: var(--color-surface) !important;
 }
+
+
+
+
+
+
+
+
+
+
+
+// Replace your existing ".dash-header" block AND the "Title bar selects"
+// ::ng-deep block at the bottom entirely with everything below.
+
+.dash-header {
+  margin-bottom: 20px;
+}
+
+.dash-header__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.dash-header__title {
+  h1 {
+    font-size: 1.35rem;
+    font-weight: 800;
+    margin: 0;
+    color: var(--color-teal-900);
+  }
+
+  &__subtitle,
+  .dash-header__subtitle {
+    margin: 6px 0 0;
+    font-size: 0.85rem;
+    color: var(--color-muted);
+    max-width: 520px;
+  }
+}
+
+.btn-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-teal-900);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover { background: var(--color-teal-100); }
+}
+
+.count-pill {
+  background: var(--color-teal-700);
+  color: #fff;
+  border-radius: 999px;
+  padding: 1px 7px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+// ── Filter panel - normal, clearly visible controls, no disguise ────────
+.dash-header__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 14px;
+  padding: 14px 16px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+}
+
+.filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-muted);
+  min-width: 160px;
+
+  &--actions {
+    justify-content: flex-end;
+  }
+}
+
+.filter-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  height: 100%;
+}
+
+// Every p-select / p-multiSelect in the filter panel gets NORMAL visible
+// styling - a real border, real background, real contrast on the
+// selected/placeholder text. This deliberately replaces the earlier
+// "disguised as title text" treatment, which made it hard to tell there
+// was a dropdown there at all, let alone read its contents clearly.
+:host ::ng-deep .dash-header__filters {
+  .p-select,
+  .p-multiselect {
+    width: 100%;
+    border: 1px solid var(--color-line) !important;
+    border-radius: var(--radius-sm) !important;
+    background: var(--color-paper) !important;
+    padding: 6px 10px !important;
+  }
+
+  .p-select-label,
+  .p-multiselect-label {
+    color: var(--color-ink) !important;
+    font-size: 0.88rem !important;
+    font-weight: 500 !important;
+  }
+
+  [class*="chip"],
+  [class*="token"] {
+    background: var(--color-teal-100) !important;
+    color: var(--color-teal-900) !important;
+    font-weight: 700 !important;
+    border-radius: 6px !important;
+    padding: 2px 8px !important;
+  }
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--color-teal-700);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 6px;
+  &:hover { text-decoration: underline; }
+}
+
+.population-note {
+  font-size: 0.7rem;
+  color: var(--color-muted);
+  margin: -10px 0 16px;
+}
+
+// ── Mobile: collapse into a compact top bar ──────────────────────────────
+@media (max-width: 640px) {
+  .dash-header__top {
+    align-items: center;
+  }
+  .dash-header__title h1 {
+    font-size: 1.1rem;
+  }
+  .dash-header__title__subtitle,
+  .dash-header__subtitle {
+    display: none; // drop the subtitle on mobile to keep the bar compact
+  }
+  .dash-header__filters {
+    flex-direction: column;
+  }
+  .filter-field {
+    min-width: 0;
+  }
+}

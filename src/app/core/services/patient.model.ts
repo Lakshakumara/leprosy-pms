@@ -68,7 +68,7 @@ export interface Patient {
   patientReferredBy: string;       // JGChabLUuiU
 
   // ── Deformity Details ──────────────────────────────────────────────────────
-  clawHand: boolean;       // CNme2qNFYpn
+  clawHand: string;       // CNme2qNFYpn
   footDrop: string;        // JCrTNTvDAWi
   footUlcer: string;       // hkCk03W7xWH
   eyeInvolvement: string;  // OUWZVXF3zty

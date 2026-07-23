@@ -113,7 +113,7 @@ export class PatientFormComponent implements OnInit {
     longitude: [null as number | null],
 
     // Deformity
-    clawHand: [false],
+    clawHand: [''],
     footDrop: [''],
     footUlcer: [''],
     eyeInvolvement: [''],
