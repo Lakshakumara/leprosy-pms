@@ -5,6 +5,7 @@ import { Observable, expand, reduce, EMPTY, map, tap, catchError, throwError, fo
 import { Patient } from './patient.model';
 import { environment } from '../../../environments/environment';
 import { OrgScopeService } from './org-scope.service';
+import { firstValueFrom } from 'rxjs';
 
 // ── DHIS2 Tracker API response shapes ─────────────────────────────────────────
 
@@ -334,7 +335,7 @@ export class Dhis2Service {
     return {
       id: tei.trackedEntity,
       teiId: tei.trackedEntity,
-
+      enrollmentId: enrollment.enrollment,
       alcNum: attrMap.get(A.ALC_NUM.uid) ?? '',
       clinicNum: attrMap.get(A.CLINIC_NUM.uid) ?? '',
       nicNum: attrMap.get(A.NIC_NUM.uid) ?? '',
@@ -418,4 +419,56 @@ export class Dhis2Service {
       .pipe(map((res) => res.organisationUnits ?? []));
   }
 
+
+
+
+
+
+
+
+  async changePatientOrgUnit(patient: Patient, newOrgUnitId: string, newOrgUnitName: string) {
+
+    // 1. Update TEI owner orgUnit
+    const teiPayload = {
+      trackedEntities: [{
+        trackedEntity: patient.teiId || patient.id,
+        orgUnit: newOrgUnitId
+      }]
+    };
+
+    await firstValueFrom(
+      this.http.post(`${this.base}/tracker?async=false&importStrategy=UPDATE`, teiPayload)
+    );
+
+    // 2. Update Enrollment orgUnit - you need enrollmentId
+    // If you don't have it, fetch it first:
+    // GET /api/tracker/enrollments?trackedEntity=TEI_ID&fields=enrollment,orgUnit
+    const enrollmentId = await this.getEnrollmentIdForTei(patient.teiId || patient.id);
+
+    const enrollmentPayload = {
+      enrollments: [{
+        enrollment: enrollmentId,
+        orgUnit: newOrgUnitId,
+        trackedEntity: patient.teiId || patient.id,
+        program: 'YOUR_PROGRAM_UID' // e.g. leprosy program UID
+      }]
+    };
+
+    await firstValueFrom(
+      this.http.post(`${this.base}/tracker?async=false&importStrategy=UPDATE`, enrollmentPayload)
+    );
+
+    // 3. Update local
+    patient.orgUnitId = newOrgUnitId;
+    patient.orgUnitName = newOrgUnitName;
+    patient.syncStatus = 'synced';
+  }
+
+  private async getEnrollmentIdForTei(teiId: string): Promise<string> {
+    const res: any = await firstValueFrom(
+      this.http.get(`${this.base}/tracker/enrollments?trackedEntity=${teiId}&fields=enrollment`)
+    );
+    return res.instances[0].enrollment; // v2.40+ returns instances
+    // for old api: res.enrollments[0].enrollment
+  }
 }

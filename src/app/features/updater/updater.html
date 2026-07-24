@@ -1,0 +1,23 @@
+<p>updater works!</p>
+<div *ngIf="patient">
+      <h3>{{patient.patientName}} - {{patient.alcNum}}</h3>
+
+      <label>EHF Score</label>
+      <input [(ngModel)]="editValues['ehfScore']" (blur)="updateField('ehfScore')" />
+
+      <label>Mobile</label>
+      <input [(ngModel)]="editValues['mobileNum']" (blur)="updateField('mobileNum')" />
+
+      <hr>
+
+      <label>Correct Facility (OrgUnit)</label>
+      <select [(ngModel)]="newOrgUnitId">
+        <option value="O6uvpzGd5pu">TH-Rathnapura</option>
+        <option value="YOUR_NEW_OU_UID">TH-Colombo</option>
+      </select>
+      <button (click)="changeOrgUnit()" [disabled]="saving">
+        {{ saving? 'Saving...' : 'Move Patient' }}
+      </button>
+
+      <p *ngIf="statusMsg">{{statusMsg}}</p>
+    </div>

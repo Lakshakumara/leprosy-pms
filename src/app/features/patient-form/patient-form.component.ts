@@ -160,7 +160,7 @@ export class PatientFormComponent implements OnInit {
     const patient: Patient = {
       id: this.existing?.id ?? crypto.randomUUID(),
       teiId: this.existing?.teiId,
-
+      enrollmentId: this.existing?.enrollmentId?? '',
       alcNum: v.alcNum,
       clinicNum: v.clinicNum,
       nicNum: v.nicNum,

@@ -23,7 +23,6 @@ throw new Error('Method not implemented.');
   /** Full in-memory cache of local records; source of truth for the UI. */
   private readonly _patients = signal<Patient[]>([]);
   readonly allPatients = this._patients.asReadonly();
-   //readonly patients = this._patients.asReadonly();
   readonly isOnline = signal<boolean>(navigator.onLine);
   readonly isSyncing = signal(false);
   readonly lastPullError = signal<string | null>(null);
@@ -198,4 +197,11 @@ throw new Error('Method not implemented.');
   getDistinctValues(field: keyof Patient): Promise<string[]> {
     return this.localStorage.getDistinctValues(field);
   }
+
+  // patient.service.ts - Add this method
+async updateLocalPatient(patient: Patient): Promise<void> {
+    await this.localStorage.savePatient(patient);
+    await this.loadFromLocal();
+}
+
 }

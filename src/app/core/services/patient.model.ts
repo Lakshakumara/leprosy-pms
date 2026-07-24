@@ -41,6 +41,7 @@ export interface Patient {
   // ── Enrollment ─────────────────────────────────────────────────────────────
   orgUnitId: string;         // facility UID (level 4)
   orgUnitName: string;       // e.g. "TH-Rathnapura"
+  enrollmentId: string;
   enrolledAt: string;        // ISO date string, e.g. "2023-06-15"
   enrollmentStatus: string;  // ACTIVE | COMPLETED | CANCELLED
 

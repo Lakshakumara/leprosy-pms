@@ -28,12 +28,17 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/patient-detail/patient-detail.component').then(m => m.PatientDetailComponent),
   },
-
   {
     path: 'new',
     canActivate: [authGuard],
     loadComponent: () =>
       import('./features/patient-form/patient-form.component').then(m => m.PatientFormComponent),
+  },
+  {
+    path: 'update/:id',
+    //canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/updater/updater').then(m => m.PatientUpdateComponent),
   },
   {
     path: 'map',
