@@ -139,10 +139,6 @@ export class DashboardComponent implements OnInit {
     return count;
   });
 
-
-
-
-
   protected readonly facilityOptions = computed<SelectOption[]>(() => {
     const user = this.storage.getJSON<any>(STORAGE_KEYS.USER_DATA);
     const facilities: SelectOption[] = [{ label: 'All facilities', value: 'ALL' }];
@@ -166,7 +162,19 @@ export class DashboardComponent implements OnInit {
     });
   });
 
+  protected readonly outerDistrictPatients = computed<Patient[]>(() => {
+    const all = this.patientService.outerDistrictPatients();
+    const years = this.selectedYears();
+    const facility = this.selectedFacility();
+    return all.filter(p => {
+      if (facility !== 'ALL' && p.orgUnitId !== facility) return false;
+      if (years === null || years.length === 0) return true;
+      const year = yearOf(p.enrolledAt);
+      return year != null && years.includes(year);
+    });
+  });
   protected readonly total = computed(() => this.filteredPatients().length);
+  protected readonly outerDistrict = computed(() => this.outerDistrictPatients().length);
   protected readonly mbCount = computed(() => this.filteredPatients().filter(isMb).length);
   protected readonly pbCount = computed(() => this.filteredPatients().filter(isPb).length);
   protected readonly activeCount = computed(

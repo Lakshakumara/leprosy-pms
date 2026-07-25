@@ -16,6 +16,17 @@
       "resources": {
         "files": ["/assets/**", "/*.(svg|cur|jpg|jpeg|png|apng|webp|avif|gif|otf|ttf|woff|woff2)"]
       }
+    },
+    {
+      "name": "geo-assets",
+      "installMode": "prefetch",
+      "updateMode": "prefetch",
+      "resources": {
+        "files": [
+          "/assets/geo/**/*.geojson",
+          "/assets/geo/**/*.json"
+        ]
+      }
     }
   ],
   "dataGroups": [
@@ -27,6 +38,18 @@
         "maxSize": 100,
         "maxAge": "1d",
         "timeout": "5s"
+      }
+    },
+    {
+      "name": "dhis2-geometry",
+      "urls": [
+        "**/api/organisationUnits/**/geometry.geojson"
+      ],
+      "cacheConfig": {
+        "maxSize": 50,
+        "maxAge": "30d",
+        "timeout": "5s",
+        "strategy": "performance"
       }
     }
   ]

@@ -108,6 +108,15 @@
       </div>
     }
   </button>
+  <button type="button" class="card stat stat--clickable" (click)="navigateWithFilter({})">
+    <div class="stat__value">{{ outerDistrict() }}</div>
+    <div class="stat__label">Outer district</div>
+    @if (yearOverYearChange() !== null) {
+      <div class="stat__delta" [class.stat__delta--up]="yearOverYearChange()! > 0" [class.stat__delta--down]="yearOverYearChange()! < 0">
+        {{ yearOverYearChange()! > 0 ? '+' : '' }}{{ yearOverYearChange() }}% vs prior year
+      </div>
+    }
+  </button>
   <button type="button" class="card stat stat--clickable" (click)="drillDownClassification('MB')">
     <div class="stat__value stat__value--mb">{{ mbCount() }}</div>
     <div class="stat__label">MB — multibacillary</div>
@@ -295,7 +304,7 @@
   <!-- MOH hotspots -->
   <section class="card chart chart--wide">
     <div class="section-head">
-      <h2>MOH area hotspots</h2>
+      <h2>MOH area distribution</h2>
       <span class="muted">Geographic priority for field supervision &amp; contact tracing</span>
     </div>
     <div class="h-bars">

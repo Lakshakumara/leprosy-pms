@@ -11,12 +11,13 @@ import {
   isMb,
   isRelapse,
 } from '../util/dashboard-analytics';
+import { DeviceStorageService } from './device-storage.service';
+import { STORAGE_KEYS } from '../util/util';
 
 @Injectable({ providedIn: 'root' })
 export class PatientService {
-clearError() {
-throw new Error('Method not implemented.');
-}
+
+  private readonly storage = inject(DeviceStorageService);
   private readonly localStorage = inject(LocalStorageService);
   private readonly dhis2 = inject(Dhis2Service);
 
@@ -32,7 +33,10 @@ throw new Error('Method not implemented.');
   readonly districtPatients = computed(() => {
     return this.allPatients().filter(p => p.patientDistrict === this.userDistricts());
   });
-  
+
+  readonly outerDistrictPatients = computed(() => {
+    return this.allPatients().filter(p => p.patientDistrict != this.userDistricts());
+  });
   userDistricts() {
     return this.dhis2.userDistricts();
   }
@@ -55,9 +59,14 @@ throw new Error('Method not implemented.');
   filtered(filter: PatientFilter): Patient[] {
     const ci = (s: string) => s.toLowerCase();
     return this._patients().filter(p => {
-      if (filter.district && filter.district !== 'ALL') {
-        if (p.patientDistrict !== filter.district) return false;
+      if (filter.outsideDistrict) {
+        if (p.patientDistrict === this.userDistricts()) return false;
+      } else {
+        if (filter.district && filter.district !== 'ALL') {
+          if (p.patientDistrict !== filter.district) return false;
+        }
       }
+
       // Free-text search: name, ALC#, NIC
       if (filter.search) {
         const q = ci(filter.search);
@@ -74,9 +83,18 @@ throw new Error('Method not implemented.');
         if (ci(p.treatmentClassification) !== ci(filter.classification)) return false;
       }
       // Hospital (org unit)
-      if (filter.orgUnitId && filter.orgUnitId !== 'ALL') {
+      if (filter.orgUnitId === 'OTHER') {
+        const userOrg = this.storage.getJSON<any>(STORAGE_KEYS.USER_DATA).organisationUnits ?? [];
+        const userOrgIds = userOrg.map((o: any) => o.id); // ['O6uvpzGd5pu', 'fO2k...']
+
+        // Keep only patients where p.orgUnitId is NOT in my orgUnits
+        if (userOrgIds.includes(p.orgUnitId)) {
+          return false;
+        }
+      } else if (filter.orgUnitId && filter.orgUnitId !== 'ALL') {
         if (p.orgUnitId !== filter.orgUnitId) return false;
       }
+
       // MOH area (contains)
       if (filter.mohArea && filter.mohArea !== 'ALL') {
         if (!ci(p.patientMohArea).includes(ci(filter.mohArea))) return false;
@@ -115,7 +133,6 @@ throw new Error('Method not implemented.');
    * with fresh DHIS2 data.
    */
   async pullFromServer(year?: number): Promise<void> {
-    console.log('year', year)
     if (!this.isOnline()) {
       this.lastPullError.set('Device is offline — showing local data only.');
       return;
@@ -199,9 +216,9 @@ throw new Error('Method not implemented.');
   }
 
   // patient.service.ts - Add this method
-async updateLocalPatient(patient: Patient): Promise<void> {
+  async updateLocalPatient(patient: Patient): Promise<void> {
     await this.localStorage.savePatient(patient);
     await this.loadFromLocal();
-}
+  }
 
 }

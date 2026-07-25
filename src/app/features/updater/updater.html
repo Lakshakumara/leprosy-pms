@@ -1,23 +1,201 @@
-<p>updater works!</p>
-<div *ngIf="patient">
-      <h3>{{patient.patientName}} - {{patient.alcNum}}</h3>
+<div class="patient-update-container">
+  <!-- Loading State -->
+  @if (loading()) {
+  <div class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading patient data...</p>
+  </div>
+  }
 
-      <label>EHF Score</label>
-      <input [(ngModel)]="editValues['ehfScore']" (blur)="updateField('ehfScore')" />
+  <!-- Not Found -->
+  @if (notFound()) {
+  <div class="not-found">
+    <i class="pi pi-user-minus"></i>
+    <h3>Patient Not Found</h3>
+    <p>The patient you're looking for doesn't exist or has been removed.</p>
+    <button class="btn-primary" (click)="goBack()">Back to Registry</button>
+  </div>
+  }
 
-      <label>Mobile</label>
-      <input [(ngModel)]="editValues['mobileNum']" (blur)="updateField('mobileNum')" />
-
-      <hr>
-
-      <label>Correct Facility (OrgUnit)</label>
-      <select [(ngModel)]="newOrgUnitId">
-        <option value="O6uvpzGd5pu">TH-Rathnapura</option>
-        <option value="YOUR_NEW_OU_UID">TH-Colombo</option>
-      </select>
-      <button (click)="changeOrgUnit()" [disabled]="saving">
-        {{ saving? 'Saving...' : 'Move Patient' }}
-      </button>
-
-      <p *ngIf="statusMsg">{{statusMsg}}</p>
+  <!-- Patient Detail -->
+  @if (patient(); as p) {
+  <div class="patient-card">
+    <!-- Header -->
+    <div class="patient-header">
+      <div class="header-left">
+        <button class="back-btn" (click)="goBack()">
+          <i class="pi pi-arrow-left"></i>
+        </button>
+        <div>
+          <h2>{{ p.patientName }}</h2>
+          <div class="patient-meta">
+            <span class="alc-badge">#{{ p.alcNum }}</span>
+            <span class="status-badge" [class.status-active]="p.enrollmentStatus === 'ACTIVE'">
+              {{ p.enrollmentStatus || 'Active' }}
+            </span>
+            <span class="facility-badge">
+              <i class="pi pi-building"></i> {{ p.orgUnitName }}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="header-right">
+        <span class="sync-status" [class.synced]="p.syncStatus === 'synced'">
+          <i class="pi" [class.pi-check-circle]="p.syncStatus === 'synced'"
+            [class.pi-clock]="p.syncStatus === 'pending'" [class.pi-times-circle]="p.syncStatus === 'error'"></i>
+          {{ p.syncStatus || 'Synced' }}
+        </span>
+      </div>
     </div>
+
+    <!-- EHF Score -->
+    <div class="field-group">
+      <div class="field-label">
+        <label>EHF Score</label>
+        <span class="field-hint">(0-12)</span>
+      </div>
+      <div class="field-input">
+        <input type="number" [(ngModel)]="form.ehfScore" min="0" max="12" class="field-control" />
+        <button class="btn-save" (click)="save('ehfScore')" [disabled]="loadingField() === 'ehfScore'">
+          @if (loadingField() === 'ehfScore') {
+          <i class="pi pi-spin pi-spinner"></i> Saving...
+          } @else {
+          <i class="pi pi-save"></i> Save
+          }
+        </button>
+        @if (getFieldStatus('ehfScore')) {
+        <span class="field-status" [class.status-success]="getFieldStatus('ehfScore') === 'success'"
+          [class.status-error]="getFieldStatus('ehfScore') === 'error'">
+          {{ getFieldStatus('ehfScore') }}
+        </span>
+        }
+      </div>
+    </div>
+
+    <!-- Mobile Number -->
+    <div class="field-group">
+      <div class="field-label">
+        <label>Mobile Number</label>
+      </div>
+      <div class="field-input">
+        <input type="tel" [(ngModel)]="form.mobileNum" class="field-control" placeholder="Enter mobile number" />
+        <button class="btn-save" (click)="save('mobileNum')" [disabled]="loadingField() === 'mobileNum'">
+          @if (loadingField() === 'mobileNum') {
+          <i class="pi pi-spin pi-spinner"></i> Saving...
+          } @else {
+          <i class="pi pi-save"></i> Save
+          }
+        </button>
+        @if (getFieldStatus('mobileNum')) {
+        <span class="field-status" [class.status-success]="getFieldStatus('mobileNum') === 'success'"
+          [class.status-error]="getFieldStatus('mobileNum') === 'error'">
+          {{ getFieldStatus('mobileNum') }}
+        </span>
+        }
+      </div>
+    </div>
+
+    <!-- Treatment Classification -->
+    <div class="field-group">
+      <div class="field-label">
+        <label>Treatment Classification</label>
+      </div>
+      <div class="field-input">
+        <select [(ngModel)]="form.treatmentClassification" class="field-control">
+          <option value="MB">MB - Multibacillary</option>
+          <option value="PB">PB - Paucibacillary</option>
+        </select>
+        <button class="btn-save" (click)="save('treatmentClassification')"
+          [disabled]="loadingField() === 'treatmentClassification'">
+          @if (loadingField() === 'treatmentClassification') {
+          <i class="pi pi-spin pi-spinner"></i> Saving...
+          } @else {
+          <i class="pi pi-save"></i> Save
+          }
+        </button>
+        @if (getFieldStatus('treatmentClassification')) {
+        <span class="field-status" [class.status-success]="getFieldStatus('treatmentClassification') === 'success'"
+          [class.status-error]="getFieldStatus('treatmentClassification') === 'error'">
+          {{ getFieldStatus('treatmentClassification') }}
+        </span>
+        }
+      </div>
+    </div>
+
+    <hr class="divider" />
+
+    <!-- Facility Update (Org Unit) -->
+    <div class="field-group field-group-highlight">
+      <div class="field-label">
+        <label>Correct Facility</label>
+        <span class="field-hint">Move patient to the correct facility</span>
+      </div>
+      <div class="field-input facility-field">
+        <div class="facility-select-wrapper">
+          <i class="pi pi-building facility-icon"></i>
+          <select [(ngModel)]="selectedOrgUnitId" class="field-control facility-select">
+            <option value="">Select a facility</option>
+            @for (facility of facilityOptions(); track facility.value) {
+            <option [value]="facility.value" [class.current-option]="facility.isCurrent">
+              {{ facility.label }} @if (facility.isCurrent) { (Current) }
+            </option>
+            }
+          </select>
+        </div>
+        <button class="btn-move" (click)="fixOrgUnit()"
+          [disabled]="loadingField() === 'orgUnit' || !selectedOrgUnitId || selectedOrgUnitId === patient()?.orgUnitId">
+          @if (loadingField() === 'orgUnit') {
+          <i class="pi pi-spin pi-spinner"></i> Moving...
+          } @else {
+          <i class="pi pi-arrow-right"></i> Move Patient
+          }
+        </button>
+        @if (getFieldStatus('orgUnit')) {
+        <span class="field-status" [class.status-success]="getFieldStatus('orgUnit') === 'success'"
+          [class.status-error]="getFieldStatus('orgUnit') === 'error'">
+          {{ getFieldStatus('orgUnit') }}
+        </span>
+        }
+      </div>
+    </div>
+
+    <!-- Current Facility Info -->
+    <div class="current-facility-info">
+      <div class="info-item">
+        <span class="info-label">Current Facility:</span>
+        <span class="info-value">{{ p.orgUnitName }} ({{ p.orgUnitId }})</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">District:</span>
+        <span class="info-value">{{ p.patientDistrict || 'N/A' }}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">MOH Area:</span>
+        <span class="info-value">{{ p.patientMohArea || 'N/A' }}</span>
+      </div>
+    </div>
+
+    <!-- Error Messages -->
+    @if (errorMessage()) {
+    <div class="error-banner">
+      <i class="pi pi-exclamation-circle"></i>
+      {{ errorMessage() }}
+      <button class="error-dismiss" (click)="errorMessage.set(null)">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+    }
+
+    <!-- Success Messages -->
+    @if (successMessage()) {
+    <div class="success-banner">
+      <i class="pi pi-check-circle"></i>
+      {{ successMessage() }}
+      <button class="success-dismiss" (click)="successMessage.set(null)">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+    }
+  </div>
+  }
+</div>

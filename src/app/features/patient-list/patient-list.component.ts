@@ -21,6 +21,7 @@ import {
   isDefaulter,
   hasDelayedDiagnosis,
 } from '../../core/util/dashboard-analytics';
+import { CheckboxModule } from 'primeng/checkbox';
 
 interface SelectOption { label: string; value: string; }
 
@@ -29,16 +30,14 @@ interface SelectOption { label: string; value: string; }
   standalone: true,
   imports: [
     CommonModule, FormsModule, RouterLink,
-    TableModule, ButtonModule, InputTextModule,
+    TableModule, ButtonModule, InputTextModule, CheckboxModule,
     SelectModule, TagModule, SkeletonModule, TooltipModule, BadgeModule
   ],
   templateUrl: './patient-list.component.html',
   styleUrl: './patient-list.component.scss',
 })
 export class PatientListComponent implements OnInit {
-exportData() {
-throw new Error('Method not implemented.');
-}
+
   private readonly storage = inject(DeviceStorageService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
@@ -69,12 +68,14 @@ throw new Error('Method not implemented.');
   ];
   
   protected readonly user = this.storage.getJSON<any>(STORAGE_KEYS.USER_DATA);
+
   protected readonly hospitalOptions: SelectOption[] = [
     { label: 'All Facilities', value: 'ALL' },
     ...(this.user?.organisationUnits || []).map((f: any) => ({ 
       label: f.name, 
       value: f.id 
     })),
+    { label: 'Other Institute', value: 'OTHER' },
   ];
   
   // Dynamic filter options
@@ -99,6 +100,7 @@ throw new Error('Method not implemented.');
     if (f.gnDivision && f.gnDivision !== 'ALL') count++;
     if (f.enrolledFrom) count++;
     if (f.enrolledTo) count++;
+    if (f.outsideDistrict) count++;
     return count;
   });
   
@@ -200,7 +202,8 @@ throw new Error('Method not implemented.');
   }
 
   protected async syncNow(): Promise<void> {
-    await this.patientService.pullFromServer();
+    const year= this.filter().enrolledFrom?.slice(0,4);
+    await this.patientService.pullFromServer(Number(year))
     await this.loadDistinctValues();
   }
 

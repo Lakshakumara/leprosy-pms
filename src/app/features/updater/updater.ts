@@ -178,8 +178,7 @@ interface FacilityOption {
                   }
                 </select>
               </div>
-              <button class="btn-move" (click)="fixOrgUnit()"
-                      [disabled]="loadingField() === 'orgUnit' || !selectedOrgUnitId || selectedOrgUnitId === patient()?.orgUnitId">
+              <button class="btn-move" (click)="fixOrgUnit()">
                 @if (loadingField() === 'orgUnit') {
                   <i class="pi pi-spin pi-spinner"></i> Moving...
                 } @else {
@@ -684,7 +683,7 @@ export class PatientUpdateComponent implements OnInit {
   protected readonly loadingField = signal<string | null>(null);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly successMessage = signal<string | null>(null);
-  
+
   // Field status tracking - use a signal with Record type
   private readonly fieldStatusMap = signal<Record<string, 'success' | 'error' | 'idle'>>({});
 
@@ -740,7 +739,7 @@ export class PatientUpdateComponent implements OnInit {
       // Get facilities from OrgScopeService
       const facilities = this.orgScopeService.assignedFacilities();
       const currentPatient = this.patient();
-      
+
       if (!currentPatient) return;
 
       const options: FacilityOption[] = facilities.map(f => ({
@@ -809,14 +808,14 @@ export class PatientUpdateComponent implements OnInit {
 
     try {
       await this.updater.updateSingleField(currentPatient, field, newValue);
-      
+
       // Update local patient
       (currentPatient as any)[field] = newValue;
       this.patient.set({ ...currentPatient });
-      
+
       // Update field status - FIXED: using proper update
       this.fieldStatusMap.update(map => ({ ...map, [field]: 'success' }));
-      
+
       this.successMessage.set(`${this.getFieldLabel(field)} updated successfully ✓`);
       setTimeout(() => this.successMessage.set(null), 3000);
     } catch (error: any) {
@@ -852,34 +851,65 @@ export class PatientUpdateComponent implements OnInit {
     await this.performOrgUnitMove(currentPatient, selectedFacility);
   }
 
+
   private async performOrgUnitMove(patient: Patient, facility: FacilityOption): Promise<void> {
     this.loadingField.set('orgUnit');
     this.errorMessage.set(null);
     this.successMessage.set(null);
 
     try {
-      await this.updater.changeOrgUnit(patient, facility.value, facility.label);
-      
-      // Update local patient
-      patient.orgUnitId = facility.value;
-      patient.orgUnitName = facility.label;
-      this.patient.set({ ...patient });
-      
-      this.fieldStatusMap.update(map => ({ ...map, orgUnit: 'success' }));
-      
-      // Update facility options
-      await this.loadFacilityOptions();
-      
-      this.successMessage.set(`Patient moved to ${facility.label} successfully ✓`);
-      setTimeout(() => this.successMessage.set(null), 3000);
+        // Use the COMPLETE method - updates EVERYTHING including Program Owner
+        await this.updater.changeOrgUnitComplete(patient, facility.value, facility.label);
+        
+        // Update local patient
+        patient.orgUnitId = facility.value;
+        patient.orgUnitName = facility.label;
+        this.patient.set({ ...patient });
+        
+        this.fieldStatusMap.update(map => ({ ...map, orgUnit: 'success' }));
+        await this.loadFacilityOptions();
+        
+        this.successMessage.set(`✅ Patient moved to ${facility.label} successfully!`);
+        setTimeout(() => this.successMessage.set(null), 3000);
+        
     } catch (error: any) {
-      this.fieldStatusMap.update(map => ({ ...map, orgUnit: 'error' }));
-      this.errorMessage.set(`Move failed: ${error.message}`);
-      console.error('Org unit move error:', error);
+        this.fieldStatusMap.update(map => ({ ...map, orgUnit: 'error' }));
+        this.errorMessage.set(`Move failed: ${error.message}`);
+        console.error('Org unit move error:', error);
     } finally {
-      this.loadingField.set(null);
+        this.loadingField.set(null);
     }
-  }
+}
+
+
+private async performOrgUnitMovefromVisits(patient: Patient, facility: FacilityOption): Promise<void> {
+    this.loadingField.set('orgUnit');
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+
+    try {
+        // Use the main changeOrgUnit method (updates ENROLLMENT)
+        await this.updater.changeOrgUnit(patient, facility.value, facility.label);
+        
+        // Update local patient
+        patient.orgUnitId = facility.value;
+        patient.orgUnitName = facility.label;
+        this.patient.set({ ...patient });
+        
+        this.fieldStatusMap.update(map => ({ ...map, orgUnit: 'success' }));
+        await this.loadFacilityOptions();
+        
+        this.successMessage.set(`✅ Patient moved to ${facility.label} successfully!`);
+        setTimeout(() => this.successMessage.set(null), 3000);
+        
+    } catch (error: any) {
+        this.fieldStatusMap.update(map => ({ ...map, orgUnit: 'error' }));
+        this.errorMessage.set(`Move failed: ${error.message}`);
+        console.error('Org unit move error:', error);
+    } finally {
+        this.loadingField.set(null);
+    }
+}
 
   private getFieldLabel(field: string): string {
     const labels: Record<string, string> = {
@@ -894,4 +924,5 @@ export class PatientUpdateComponent implements OnInit {
   protected goBack(): void {
     this.router.navigate(['/patients']);
   }
+
 }

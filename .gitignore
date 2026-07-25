@@ -11,7 +11,9 @@ yarn-error.log
 package-lock.json
 yarn.lock
 pnpm-lock.yaml
-element.json
+element1.json
+element2.json
+pt.json
 
 # IDEs and editors
 /.idea

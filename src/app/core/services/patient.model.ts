@@ -101,6 +101,7 @@ export interface PatientFilter {
   gnDivision?: string;
   enrolledFrom?: string;
   enrolledTo?: string;
+  outsideDistrict?: boolean;
   /** Dashboard drill-down: grade2 | relapse | defaulter | noContact | delayed | child | mb */
   alert?: string;
 }

@@ -65,17 +65,6 @@ export class Dhis2OrgUnitService {
     return data.organisationUnits;
   }
 
-  /**
-   * Convenience wrapper: facilities (level 4) under the configured district
-   * (defaults to environment.dhis2.district.id — e.g. "Ratnapura RDHS").
-   * This is the direct source for your GUI's org unit filter options.
-   */
-  async getFacilitiesForDistrict(
-    districtId: string = environment.dhis2.district.id,
-  ): Promise<OrgUnitDto[]> {
-    return this.getChildOrgUnits(districtId);
-  }
-
   /** Fetch org units at a specific hierarchy level (e.g. 4 = facility level). */
   async getOrgUnitsByLevel(level: number): Promise<OrgUnitDto[]> {
     const url =

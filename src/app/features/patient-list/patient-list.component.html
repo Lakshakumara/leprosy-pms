@@ -17,7 +17,7 @@
             <span class="count-pill">{{ activeFilterCount() }}</span>
             }
         </button>
-        <button class="btn-sync" (click)="syncNow()"
+        <button class="btn-sync" pTooltip="Load all patients in current district" (click)="syncNow()"
             [disabled]="!patientService.isOnline() || patientService.isSyncing()" id="sync-btn">
             <i class="pi" [class.pi-refresh]="!patientService.isSyncing()" [class.pi-spin]="patientService.isSyncing()"
                 [class.pi-spinner]="patientService.isSyncing()"></i>
@@ -83,6 +83,11 @@
             <label for="enrolled-to">Enrolled to</label>
             <input id="enrolled-to" pInputText type="date" [ngModel]="filter().enrolledTo"
                 (ngModelChange)="updateFilter('enrolledTo', $event)" />
+        </div>
+        <div class="filter-field filter-field--checkbox">
+            <p-checkbox inputId="Outside_District" [binary]="true" [ngModel]="filter().outsideDistrict"
+                (ngModelChange)="updateFilter('outsideDistrict', $event)" />
+            <label for="Outside_District">Outside District</label>
         </div>
     </div>
 </div>
@@ -199,7 +204,7 @@
                 <td class="actions">
                     <a [routerLink]="['/patients', p.id]" pButton icon="pi pi-eye" class="p-button-text p-button-sm"
                         title="View details"></a>
-                        <a [routerLink]="['/update', p.id]" pButton icon="pi pi-edit" class="p-button-text p-button-sm"
+                    <a [routerLink]="['/update', p.id]" pButton icon="pi pi-pencil" class="p-button-text p-button-sm"
                         title="View details"></a>
                 </td>
             </tr>
