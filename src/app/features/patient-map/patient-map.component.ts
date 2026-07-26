@@ -1,4 +1,4 @@
-import { Component, inject, computed, signal, OnInit, AfterViewInit, ElementRef, ViewChild } from '@angular/core';
+import { Component, inject, computed, signal, OnInit, AfterViewInit, ElementRef, ViewChild, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PatientService } from '../../core/services/patient.service';
 import { Dhis2Service, OrgUnitGeometry } from '../../core/services/dhis2.service';
@@ -6,6 +6,7 @@ import { OrgScopeService } from '../../core/services/org-scope.service';
 import { Patient } from '../../core/services/patient.model';
 import { firstValueFrom } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
+import { debounce } from 'lodash';
 
 /**
  * Free map view using Leaflet + OpenStreetMap tiles - no API key, no
@@ -24,7 +25,7 @@ import { HttpClient } from '@angular/common/http';
  *    a popup with ALC number / name / address. Leaflet's layer control
  *    renders as a toggle menu in the map corner.
  *
- * Install: npm install leaflet @types/leaflet --save
+ * Install: npm install leaflet @types/leaflet leaflet.markercluster @types/leaflet.markercluster --save
  * Also add "node_modules/leaflet/dist/leaflet.css" to angular.json's styles array.
  */
 @Component({
@@ -44,6 +45,8 @@ export class PatientMapComponent implements OnInit, AfterViewInit {
 
   protected readonly selected = signal<Patient | null>(null);
   protected readonly districtLoadError = signal<string | null>(null);
+  protected readonly searchQuery = signal<string>('');
+  protected readonly filteredPatients = signal<Patient[]>([]);
 
   protected readonly mappable = computed(() =>
     this.patientService.districtPatients().filter((p) => p.latitude != null && p.longitude != null)
@@ -75,28 +78,43 @@ export class PatientMapComponent implements OnInit, AfterViewInit {
     '#1d4ed8', '#b5532c', '#b08900', '#0d9488', '#7c3aed',
     '#dc2626', '#059669', '#ea580c', '#4f46e5', '#0891b2'
   ];
+  
   private map: any;
   private L!: typeof import('leaflet');
+  private markerClusterGroup: any;
+  private allPatientMarkers: Map<string, any> = new Map();
+  private searchControl: any;
+  private searchInput: HTMLInputElement | null = null;
+  private isMapInitialized = false;
+
+  // Debounced search to avoid performance issues
+  private debouncedSearch = debounce(() => {
+    this.applySearchFilter();
+  }, 300);
+
+  constructor() {
+    // React to patient data changes
+    effect(() => {
+      const patients = this.mappable();
+      if (this.isMapInitialized && patients.length > 0) {
+        this.updatePatientMarkers(patients);
+      }
+    });
+  }
 
   ngOnInit(): void { }
 
   async ngAfterViewInit(): Promise<void> {
-    // Leaflet is a CommonJS/UMD package. Angular's dev server and its
-    // production esbuild bundler can resolve `await import('leaflet')`
-    // differently - dev may return the Leaflet namespace directly, while
-    // the production bundle can wrap it as { default: <namespace> }
-    // instead. Normalizing here handles both shapes, rather than assuming
-    // one - this is exactly why "L.map is not a function" only showed up
-    // after deploying, not in `ng serve`.
     const leafletModule: any = await import('leaflet');
     this.L = (leafletModule.default ?? leafletModule) as typeof import('leaflet');
     const L = this.L;
 
+    // Import markercluster
+    await import('leaflet.markercluster');
+    
     this.map = L.map(this.mapContainer.nativeElement, {
-      // Prevent zooming out to see the whole world/country - keeps focus
-      // on the district once we fit bounds to it below.
       minZoom: 9
-    }).setView([7.8731, 80.7718], 7); // temporary fallback center until district loads
+    }).setView([7.8731, 80.7718], 7);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -126,14 +144,287 @@ export class PatientMapComponent implements OnInit, AfterViewInit {
       overlays[`${dot}MOH areas`] = mohLayer;
       mohLayer.addTo(this.map);
     }
-    // ── Year-colored patient layers ─────────────────────────────────────
-    const yearLayers = this.buildYearLayers(L);
-    for (const [label, layer] of Object.entries(yearLayers)) {
-      overlays[label] = layer;
-      layer.addTo(this.map); // default: all years visible, user can untick
-    }
-
+    
+    // ── Create cluster group ─────────────────────────────────────
+    this.markerClusterGroup = L.markerClusterGroup({
+      maxClusterRadius: 50,
+      spiderfyOnMaxZoom: true,
+      showCoverageOnHover: false,
+      zoomToBoundsOnClick: true,
+      iconCreateFunction: (cluster: any) => {
+        const childCount = cluster.getChildCount();
+        let size = 'medium';
+        let color = '#0b4f4a';
+        
+        if (childCount < 10) {
+          size = 'small';
+          color = '#3b82f6';
+        } else if (childCount < 50) {
+          size = 'medium';
+          color = '#f59e0b';
+        } else {
+          size = 'large';
+          color = '#ef4444';
+        }
+        
+        return L.divIcon({
+          html: `<div style="background:${color};color:white;border-radius:50%;width:${size === 'small' ? 30 : size === 'medium' ? 40 : 50}px;height:${size === 'small' ? 30 : size === 'medium' ? 40 : 50}px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:${size === 'small' ? 12 : size === 'medium' ? 14 : 16}px;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);">${childCount}</div>`,
+          className: 'cluster-marker',
+          iconSize: [size === 'small' ? 30 : size === 'medium' ? 40 : 50, size === 'small' ? 30 : size === 'medium' ? 40 : 50]
+        });
+      }
+    });
+    
+    // Add cluster group to map
+    this.markerClusterGroup.addTo(this.map);
+    
+    // ── Build patient markers with clustering ─────────────────────
+    const allPatients = this.mappable();
+    this.updatePatientMarkers(allPatients);
+    
+    // ── Add search control ─────────────────────────────────────
+    this.addSearchControl(L);
+    
+    // ── Layer control ─────────────────────────────────────
     L.control.layers(undefined, overlays, { collapsed: false }).addTo(this.map);
+    
+    this.isMapInitialized = true;
+  }
+
+  /**
+   * Updates patient markers with clustering and filtering
+   */
+  private updatePatientMarkers(patients: Patient[]): void {
+    if (!this.markerClusterGroup || !this.L) return;
+    
+    // Clear existing markers
+    this.markerClusterGroup.clearLayers();
+    this.allPatientMarkers.clear();
+    
+    // Apply search filter if active
+    const searchQuery = this.searchQuery().toLowerCase().trim();
+    let filteredPatients = patients;
+    
+    if (searchQuery) {
+      filteredPatients = patients.filter(p => 
+        p.patientName?.toLowerCase().includes(searchQuery) ||
+        p.patientHomeAddress?.toLowerCase().includes(searchQuery) ||
+        p.alcNum?.toLowerCase().includes(searchQuery) ||
+        p.patientMohArea?.toLowerCase().includes(searchQuery)
+      );
+    }
+    
+    this.filteredPatients.set(filteredPatients);
+    
+    // Group patients by year for color coding
+    const patientsByYear = this.groupPatientsByYear(filteredPatients);
+    
+    // Create markers for each year group
+    for (const [year, yearPatients] of Object.entries(patientsByYear)) {
+      const color = this.yearColors[Number(year)] || '#6b7280';
+      
+      for (const p of yearPatients) {
+        const marker = this.createPatientMarker(p, color);
+        this.markerClusterGroup.addLayer(marker);
+        this.allPatientMarkers.set(p.id!, marker);
+      }
+    }
+    
+    // If no markers, show a message
+    if (filteredPatients.length === 0) {
+      console.log('No patients match the search criteria');
+    }
+  }
+
+  /**
+   * Group patients by enrollment year
+   */
+  private groupPatientsByYear(patients: Patient[]): Record<string, Patient[]> {
+    const groups: Record<string, Patient[]> = {};
+    
+    for (const p of patients) {
+      let year = '2024'; // default
+      if (p.enrolledAt) {
+        const extractedYear = p.enrolledAt.slice(0, 4);
+        if (extractedYear && !isNaN(Number(extractedYear))) {
+          year = extractedYear;
+        }
+      }
+      
+      if (!groups[year]) {
+        groups[year] = [];
+      }
+      groups[year].push(p);
+    }
+    
+    return groups;
+  }
+
+  /**
+   * Create a single patient marker
+   */
+  private createPatientMarker(patient: Patient, color: string): any {
+    const L = this.L;
+    
+    const icon = L.divIcon({
+      className: 'patient-marker',
+      html: `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.4);transition:transform 0.2s;"></div>`,
+      iconSize: [14, 14],
+      iconAnchor: [7, 7]
+    });
+
+    const marker = L.marker([patient.latitude!, patient.longitude!], { icon });
+    marker.bindPopup(this.popupHtml(patient));
+    marker.on('click', () => this.selected.set(patient));
+    
+    return marker;
+  }
+
+  /**
+   * Add search control to the map
+   */
+  private addSearchControl(L: typeof import('leaflet')): void {
+    const SearchControl = L.Control.extend({
+      options: {
+        position: 'topleft'
+      },
+      
+      onAdd: () => {
+        const container = L.DomUtil.create('div', 'search-control-container');
+        container.style.background = 'white';
+        container.style.padding = '10px';
+        container.style.borderRadius = '4px';
+        container.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+        container.style.minWidth = '220px';
+        
+        const wrapper = L.DomUtil.create('div', 'search-wrapper');
+        wrapper.style.display = 'flex';
+        wrapper.style.alignItems = 'center';
+        wrapper.style.gap = '8px';
+        
+        const icon = L.DomUtil.create('span', 'search-icon');
+        icon.innerHTML = '🔍';
+        icon.style.fontSize = '16px';
+        wrapper.appendChild(icon);
+        
+        const input = L.DomUtil.create('input', 'search-input') as HTMLInputElement;
+        input.type = 'text';
+        input.placeholder = 'Search patients...';
+        input.style.border = '1px solid #e2e8f0';
+        input.style.borderRadius = '4px';
+        input.style.padding = '6px 10px';
+        input.style.width = '100%';
+        input.style.fontSize = '14px';
+        input.style.outline = 'none';
+        
+        input.addEventListener('focus', () => {
+          input.style.borderColor = '#0b4f4a';
+        });
+        
+        input.addEventListener('blur', () => {
+          input.style.borderColor = '#e2e8f0';
+        });
+        
+        input.addEventListener('input', (e) => {
+          const value = (e.target as HTMLInputElement).value;
+          this.searchQuery.set(value);
+          this.debouncedSearch();
+        });
+        
+        wrapper.appendChild(input);
+        container.appendChild(wrapper);
+        
+        // Add clear button
+        const clearBtn = L.DomUtil.create('button', 'search-clear');
+        clearBtn.textContent = '✕';
+        clearBtn.style.cssText = `
+          position: absolute;
+          right: 14px;
+          top: 50%;
+          transform: translateY(-50%);
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: #9ca3af;
+          font-size: 14px;
+          padding: 4px;
+          display: none;
+        `;
+        
+        clearBtn.addEventListener('click', () => {
+          input.value = '';
+          this.searchQuery.set('');
+          this.applySearchFilter();
+          clearBtn.style.display = 'none';
+          input.focus();
+        });
+        
+        container.style.position = 'relative';
+        container.appendChild(clearBtn);
+        
+        // Show/hide clear button
+        input.addEventListener('input', () => {
+          clearBtn.style.display = input.value.length > 0 ? 'block' : 'none';
+        });
+        
+        this.searchInput = input;
+        
+        return container;
+      }
+    });
+    
+    this.searchControl = new SearchControl();
+    this.searchControl.addTo(this.map);
+  }
+
+  /**
+   * Apply search filter to markers
+   */
+  private applySearchFilter(): void {
+    const patients = this.mappable();
+    this.updatePatientMarkers(patients);
+    
+    // Zoom to show filtered patients if any
+    const filtered = this.filteredPatients();
+    if (filtered.length > 0) {
+      const bounds = this.getBoundsFromPatients(filtered);
+      if (bounds) {
+        this.map.fitBounds(bounds, { padding: [30, 30] });
+      }
+    }
+  }
+
+  /**
+   * Get bounds from a list of patients
+   */
+  private getBoundsFromPatients(patients: Patient[]): any {
+    if (!this.L || patients.length === 0) return null;
+    
+    const lats = patients.map(p => p.latitude!).filter(lat => lat != null);
+    const lngs = patients.map(p => p.longitude!).filter(lng => lng != null);
+    
+    if (lats.length === 0 || lngs.length === 0) return null;
+    
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+    const minLng = Math.min(...lngs);
+    const maxLng = Math.max(...lngs);
+    
+    return this.L.latLngBounds(
+      this.L.latLng(minLat, minLng),
+      this.L.latLng(maxLat, maxLng)
+    );
+  }
+
+  /**
+   * Clear search and reset view
+   */
+  protected clearSearch(): void {
+    this.searchQuery.set('');
+    if (this.searchInput) {
+      this.searchInput.value = '';
+    }
+    this.applySearchFilter();
   }
 
   /**
@@ -293,7 +584,6 @@ export class PatientMapComponent implements OnInit, AfterViewInit {
     return group;
   }
 
-
   /** One Leaflet layerGroup per year, each with its own marker color and popups. */
   private buildYearLayers(L: typeof import('leaflet')): Record<string, any> {
     const years = Object.keys(this.yearColors).map(Number).sort((a, b) => b - a);
@@ -336,10 +626,17 @@ export class PatientMapComponent implements OnInit, AfterViewInit {
     const alc = p.alcNum || '—';
     const name = p.patientName || '(no name)';
     const address = p.patientHomeAddress || 'No address on file';
+    const moh = p.patientMohArea || 'N/A';
+    const phone = p.mobileNum || p.telNum;
+    
     return `
-      <div style="font-family: var(--font-body, sans-serif); font-size: 0.85rem; line-height: 1.5;">
-        <strong>${this.escapeHtml(alc)}</strong> — ${this.escapeHtml(name)}<br>
-        <span style="color:#6b7280">${this.escapeHtml(address)}</span>
+      <div style="font-family: var(--font-body, sans-serif); font-size: 0.85rem; line-height: 1.5; min-width: 200px;">
+        <div style="font-weight: 600; font-size: 1rem; margin-bottom: 4px;">${this.escapeHtml(name)}</div>
+        <div style="color: #6b7280; margin-bottom: 2px;">ALC: ${this.escapeHtml(alc)}</div>
+        <div style="color: #6b7280; margin-bottom: 2px;">${this.escapeHtml(address)}</div>
+        <div style="color: #6b7280; font-size: 0.75rem; margin-top: 4px; border-top: 1px solid #e5e7eb; padding-top: 4px;">
+          MOH: ${this.escapeHtml(moh)} | ${this.escapeHtml(phone)}
+        </div>
       </div>
     `;
   }
