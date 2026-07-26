@@ -12,7 +12,7 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { TooltipModule } from 'primeng/tooltip';
 import { BadgeModule } from 'primeng/badge';
 import { PatientService } from '../../core/services/patient.service';
-import { Patient, PatientFilter } from '../../core/services/patient.model';
+import { createDefaultPatientFilter, Patient, PatientFilter } from '../../core/services/patient.model';
 import { STORAGE_KEYS } from '../../core/util/util';
 import { DeviceStorageService } from '../../core/services/device-storage.service';
 import {
@@ -42,7 +42,7 @@ export class PatientListComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   protected readonly patientService = inject(PatientService);
-  
+
   // State
   protected readonly filter = signal<PatientFilter>({
     district: this.patientService.userDistricts(),
@@ -52,42 +52,42 @@ export class PatientListComponent implements OnInit {
     mohArea: 'ALL',
     phiArea: 'ALL',
     gnDivision: 'ALL',
-    ...this.defaultDateRange(),
   });
-  
+
   protected readonly showFilters = signal(false);
   protected readonly filtersLoading = signal(true);
   protected readonly expandedAddresses = signal(new Set<string>());
   protected readonly viewMode = signal<'table' | 'cards'>('table');
-  
+
   // Static filter options
   protected readonly classificationOptions: SelectOption[] = [
     { label: 'All Classifications', value: 'ALL' },
     { label: 'Multibacillary (MB)', value: 'MB (>5 lesions)' },
     { label: 'Paucibacillary (PB)', value: 'PB (1-5 lesions)' },
   ];
-  
+
   protected readonly user = this.storage.getJSON<any>(STORAGE_KEYS.USER_DATA);
 
   protected readonly hospitalOptions: SelectOption[] = [
     { label: 'All Facilities', value: 'ALL' },
-    ...(this.user?.organisationUnits || []).map((f: any) => ({ 
-      label: f.name, 
-      value: f.id 
+    ...(this.user?.organisationUnits || []).map((f: any) => ({
+      label: f.name,
+      value: f.id
     })),
     { label: 'Other Institute', value: 'OTHER' },
   ];
-  
+
   // Dynamic filter options
   protected mohAreaOptions = signal<SelectOption[]>([{ label: 'All MOH Areas', value: 'ALL' }]);
   protected phiAreaOptions = signal<SelectOption[]>([{ label: 'All PHI Areas', value: 'ALL' }]);
   protected gnDivisionOptions = signal<SelectOption[]>([{ label: 'All GN Divisions', value: 'ALL' }]);
   protected districtOptions = signal<SelectOption[]>([{ label: 'All Districts', value: 'ALL' }]);
-  
+  protected yearOptions = signal<SelectOption[]>([{ label: 'All Years', value: 'ALL' }]);
+
   // Computed values
   protected readonly rows = computed(() => this.patientService.filtered(this.filter()));
   protected readonly totalPatients = computed(() => this.patientService.districtPatients().length);
-  
+
   protected readonly activeFilterCount = computed(() => {
     const f = this.filter();
     let count = 0;
@@ -101,9 +101,10 @@ export class PatientListComponent implements OnInit {
     if (f.enrolledFrom) count++;
     if (f.enrolledTo) count++;
     if (f.outsideDistrict) count++;
+    if (f.year) count++;
     return count;
   });
-  
+
   protected readonly stats = computed(() => ({
     total: this.totalPatients(),
     filtered: this.rows().length,
@@ -111,17 +112,6 @@ export class PatientListComponent implements OnInit {
     pb: this.rows().filter(p => p.treatmentClassification?.toUpperCase().startsWith('PB')).length,
     children: this.rows().filter(p => Number(p.patientAge) < 15).length,
   }));
-
-  private defaultDateRange(): { enrolledFrom: string; enrolledTo: string } {
-    const now = new Date();
-    const yyyy = now.getFullYear();
-    const mm = String(now.getMonth() + 1).padStart(2, '0');
-    const dd = String(now.getDate()).padStart(2, '0');
-    return {
-      enrolledFrom: `${yyyy}-01-01`,
-      enrolledTo: `${yyyy}-${mm}-${dd}`,
-    };
-  }
 
   async ngOnInit(): Promise<void> {
     if (this.patientService.districtPatients().length === 0) {
@@ -146,11 +136,11 @@ export class PatientListComponent implements OnInit {
     if (mohArea) patch.mohArea = mohArea;
     const alert = params.get('alert');
     if (alert) patch.alert = alert;
-    if (year) {
+    /*if (year) {
       patch.enrolledFrom = `${year}-01-01`;
       patch.enrolledTo = `${year}-12-31`;
-    }
-
+    }*/
+    if (year) patch.year = year;
     if (Object.keys(patch).length) {
       this.filter.update(f => ({ ...f, ...patch }));
       this.showFilters.set(true);
@@ -159,11 +149,12 @@ export class PatientListComponent implements OnInit {
 
   private async loadDistinctValues(): Promise<void> {
     this.filtersLoading.set(true);
-    const [moh, phi, gn, district] = await Promise.all([
+    const [moh, phi, gn, district, years] = await Promise.all([
       this.patientService.getDistinctValues('patientMohArea'),
       this.patientService.getDistinctValues('patientPhiArea'),
       this.patientService.getDistinctValues('patientGnDivision'),
-      this.patientService.getDistinctValues('patientDistrict')
+      this.patientService.getDistinctValues('patientDistrict'),
+      this.patientService.getYears(10),
     ]);
     this.districtOptions.set([
       { label: 'All Districts', value: 'ALL' },
@@ -181,6 +172,10 @@ export class PatientListComponent implements OnInit {
       { label: 'All GN Divisions', value: 'ALL' },
       ...gn.map(v => ({ label: v, value: v })),
     ]);
+    this.yearOptions.set([
+      { label: 'All Years', value: 'ALL' },
+      ...years.map(v => ({ label: v, value: v })),
+    ]);
     this.filtersLoading.set(false);
   }
 
@@ -197,12 +192,12 @@ export class PatientListComponent implements OnInit {
       mohArea: 'ALL',
       phiArea: 'ALL',
       gnDivision: 'ALL',
-      ...this.defaultDateRange(),
+      ...createDefaultPatientFilter()
     });
   }
 
   protected async syncNow(): Promise<void> {
-    const year= this.filter().enrolledFrom?.slice(0,4);
+    const year = this.filter().enrolledFrom?.slice(0, 4);
     await this.patientService.pullFromServer(Number(year))
     await this.loadDistinctValues();
   }

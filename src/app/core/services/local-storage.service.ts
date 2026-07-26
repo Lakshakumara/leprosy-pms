@@ -57,4 +57,22 @@ export class LocalStorageService {
     }
     return [...set_].sort((a, b) => a.localeCompare(b));
   }
+  async getYears(top:number): Promise<string[]> {
+    const all = await this.getAllPatients();
+    const set_ = new Set<string>();
+    for (const p of all) {
+      let year = ''+new Date().getFullYear()
+      if (p.enrolledAt) {
+        const extractedYear = p.enrolledAt.slice(0, 4);
+        if (extractedYear && !isNaN(Number(extractedYear))) {
+          year = extractedYear;
+         set_.add(extractedYear.trim());
+        }
+      }
+    }
+    const sorted = [...set_].sort((a, b) => b.localeCompare(a));
+  
+  // top 5, if less than 5 return all
+  return sorted.slice(0, top);
+  }
 }

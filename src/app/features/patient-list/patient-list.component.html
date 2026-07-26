@@ -126,6 +126,10 @@
                 </div>
 
                 <div class="caption-filters">
+                    <p-select [options]="yearOptions()" optionLabel="label" optionValue="value"
+                        [ngModel]="filter().year" (ngModelChange)="updateFilter('year', $event)"
+                        [loading]="filtersLoading()" id="year-select">
+                    </p-select>
                     <p-select [options]="districtOptions()" optionLabel="label" optionValue="value"
                         [ngModel]="filter().district" (ngModelChange)="updateFilter('district', $event)"
                         [loading]="filtersLoading()" id="district-select">
