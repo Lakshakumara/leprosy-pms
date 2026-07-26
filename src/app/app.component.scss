@@ -168,12 +168,18 @@
 // ── Main content ──────────────────────────────────────────────────────────────
 .shell__content {
   padding: 28px 32px;
-  max-width: 1200px;
   min-height: 100vh;
   background: var(--color-paper);
   @media (max-width: 640px) { padding: 16px; }
-  @media (max-width: 860px) { padding: 20px 16px; min-height: auto; }
+ /* @media (max-width: 860px) { padding: 20px 16px; min-height: auto; }*/
   @media (max-width: 480px) { padding: 14px 12px; }
+  @media (max-width: 860px) {
+  .shell__content {
+    overflow-x: hidden;
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
 }
 
 // ── Mobile bottom navigation ──────────────────────────────────────────────────
@@ -214,5 +220,120 @@
       }
       &:disabled { opacity: 0.4; }
     }
+  }
+}
+
+// Append these to your existing app.component.scss
+
+// ── Info button next to the desktop sidebar brand ────────────────────────
+.shell__brand {
+  position: relative; // so the info button can sit at the far right cleanly
+}
+.shell__info-btn {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: rgba(234, 243, 241, 0.6);
+  cursor: pointer;
+  padding: 4px;
+  flex-shrink: 0;
+
+  &:hover { color: #fff; }
+  i { font-size: 1rem; }
+}
+
+// ── Mobile-only compact top bar ───────────────────────────────────────────
+// The sidebar (which normally holds brand/credentials) is display:none
+// below 860px, so this fills that gap with a minimal persistent header -
+// just enough to identify the app and reach the About dialog, without
+// competing with the bottom nav for space.
+.mobile-topbar {
+  display: none;
+
+  @media (max-width: 860px) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: linear-gradient(160deg, #0b4f4a 0%, #0d6159 100%);
+    color: #eaf3f1;
+    position: sticky;
+    top: 0;
+    z-index: 900;
+  }
+}
+.mobile-topbar__brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+.shell__brand-mark--sm {
+  width: 26px;
+  height: 26px;
+  font-size: 0.85rem;
+  border-radius: 8px;
+}
+.mobile-topbar__info {
+  background: none;
+  border: none;
+  color: rgba(234, 243, 241, 0.75);
+  cursor: pointer;
+  padding: 4px;
+
+  &:hover, &:active { color: #fff; }
+  i { font-size: 1.15rem; }
+}
+
+// ── About dialog content ──────────────────────────────────────────────────
+.about-content {
+  text-align: center;
+  padding: 8px 4px 4px;
+
+  &__mark {
+    width: 52px;
+    height: 52px;
+    margin: 0 auto 14px;
+    border-radius: 14px;
+    background: linear-gradient(160deg, #0b4f4a 0%, #0d6159 100%);
+    color: #fff;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.4rem;
+    display: grid;
+    place-items: center;
+  }
+
+  h3 {
+    margin: 0 0 4px;
+    font-size: 1.05rem;
+    color: var(--color-teal-900);
+  }
+
+  &__version {
+    font-size: 0.78rem;
+    color: var(--color-muted);
+    margin: 0 0 14px;
+  }
+
+  p {
+    font-size: 0.85rem;
+    margin: 0 0 8px;
+    color: var(--color-ink);
+  }
+
+  &__sub {
+    color: var(--color-muted) !important;
+    font-size: 0.8rem !important;
+  }
+
+  &__sync {
+    font-size: 0.75rem !important;
+    color: var(--color-muted) !important;
+    border-top: 1px solid var(--color-line);
+    padding-top: 10px;
+    margin-top: 10px !important;
   }
 }

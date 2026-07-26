@@ -11,6 +11,9 @@
         <div class="shell__brand-name">Leprosy PMS</div>
         <div class="shell__brand-sub">Designed by PHI LC Ratnapura</div>
       </div>
+      <button class="shell__info-btn" (click)="showAbout.set(true)" title="About this app">
+        <i class="pi pi-info-circle"></i>
+      </button>
     </div>
 
     <nav class="shell__links">
@@ -64,6 +67,17 @@
     </div>
   </aside>
 
+  <!-- ── Mobile-only compact top bar (sidebar is hidden below 860px) ──────── -->
+  <header class="mobile-topbar">
+    <div class="mobile-topbar__brand">
+      <span class="shell__brand-mark shell__brand-mark--sm">L</span>
+      <span>Leprosy PMS</span>
+    </div>
+    <button class="mobile-topbar__info" (click)="showAbout.set(true)" title="About this app">
+      <i class="pi pi-info-circle"></i>
+    </button>
+  </header>
+
   <!-- ── Main content ────────────────────────────────────────────────────── -->
   <main class="shell__content">
     <router-outlet />
@@ -89,5 +103,20 @@
       <span>{{ patients.isSyncing() ? 'Syncing' : 'Sync' }}</span>
     </button>
   </nav>
+
+  <!-- ── About dialog - shared by both the sidebar info icon and the mobile top bar ──────── -->
+  <p-dialog header="About Leprosy PMS" [(visible)]="showAbout" [modal]="true" [dismissableMask]="true"
+            [style]="{ width: '360px' }" [breakpoints]="{ '640px': '92vw' }">
+    <div class="about-content">
+      <div class="about-content__mark">L</div>
+      <h3>Leprosy Patient Management System</h3>
+      <p class="about-content__version">Version 1.0 · {{ appBuildDate }}</p>
+      <p>Designed and maintained by <strong>PHI LC Ratnapura</strong>.</p>
+      <p class="about-content__sub">Offline-first patient registry synced with DHIS2, built for district-level leprosy case management and follow-up.</p>
+      @if (patients.lastSyncedAt()) {
+        <p class="about-content__sync">Last DHIS2 sync: {{ patients.lastSyncedAt() | date:'dd MMM yyyy, HH:mm' }}</p>
+      }
+    </div>
+  </p-dialog>
 </div>
 }
