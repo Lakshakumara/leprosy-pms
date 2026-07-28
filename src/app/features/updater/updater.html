@@ -142,8 +142,7 @@
             }
           </select>
         </div>
-        <button class="btn-move" (click)="fixOrgUnit()"
-          [disabled]="loadingField() === 'orgUnit' || !selectedOrgUnitId || selectedOrgUnitId === patient()?.orgUnitId">
+        <button class="btn-move" (click)="fixOrgUnit()">
           @if (loadingField() === 'orgUnit') {
           <i class="pi pi-spin pi-spinner"></i> Moving...
           } @else {

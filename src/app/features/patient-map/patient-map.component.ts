@@ -1,4 +1,4 @@
-import { Component, inject, computed, signal, OnInit, AfterViewInit, ElementRef, ViewChild, effect } from '@angular/core';
+import { Component, inject, computed, signal, OnInit, AfterViewInit, ElementRef, ViewChild, effect, NgZone, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PatientService } from '../../core/services/patient.service';
 import { Dhis2Service, OrgUnitGeometry } from '../../core/services/dhis2.service';
@@ -7,6 +7,10 @@ import { Patient } from '../../core/services/patient.model';
 import { firstValueFrom } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { debounce } from 'lodash';
+import { LocalStorageService } from '../../core/services/local-storage.service';
+import { ButtonModule } from 'primeng/button';
+import { DialogModule } from 'primeng/dialog'
+import { FormsModule } from '@angular/forms';
 
 /**
  * Free map view using Leaflet + OpenStreetMap tiles - no API key, no
@@ -31,14 +35,16 @@ import { debounce } from 'lodash';
 @Component({
   selector: 'app-patient-map',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule, ButtonModule, DialogModule],
   templateUrl: './patient-map.component.html',
   styleUrl: './patient-map.component.scss'
 })
-export class PatientMapComponent implements OnInit, AfterViewInit {
+export class PatientMapComponent implements OnInit, AfterViewInit,OnDestroy {
   @ViewChild('mapContainer', { static: true }) mapContainer!: ElementRef<HTMLDivElement>;
-
+  private readonly ngZone = inject(NgZone);
+  private readonly cdr = inject(ChangeDetectorRef); // Add this
   protected readonly patientService = inject(PatientService);
+  private readonly localStorage = inject(LocalStorageService);
   private readonly dhis2 = inject(Dhis2Service);
   private readonly orgScope = inject(OrgScopeService);
   private readonly http = inject(HttpClient);
@@ -52,16 +58,10 @@ export class PatientMapComponent implements OnInit, AfterViewInit {
     this.patientService.districtPatients().filter((p) => p.latitude != null && p.longitude != null)
   );
 
-  /**
-   * SLOT FOR MANUALLY-SUPPLIED MOH BOUNDARY DATA.
-   * If DHIS2 doesn't have MOH-area geometry yet, paste real GeoJSON
-   * FeatureCollection here (each Feature needs a `name` property) and it
-   * will render exactly like DHIS2-sourced boundaries would. Leave as null
-   * until you have real data - the layer will just be empty, no error.
-   */
+
   private readonly manualDsGeoJson: GeoJSON.FeatureCollection | null = null;
   private manualMohGeoJson: GeoJSON.FeatureCollection | null = null;
-  private readonly yearsTop5 = this.patientService.yearsTop5()
+  private readonly yearsTop = this.patientService.yearsTop5()
 
   private readonly yearColors: Record<string, string> = {
     2026: '#1d4ed8', // blue
@@ -85,7 +85,6 @@ export class PatientMapComponent implements OnInit, AfterViewInit {
   private markerClusterGroup: any;
   private allPatientMarkers: Map<string, any> = new Map();
   private searchControl: any;
-  private clusterControl: any;
   private searchInput: HTMLInputElement | null = null;
   private isMapInitialized = false;
 
@@ -107,9 +106,25 @@ export class PatientMapComponent implements OnInit, AfterViewInit {
       }
     });
   }
+protected isMobile = signal(false);
+  ngOnInit(): void { 
+    this.isMobile.set(window.innerWidth < 769);
+  
+  // Listen for resize events
+  window.addEventListener('resize', () => {
+    this.isMobile.set(window.innerWidth < 769);
+    this.cdr.detectChanges();
+  });
+  }
 
-  ngOnInit(): void { }
-
+  ngOnDestroy(): void {
+    if (this.map && this.mapClickHandler) {
+      this.map.off('click', this.mapClickHandler);
+    }
+    if (this.tempMarker && this.map) {
+      this.map.removeLayer(this.tempMarker);
+    }
+  }
   private activeYears = new Set<number>([2026, 2025, 2024, 2023, 2022]);
   private isSwitching = false;
 
@@ -129,7 +144,7 @@ export class PatientMapComponent implements OnInit, AfterViewInit {
 
     const districtLayer = await this.loadDistrictBoundary(L);
     if (districtLayer) {
-      overlays[`<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#0b4f4a;margin-right:6px;"></span>District boundary`] = districtLayer;
+      overlays[`<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#0b4f4a;margin-right:6px;"></span>Crop District`] = districtLayer;
       districtLayer.addTo(this.map);
     }
 
@@ -140,7 +155,44 @@ export class PatientMapComponent implements OnInit, AfterViewInit {
     }
 
     this.allYearGroup = L.layerGroup();
+
     this.markerClusterGroup = L.markerClusterGroup({
+      maxClusterRadius: 50,
+      iconCreateFunction: (cluster: any) => {
+        const children = cluster.getAllChildMarkers();
+        const count = children.length;
+
+        // Tally each child's year color (stored on the marker when created -
+        // see createPatientMarker's _colorRef) and pick the most common one.
+        const colorCounts = new Map<string, number>();
+        for (const child of children) {
+          const color = child.options?._colorRef ?? '#6b7280';
+          colorCounts.set(color, (colorCounts.get(color) ?? 0) + 1);
+        }
+        let dominantColor = '#6b7280';
+        let maxCount = 0;
+        for (const [color, c] of colorCounts) {
+          if (c > maxCount) {
+            maxCount = c;
+            dominantColor = color;
+          }
+        }
+
+        // Size still scales with count for readability, but color now reflects
+        // the actual selected-year composition of that cluster.
+        const size = count < 10 ? 30 : count < 50 ? 40 : 50;
+
+        return L.divIcon({
+          html: `<div style="background:${dominantColor};color:white;border-radius:50%;width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;font-weight:bold;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.3);">${count}</div>`,
+          iconSize: [size, size],
+          className: ''
+        });
+      }
+    });
+
+
+
+    /*this.markerClusterGroup = L.markerClusterGroup({
       maxClusterRadius: 50,
       iconCreateFunction: (cluster: any) => {
         const count = cluster.getChildCount();
@@ -151,17 +203,15 @@ export class PatientMapComponent implements OnInit, AfterViewInit {
           iconSize: [size, size], className: ''
         });
       }
-    });
+    });*/
 
     const top5Years = await this.patientService.getYears(5);
     this.activeYears = new Set(top5Years.map(y => Number(y))); // init here
 
     top5Years.forEach(year => {
       const yNum = Number(year);
-      console.log('ynum', yNum)
       const color = this.yearColors[yNum] || '#6b7280';
       this.yearLayerGroups[yNum] = L.layerGroup();
-      console.log('L.layerGroup()', L.layerGroup())
       const dot = `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${color};margin-right:6px;"></span>`;
       overlays[`${dot}${year} (<span id="count-${year}">0</span>)`] = this.yearLayerGroups[yNum];
     });
@@ -189,14 +239,41 @@ export class PatientMapComponent implements OnInit, AfterViewInit {
       }
     });
 
-    this.updatePatientMarkers(this.mappable());
+
+    this.map.on('popupopen', (e: any) => {
+      const btn = e.popup.getElement()?.querySelector('[data-edit]') as HTMLElement;
+      if (!btn) return;
+      L.DomEvent.disableClickPropagation(btn);
+      btn.onclick = () => {
+        const id = btn.getAttribute('data-edit');
+        const patient = this.mappable().find(x => x.id === id);
+        if (patient) {
+          // Close popup and open dialog
+          this.map.closePopup();
+          this.openEditDialog(patient);
+        }
+      };
+    });
+    // Setup map click for location picking
+    this.mapClickHandler = (e: any) => {
+      if (this.showEditDialog() && this.isPickingLocation()) {
+        this.ngZone.run(() => {
+          this.editLat.set(e.latlng.lat);
+          this.editLng.set(e.latlng.lng);
+          this.updateTempMarker(e.latlng.lat, e.latlng.lng);
+          this.cdr.detectChanges();
+        });
+      }
+    };
+    this.map.on('click', this.mapClickHandler);
+
     this.addSearchControl(L);
     this.addClusterControl(L);
     L.control.layers(undefined, overlays, { collapsed: false }).addTo(this.map);
     this.isMapInitialized = true;
-    this.exportMapImage()
-
+    this.updatePatientMarkers(this.mappable());
   }
+
 
   private addClusterControl(L: typeof import('leaflet')): void {
     const self = this;
@@ -269,163 +346,6 @@ export class PatientMapComponent implements OnInit, AfterViewInit {
     this.refreshCluster();
   }
 
-
-
-
-  /*
-  async ngAfterViewInit(): Promise<void> {
-    const leafletModule: any = await import('leaflet');
-    this.L = (leafletModule.default?? leafletModule) as typeof import('leaflet');
-    const L = this.L;
-    await import('leaflet.markercluster');
-  
-    this.map = L.map(this.mapContainer.nativeElement, { minZoom: 9 }).setView([7.8731, 80.7718], 7);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap',
-      maxZoom: 19
-    }).addTo(this.map);
-  
-    const overlays: Record<string, any> = {};
-  
-    const districtLayer = await this.loadDistrictBoundary(L);
-    if (districtLayer) {
-      overlays[`<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#0b4f4a;margin-right:6px;"></span>District boundary`] = districtLayer;
-      districtLayer.addTo(this.map);
-    }
-  
-    const mohLayer = await this.loadMOHAreaLayer(L);
-    if (mohLayer) {
-      overlays[`<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#4f46e5;margin-right:6px;"></span>MOH areas`] = mohLayer;
-      mohLayer.addTo(this.map);
-    }
-  
-    // --- create groups ---
-    this.allYearGroup = L.layerGroup();
-    this.markerClusterGroup = L.markerClusterGroup({
-      maxClusterRadius: 50,
-      iconCreateFunction: (cluster: any) => {
-        const count = cluster.getChildCount();
-        const size = count < 10? 30 : count < 50? 40 : 50;
-        const color = count < 10? '#3b82f6' : count < 50? '#f59e0b' : '#ef4444';
-        return L.divIcon({
-          html: `<div style="background:${color};color:white;border-radius:50%;width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;font-weight:bold;border:2px solid white;">${count}</div>`,
-          iconSize: [size, size], className: ''
-        });
-      }
-    });
-  
-    // Build year layers initially (empty markers, will fill in updatePatientMarkers)
-    [2026,2025,2024,2023,2022].forEach(year => {
-      const color = this.yearColors[year] || '#6b7280';
-      const group = L.layerGroup();
-      this.yearLayerGroups[year] = group;
-      const dot = `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${color};margin-right:6px;"></span>`;
-      overlays[`${dot}${year} (<span id="count-${year}">0</span>)`] = group;
-    });
-  
-    this.allYearGroup.addTo(this.map); // DEFAULT = year view
-    Object.values(this.yearLayerGroups).forEach(g => g.addTo(this.allYearGroup));
-  
-    // listen to layer control check/uncheck to sync activeYears
-    this.map.on('overlayadd overlayremove', (e: any) => {
-      // find which year was toggled by matching layer instance
-      for (const [yearStr, group] of Object.entries(this.yearLayerGroups)) {
-        if (e.layer === group) {
-          const year = Number(yearStr);
-          if (e.type === 'overlayadd') this.activeYears.add(year);
-          else this.activeYears.delete(year);
-          this.refreshClusterFromActiveYears();
-          break;
-        }
-      }
-    });
-  
-    this.updatePatientMarkers(this.mappable());
-  
-    this.addSearchControl(L);
-    this.addClusterControl(L);
-    L.control.layers(undefined, overlays, { collapsed: false }).addTo(this.map);
-    this.isMapInitialized = true;
-  }
-  
-  private refreshClusterFromActiveYears() {
-    this.markerClusterGroup.clearLayers();
-    for (const year of this.activeYears) {
-      const group = this.yearLayerGroups[year];
-      if (!group) continue;
-      group.eachLayer((m: any) => {
-        // recreate marker for cluster (clone)
-        const p = m.options._patientRef;
-        const color = m.options._colorRef;
-        if (p) this.markerClusterGroup.addLayer(this.createPatientMarker(p, color));
-      });
-    }
-  }
-  
-  private updatePatientMarkers(patients: Patient[]): void {
-    if (!this.L) return;
-  
-    // clear all
-    Object.values(this.yearLayerGroups).forEach(g => g.clearLayers());
-    this.markerClusterGroup.clearLayers();
-  
-    const counts: Record<number, number> = { 2026:0,2025:0,2024:0,2023:0,2022:0 };
-  
-    for (const p of patients) {
-      const year = Number(p.enrolledAt?.slice(0,4)) || 2026;
-      if (!this.yearLayerGroups[year]) continue;
-      const color = this.yearColors[year] || '#6b7280';
-      const marker = this.createPatientMarker(p, color);
-      marker.addTo(this.yearLayerGroups[year]);
-      counts[year]++;
-    }
-  
-    // update counts in layer control
-    Object.entries(counts).forEach(([y,c]) => {
-      const el = document.getElementById(`count-${y}`);
-      if (el) el.textContent = String(c);
-    });
-  
-    this.refreshClusterFromActiveYears();
-  }
-  
-  private buildYearLayers(L: typeof import('leaflet')) { return this.yearLayerGroups; }
-  
-  private addClusterControl(L: typeof import('leaflet')): void {
-    const self = this;
-    const ClusterControl = L.Control.extend({
-      options: { position: 'topleft' },
-      onAdd: function() {
-        const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-        container.style.width = '34px'; container.style.height = '34px';
-        const btn = L.DomUtil.create('a', '', container);
-        btn.href = '#'; btn.innerHTML = '📅';
-        btn.title = 'Year view - Click for Cluster';
-        btn.style.fontSize = '18px'; btn.style.lineHeight = '34px'; btn.style.textAlign = 'center';
-        L.DomEvent.disableClickPropagation(container);
-        L.DomEvent.on(btn, 'click', L.DomEvent.stop);
-        L.DomEvent.on(btn, 'click', (e: any) => {
-          e.preventDefault();
-          if (self.currentMode === 'year') {
-            self.map.removeLayer(self.allYearGroup);
-            self.map.addLayer(self.markerClusterGroup);
-            self.currentMode = 'cluster';
-            btn.innerHTML = '🔗';
-          } else {
-            self.map.removeLayer(self.markerClusterGroup);
-            self.map.addLayer(self.allYearGroup);
-            self.currentMode = 'year';
-            btn.innerHTML = '📅';
-          }
-        });
-        return container;
-      }
-    });
-    new ClusterControl().addTo(this.map);
-  }*/
-
-
-
   private createPatientMarker(patient: Patient, color: string): any {
     const L = this.L;
     const icon = L.divIcon({
@@ -490,95 +410,63 @@ export class PatientMapComponent implements OnInit, AfterViewInit {
      return marker;
    }*/
 
-  /**
-   * Add search control to the map
-   */
+  // Replace your existing addSearchControl() method entirely with this.
+
   private addSearchControl(L: typeof import('leaflet')): void {
+    const self = this;
     const SearchControl = L.Control.extend({
-      options: {
-        position: 'topleft'
-      },
+      options: { position: 'topleft' },
 
-      onAdd: () => {
-        const container = L.DomUtil.create('div', 'search-control-container');
-        container.style.background = 'white';
-        container.style.padding = '10px';
-        container.style.borderRadius = '4px';
-        container.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
-        container.style.minWidth = '220px';
+      onAdd: function () {
+        const container = L.DomUtil.create('div', 'search-control-container search-control-container--collapsed');
+        L.DomEvent.disableClickPropagation(container);
 
-        const wrapper = L.DomUtil.create('div', 'search-wrapper');
-        wrapper.style.display = 'flex';
-        wrapper.style.alignItems = 'center';
-        wrapper.style.gap = '8px';
+        // Icon-only button shown by default
+        const iconBtn = L.DomUtil.create('button', 'search-icon-btn', container) as HTMLButtonElement;
+        iconBtn.innerHTML = '<i class="pi pi-search"></i>';
+        iconBtn.type = 'button';
+        iconBtn.title = 'Search patients';
 
-        const icon = L.DomUtil.create('span', 'search-icon');
-        icon.innerHTML = '🔍';
-        icon.style.fontSize = '16px';
-        wrapper.appendChild(icon);
-
-        const input = L.DomUtil.create('input', 'search-input') as HTMLInputElement;
+        // Input + clear button, hidden until expanded
+        const wrapper = L.DomUtil.create('div', 'search-wrapper', container);
+        const input = L.DomUtil.create('input', 'search-input', wrapper) as HTMLInputElement;
         input.type = 'text';
-        input.placeholder = 'Search patients...';
-        input.style.border = '1px solid #e2e8f0';
-        input.style.borderRadius = '4px';
-        input.style.padding = '6px 10px';
-        input.style.width = '100%';
-        input.style.fontSize = '14px';
-        input.style.outline = 'none';
+        input.placeholder = 'Search patients…';
 
-        input.addEventListener('focus', () => {
-          input.style.borderColor = '#0b4f4a';
-        });
+        const clearBtn = L.DomUtil.create('button', 'search-clear', wrapper) as HTMLButtonElement;
+        clearBtn.type = 'button';
+        clearBtn.innerHTML = '<i class="pi pi-times"></i>';
 
-        input.addEventListener('blur', () => {
-          input.style.borderColor = '#e2e8f0';
-        });
+        const collapse = () => {
+          if (input.value.length > 0) return; // don't collapse if there's an active search
+          container.classList.add('search-control-container--collapsed');
+        };
+
+        const expand = () => {
+          container.classList.remove('search-control-container--collapsed');
+          setTimeout(() => input.focus(), 50);
+        };
+
+        iconBtn.addEventListener('click', expand);
 
         input.addEventListener('input', (e) => {
           const value = (e.target as HTMLInputElement).value;
-          this.searchQuery.set(value);
-          this.debouncedSearch();
+          self.searchQuery.set(value);
+          self.debouncedSearch();
+          clearBtn.style.display = value.length > 0 ? 'flex' : 'none';
         });
 
-        wrapper.appendChild(input);
-        container.appendChild(wrapper);
-
-        // Add clear button
-        const clearBtn = L.DomUtil.create('button', 'search-clear');
-        clearBtn.textContent = '✕';
-        clearBtn.style.cssText = `
-          position: absolute;
-          right: 14px;
-          top: 50%;
-          transform: translateY(-50%);
-          background: none;
-          border: none;
-          cursor: pointer;
-          color: #9ca3af;
-          font-size: 14px;
-          padding: 4px;
-          display: none;
-        `;
+        input.addEventListener('blur', () => setTimeout(collapse, 150));
 
         clearBtn.addEventListener('click', () => {
           input.value = '';
-          this.searchQuery.set('');
-          this.applySearchFilter();
+          self.searchQuery.set('');
+          self.applySearchFilter();
           clearBtn.style.display = 'none';
-          input.focus();
+          collapse();
         });
 
-        container.style.position = 'relative';
-        container.appendChild(clearBtn);
-
-        // Show/hide clear button
-        input.addEventListener('input', () => {
-          clearBtn.style.display = input.value.length > 0 ? 'block' : 'none';
-        });
-
-        this.searchInput = input;
-
+        self.searchInput = input;
         return container;
       }
     });
@@ -637,74 +525,77 @@ export class PatientMapComponent implements OnInit, AfterViewInit {
     this.applySearchFilter();
   }
 
-  /**
-   * Pulls the user's assigned district's real polygon from DHIS2 (not
-   * hardcoded - uses whichever district(s) OrgScopeService resolved for
-   * the logged-in user), draws its outline, and builds a "cutout" mask
-   * (a world-covering polygon with the district shape as a hole) so
-   * everything outside the district is visually dimmed. Also fits the map
-   * view to the district and constrains panning to roughly its bounds.
-   */
   private async loadDistrictBoundary(L: typeof import('leaflet')): Promise<any | null> {
     const district = this.orgScope.assignedDistricts()[0];
     if (!district) {
-      this.districtLoadError.set('No assigned district found - showing default Sri Lanka view.');
+      this.districtLoadError.set('No assigned district found');
       return null;
     }
 
+    const CACHE_KEY = `district-geo-${district.id}`;
+    let geometry: any = null;
+
+    // 1. Try offline cache first (Instant load)
     try {
-      const geo = await firstValueFrom(this.dhis2.fetchOrgUnitGeometry(district.id));
-      if (!geo.geometry || geo.geometry.type !== 'Polygon') {
-        this.districtLoadError.set(`"${district.name}" has no boundary polygon in DHIS2 yet.`);
-        return null;
+      const cached = await this.localStorage.getMeta<any>(CACHE_KEY);
+      if (cached) {
+        geometry = cached;
+        console.log('[District] from IndexedDB cache');
       }
+    } catch { }
 
-      const districtGroup = L.layerGroup();
+    // 2. If not cached, fetch from DHIS2
+    if (!geometry) {
+      try {
+        const geo = await firstValueFrom(this.dhis2.fetchOrgUnitGeometry(district.id));
+        if (!geo.geometry) throw new Error('No geometry');
 
-      // Outline of the district itself
-      const boundaryLayer = L.geoJSON(
-        { type: 'Feature', properties: {}, geometry: geo.geometry } as any,
-        { style: { color: '#0b4f4a', weight: 2, fill: false } }
-      );
-      boundaryLayer.addTo(districtGroup);
+        geometry = geo.geometry;
 
-      // Cutout mask: world rectangle with the district as a hole, so
-      // everything outside the district dims out visually.
-      const worldRing: [number, number][] = [
-        [-180, -85], [180, -85], [180, 85], [-180, 85], [-180, -85]
-      ];
-      const maskFeature = {
-        type: 'Feature',
-        properties: {},
-        geometry: {
-          type: 'Polygon',
-          coordinates: [worldRing, geo.geometry.coordinates[0]]
+        // 3. Cache for offline
+        await this.localStorage.setMeta(CACHE_KEY, geometry);
+        await this.localStorage.setMeta(`${CACHE_KEY}-updated`, new Date().toISOString());
+        console.log('[District] cached to IndexedDB');
+
+      } catch (err) {
+        // 4. Offline & no cache -> fail
+        if (!geometry) {
+          console.error('District load failed & no cache', err);
+          this.districtLoadError.set('Could not load district boundary (offline & no cache).');
+          return null;
         }
-      } as any;
-      L.geoJSON(maskFeature, {
-        style: { fillColor: '#f6f5f1', fillOpacity: 0.85, stroke: false },
-        interactive: false
-      }).addTo(districtGroup);
-
-      const bounds = boundaryLayer.getBounds();
-      this.map.fitBounds(bounds, { padding: [20, 20] });
-      this.map.setMaxBounds(bounds.pad(0.3));
-
-      return districtGroup;
-    } catch (err) {
-      console.error('[PatientMapComponent] Failed to load district boundary:', err);
-      this.districtLoadError.set('Could not load district boundary from DHIS2.');
-      return null;
+      }
+    } else {
+      // Optional: background refresh when online
+      if (navigator.onLine) {
+        firstValueFrom(this.dhis2.fetchOrgUnitGeometry(district.id))
+          .then(g => {
+            if (g.geometry) this.localStorage.setMeta(CACHE_KEY, g.geometry);
+          }).catch(() => { });
+      }
     }
+
+    // 5. Build layer (same as before)
+    const districtGroup = L.layerGroup();
+    const boundaryLayer = L.geoJSON(
+      { type: 'Feature', properties: {}, geometry } as any,
+      { style: { color: '#0b4f4a', weight: 2, fill: false } }
+    );
+    boundaryLayer.addTo(districtGroup);
+
+    const worldRing: [number, number][] = [[-180, -85], [180, -85], [180, 85], [-180, 85], [-180, -85]];
+    L.geoJSON({ type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [worldRing, geometry.coordinates[0]] } } as any, {
+      style: { fillColor: '#f6f5f1', fillOpacity: 0.85, stroke: false },
+      interactive: false
+    }).addTo(districtGroup);
+
+    const bounds = boundaryLayer.getBounds();
+    this.map.fitBounds(bounds, { padding: [20, 20] });
+    this.map.setMaxBounds(bounds.pad(0.3));
+
+    return districtGroup;
   }
 
-  /**
-   * Tries DHIS2 first (MOH-area org units under the district, if any have
-   * geometry populated). Falls back to manualDsGeoJson if DHIS2 comes back
-   * empty. Returns null (layer simply omitted) if neither source has data -
-   * this is expected until either DHIS2 gets polygon data loaded for this
-   * level, or you paste real GeoJSON into manualDsGeoJson above.
-   */
   private async loadMOHAreaLayerDHIS2(L: typeof import('leaflet')): Promise<any | null> {
     const district = this.orgScope.assignedDistricts()[0];
     let features: OrgUnitGeometry[] = [];
@@ -778,23 +669,49 @@ export class PatientMapComponent implements OnInit, AfterViewInit {
 
     return group;
   }
+  /*
+    private popupHtml(p: Patient): string {
+      const alc = p.alcNum || '—';
+      const name = p.patientName || '(no name)';
+      const address = p.patientHomeAddress || 'No address on file';
+      const moh = p.patientMohArea || 'N/A';
+      const phone = p.mobileNum || p.telNum || '—';
+  
+      return `
+      <div style="font-family: var(--font-body, sans-serif); font-size: 0.85rem; line-height: 1.5; min-width: 220px;">
+        <div style="font-weight: 600; font-size: 1rem; margin-bottom: 4px;">${this.escapeHtml(name)}</div>
+        <div style="color: #6b7280; margin-bottom: 2px;">${this.escapeHtml(alc)}</div>
+        <div style="color: #6b7280; margin-bottom: 2px;">${this.escapeHtml(address)}</div>
+        <div style="color: #6b7280; font-size: 0.75rem; margin-top: 4px; border-top: 1px solid #e5e7eb; padding-top: 4px; margin-bottom:10px;">
+          MOH: ${this.escapeHtml(moh)} | ${this.escapeHtml(phone)}
+        </div>
+        <button data-edit="${this.escapeHtml(p.id)}" 
+          style="display:inline-flex; align-items:center; gap:6px; padding:6px 12px; font-size:0.8rem; font-weight:600; background:#0b4f4a; color:white; border:none; border-radius:6px; cursor:pointer; width:100%; justify-content:center;">
+          <i class="pi pi-pencil" style="font-size:0.8rem"></i> Edit Location
+        </button>
+      </div>
+    `;
+    }*/
 
   private popupHtml(p: Patient): string {
     const alc = p.alcNum || '—';
     const name = p.patientName || '(no name)';
     const address = p.patientHomeAddress || 'No address on file';
     const moh = p.patientMohArea || 'N/A';
-    const phone = p.mobileNum || p.telNum;
-
+    const phone = p.mobileNum || p.telNum || '—';
     return `
-      <div style="font-family: var(--font-body, sans-serif); font-size: 0.85rem; line-height: 1.5; min-width: 200px;">
-        <div style="font-weight: 600; font-size: 1rem; margin-bottom: 4px;">${this.escapeHtml(name)}</div>
-        <div style="color: #6b7280; margin-bottom: 2px;">ALC: ${this.escapeHtml(alc)}</div>
-        <div style="color: #6b7280; margin-bottom: 2px;">${this.escapeHtml(address)}</div>
-        <div style="color: #6b7280; font-size: 0.75rem; margin-top: 4px; border-top: 1px solid #e5e7eb; padding-top: 4px;">
-          MOH: ${this.escapeHtml(moh)} | ${this.escapeHtml(phone)}
-        </div>
+    <div style="font-family: var(--font-body, sans-serif); font-size: 0.85rem; line-height: 1.5; min-width: 220px;">
+      <div style="font-weight: 600; font-size: 1rem; margin-bottom: 4px;">${this.escapeHtml(name)}</div>
+      <div style="color: #6b7280; margin-bottom: 2px;">${this.escapeHtml(alc)}</div>
+      <div style="color: #6b7280; margin-bottom: 2px;">${this.escapeHtml(address)}</div>
+      <div style="color: #6b7280; font-size: 0.75rem; margin-top: 4px; border-top: 1px solid #e5e7eb; padding-top: 4px; margin-bottom:10px;">
+        MOH: ${this.escapeHtml(moh)} | ${this.escapeHtml(phone)}
       </div>
+      <button data-edit="${this.escapeHtml(p.id)}" 
+        style="display:inline-flex; align-items:center; gap:6px; padding:6px 12px; font-size:0.8rem; font-weight:600; background:#0b4f4a; color:white; border:none; border-radius:6px; cursor:pointer; width:100%; justify-content:center;">
+        <i class="pi pi-pencil" style="font-size:0.8rem"></i> Edit Location
+      </button>
+    </div>
     `;
   }
 
@@ -803,105 +720,176 @@ export class PatientMapComponent implements OnInit, AfterViewInit {
     div.textContent = s;
     return div.innerHTML;
   }
-  // Export map as image
-  private exportMapImage(): void {
-    /* this.map.once('render', () => {
-       const canvas = document.querySelector('.leaflet-map-pane canvas');
-       if (canvas) {
-         const link = document.createElement('a');
-         link.download = 'patient-map.png';
-         link.href = (canvas as HTMLCanvasElement).toDataURL('image/png');
-         link.click();
-       }
-     });*/
+
+  selectedPatient = signal<Patient | null>(null);
+  showEditDialog = signal(false);
+  editLat = signal<number>(0);
+  editLng = signal<number>(0);
+  isPickingLocation = signal(false);
+  // Map marker for selected location
+  private tempMarker: any = null;
+  private mapClickHandler: any = null;
+
+
+
+
+  private updateTempMarker(lat: number, lng: number): void {
+    const L = this.L;
+    if (this.tempMarker) {
+      this.map.removeLayer(this.tempMarker);
+    }
+
+    const icon = L.divIcon({
+      className: '',
+      html: `<div style="width:20px;height:20px;border-radius:50%;background:#ef4444;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.4);"></div>`,
+      iconSize: [20, 20],
+      iconAnchor: [10, 10]
+    });
+
+    this.tempMarker = L.marker([lat, lng], { icon }).addTo(this.map);
   }
 
-  /** One Leaflet layerGroup per year, each with its own marker color and popups. */
-  /* private buildYearLayers(L: typeof import('leaflet')): Record<string, any> {
-     const years = Object.keys(this.yearColors).map(Number).sort((a, b) => b - a);
-     const layers: Record<string, any> = {};
- 
-     for (const year of years) {
-       const group = L.layerGroup();
-       const color = this.yearColors[year];
- 
-       const patientsThisYear = this.mappable().filter((p) => {
-         if (!p.enrolledAt) return false;
-         return Number(p.enrolledAt.slice(0, 4)) === year;
-       });
- 
-       for (const p of patientsThisYear) {
-         const icon = L.divIcon({
-           className: '',
-           html: `<div style="width:16px;height:16px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,0.4)"></div>`,
-           iconSize: [16, 16]
-         });
- 
-         const marker = L.marker([p.latitude!, p.longitude!], { icon });
-         marker.bindPopup(this.popupHtml(p));
-         marker.on('click', () => this.selected.set(p));
-         marker.addTo(group);
-       }
- 
-       // Colored dot embedded directly in the label HTML - Leaflet's layer
-       // control renders overlay names as raw innerHTML, so this ties the
-       // color to this specific entry regardless of layer ordering, rather
-       // than relying on fragile CSS nth-child matching.
-       const dot = `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background-color:${color};margin-right:6px;vertical-align:middle;"></span>`;
-       layers[`${dot}${year} (${patientsThisYear.length})`] = group;
-     }
- 
-     return layers;
-   }*/
+  openEditDialog(p: Patient) {
+    this.selectedPatient.set(p);
+    this.editLat.set(p.latitude || 7.0);
+    this.editLng.set(p.longitude || 81.0);
+    this.isPickingLocation.set(false);
+
+    // Remove any temp marker
+    if (this.tempMarker) {
+      this.map.removeLayer(this.tempMarker);
+      this.tempMarker = null;
+    }
+
+    this.showEditDialog.set(true);
+    this.cdr.detectChanges();
+  }
+
+  pickLocationFromMap() {
+    this.isPickingLocation.set(true);
+    // Add a visual hint on the map
+    if (this.tempMarker) {
+      this.map.removeLayer(this.tempMarker);
+      this.tempMarker = null;
+    }
+    this.cdr.detectChanges();
+  }
+
+  cancelPicking() {
+    this.isPickingLocation.set(false);
+    if (this.tempMarker) {
+      this.map.removeLayer(this.tempMarker);
+      this.tempMarker = null;
+    }
+    // Reset to original location
+    const p = this.selectedPatient();
+    if (p) {
+      this.editLat.set(p.latitude || 7.0);
+      this.editLng.set(p.longitude || 81.0);
+    }
+    this.cdr.detectChanges();
+  }
+
+  async saveLocation() {
+    const p = this.selectedPatient();
+    if (!p) return;
+
+    const updated = {
+      ...p,
+      latitude: this.editLat(),
+      longitude: this.editLng(),
+      syncStatus: 'pending' as const
+    };
+    await this.localStorage.savePatient(updated);
+
+    this.showEditDialog.set(false);
+    this.isPickingLocation.set(false);
+
+    if (this.tempMarker) {
+      this.map.removeLayer(this.tempMarker);
+      this.tempMarker = null;
+    }
+
+    this.refreshCluster();
+    this.cdr.detectChanges();
+  }
+
+  cancelEdit() {
+    this.showEditDialog.set(false);
+    this.isPickingLocation.set(false);
+    if (this.tempMarker) {
+      this.map.removeLayer(this.tempMarker);
+      this.tempMarker = null;
+    }
+    this.cdr.detectChanges();
+  }
 
 
-  /*private addClusterControl(L: typeof import('leaflet')): void {
-    const self = this;
-    const ClusterControl = L.Control.extend({
-      options: { position: 'topleft' },
-      onAdd: function() {
-        const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-        container.style.background = 'white';
-        container.style.width = '34px';
-        container.style.height = '34px';
-        container.style.cursor = 'pointer';
-  
-        const btn = L.DomUtil.create('a', '', container);
-        btn.href = '#';
-        btn.style.fontSize = '18px';
-        btn.style.lineHeight = '34px';
-        btn.style.textAlign = 'center';
-        btn.style.textDecoration = 'none';
-        btn.innerHTML = '📅'; // year mode icon
-        btn.title = 'Year view - Click for Cluster view';
-  
-        L.DomEvent.disableClickPropagation(container);
-        L.DomEvent.on(btn, 'click', L.DomEvent.stop);
-        L.DomEvent.on(btn, 'click', (e: any) => {
-          e.preventDefault();
-          if (self.currentMode === 'year') {
-            // Switch to CLUSTER
-            self.map.removeLayer(self.allYearGroup);
-            self.map.addLayer(self.markerClusterGroup);
-            self.currentMode = 'cluster';
-            btn.innerHTML = '🔗';
-            btn.title = 'Cluster view - Click for Year view';
-            container.style.background = '#e0f2f1';
-          } else {
-            // Switch to YEAR
-            self.map.removeLayer(self.markerClusterGroup);
-            self.map.addLayer(self.allYearGroup);
-            self.currentMode = 'year';
-            btn.innerHTML = '📅';
-            btn.title = 'Year view - Click for Cluster view';
-            container.style.background = 'white';
-          }
+
+
+
+
+
+
+
+
+  private setupMapClickForEditing(): void {
+    if (!this.map) return;
+
+    this.map.on('click', (e: any) => {
+      if (this.showEditDialog() && this.isPickingLocation()) {
+        this.ngZone.run(() => {
+          this.editLat.set(e.latlng.lat);
+          this.editLng.set(e.latlng.lng);
+          this.isPickingLocation.set(false);
+          this.cdr.detectChanges();
         });
-        return container;
       }
     });
-    this.clusterControl = new ClusterControl();
-    this.clusterControl.addTo(this.map);
-  }*/
+  }
 
+
+  protected readonly exporting = signal(false);
+
+  protected async exportMapImage(): Promise<void> {
+    this.exporting.set(true);
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+
+      // IMPORTANT CAVEAT: OpenStreetMap's public tile servers
+      // ({s}.tile.openstreetmap.org) don't reliably send CORS headers, which
+      // can cause the canvas to be "tainted" and toDataURL() to throw even
+      // with useCORS:true - this is a known limitation of screenshotting
+      // Leaflet maps with cross-origin raster tiles, not a bug in this code.
+      // If exports come out blank/fail, switching the tile provider to one
+      // with explicit CORS support (e.g. CARTO's free basemaps) is the real
+      // fix, not a code change here.
+      const canvas = await html2canvas(this.mapContainer.nativeElement, {
+        useCORS: true,
+        allowTaint: false,
+        logging: false
+      });
+
+      const link = document.createElement('a');
+      link.download = `patient-map-${new Date().toISOString().slice(0, 10)}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (err) {
+      console.error('[PatientMapComponent] Map export failed:', err);
+      alert('Could not export the map image. This can happen due to cross-origin map tile restrictions - see console for details.');
+    } finally {
+      this.exporting.set(false);
+    }
+  }
+
+  // Add this method to your component
+protected refreshMap(): void {
+  // Refresh patient data
+  this.mappable();
+  
+  // Refresh map markers
+  setTimeout(() => {
+    this.updatePatientMarkers(this.mappable());
+  }, 100);
+}
 }
