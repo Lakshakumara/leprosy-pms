@@ -55,7 +55,7 @@ export const appConfig: ApplicationConfig = {
         preset: Aura,
         options: {
           darkModeSelector: false, // clinical UI: fixed light theme for legibility
-          sLayer: { name: 'primeng', order: 'primeng' }
+          cssLayer: { name: 'primeng', order: 'primeng' }
         }
       }
     }), 

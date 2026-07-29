@@ -17,7 +17,8 @@
             <span class="count-pill">{{ activeFilterCount() }}</span>
             }
         </button>
-        <button class="btn-sync" pTooltip="Load all patients in current district" (click)="syncNow()"
+        <button class="btn-sync" pTooltip="Load all patients in current district" tooltipPosition="left"
+            [tooltipOptions]="{ positionLeft: 15 }" (click)="syncNow()"
             [disabled]="!patientService.isOnline() || patientService.isSyncing()" id="sync-btn">
             <i class="pi" [class.pi-refresh]="!patientService.isSyncing()" [class.pi-spin]="patientService.isSyncing()"
                 [class.pi-spinner]="patientService.isSyncing()"></i>

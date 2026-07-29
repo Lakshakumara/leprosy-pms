@@ -103,10 +103,6 @@ export class PatientMapComponent implements OnInit, AfterViewInit, OnDestroy {
 ];
 
 yearColors: Record<string, string> = {}; // NOT readonly, we build it
-  private readonly dsAreaPalette = [
-    '#1d4ed8', '#b5532c', '#b08900', '#0d9488', '#7c3aed',
-    '#dc2626', '#059669', '#ea580c', '#4f46e5', '#0891b2'
-  ];
 
   private readonly mohAreaPalette = [
     '#1d4ed8', '#b5532c', '#b08900', '#0d9488', '#7c3aed',
@@ -121,7 +117,6 @@ yearColors: Record<string, string> = {}; // NOT readonly, we build it
   private isMapInitialized = false;
 
   private yearLayerGroups: Record<string, any> = {};
-  private allYearGroup: any; // combined year layers
   private currentMode: 'year' | 'cluster' = 'year';
 
   private activeYears: Set<string> = new Set<string>()
@@ -198,8 +193,6 @@ yearColors: Record<string, string> = {}; // NOT readonly, we build it
       mohLayer.addTo(this.map);
     }
 
-    this.allYearGroup = L.layerGroup();
-
     this.activeYears.forEach((year: string) => {
       const yNum = year;
       const color = this.yearColors[yNum] || '#6b7280';
@@ -243,25 +236,6 @@ yearColors: Record<string, string> = {}; // NOT readonly, we build it
         });
       }
     });
-
-
-
-    /*this.markerClusterGroup = L.markerClusterGroup({
-      maxClusterRadius: 50,
-      iconCreateFunction: (cluster: any) => {
-        const count = cluster.getChildCount();
-        const size = count < 10 ? 30 : count < 50 ? 40 : 50;
-        const color = count < 10 ? '#3b82f6' : count < 50 ? '#f59e0b' : '#ef4444';
-        return L.divIcon({
-          html: `<div style="background:${color};color:white;border-radius:50%;width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;font-weight:bold;border:2px solid white;">${count}</div>`,
-          iconSize: [size, size], className: ''
-        });
-      }
-    });*/
-
-    //this.activeYears = new Set(top5Years.map(y => Number(y))); // init here
-
-
 
     this.map.on('overlayadd', (e: any) => {
       if (this.isSwitching) return;
@@ -314,8 +288,6 @@ yearColors: Record<string, string> = {}; // NOT readonly, we build it
     };
     this.map.on('click', this.mapClickHandler);
 
-    this.addSearchControl(L);
-   // this.addClusterControl(L);
     this.addCustomControl(L);
     L.control.layers(undefined, overlays, { collapsed: false }).addTo(this.map);
     this.isMapInitialized = true;
@@ -323,7 +295,7 @@ yearColors: Record<string, string> = {}; // NOT readonly, we build it
   }
 
   private addCustomControl(L: typeof import('leaflet')): void {
-  const self = this;
+    const self = this;
 
   const CustomControl = L.Control.extend({
     options: { position: 'topleft' },
@@ -723,12 +695,25 @@ private addClusterControl(L: typeof import('leaflet')): void {
   private applySearchFilter(): void {
     console.log('apply filter ')
     const patients = this.mappable();
-    this.updatePatientMarkers(patients);
+
+    const searchQuery = this.searchQuery().toLowerCase().trim();
+    let filteredPatients = patients;
+    
+    if (searchQuery) {
+      filteredPatients = patients.filter(p => 
+        p.patientName?.toLowerCase().includes(searchQuery) ||
+        p.patientHomeAddress?.toLowerCase().includes(searchQuery) ||
+        p.alcNum?.toLowerCase().includes(searchQuery) ||
+        p.patientMohArea?.toLowerCase().includes(searchQuery) ||
+        p.patientPhiArea?.toLowerCase().includes(searchQuery)
+      );
+    }
+    
+    this.updatePatientMarkers(filteredPatients);
 
     // Zoom to show filtered patients if any
-    const filtered = this.filteredPatients();
-    if (filtered.length > 0) {
-      const bounds = this.getBoundsFromPatients(filtered);
+    if (filteredPatients.length > 0) {
+      const bounds = this.getBoundsFromPatients(filteredPatients);
       if (bounds) {
         this.map.fitBounds(bounds, { padding: [30, 30] });
       }
@@ -864,7 +849,7 @@ private addClusterControl(L: typeof import('leaflet')): void {
     const group = L.layerGroup();
 
     features.forEach((f, i) => {
-      const color = this.dsAreaPalette[i % this.dsAreaPalette.length];
+      const color = this.mohAreaPalette[i % this.mohAreaPalette.length];
       L.geoJSON({ type: 'Feature', properties: { name: f.name }, geometry: f.geometry as any } as any, {
         style: { color, weight: 1.5, fillColor: color, fillOpacity: 0.15 }
       })
@@ -874,7 +859,7 @@ private addClusterControl(L: typeof import('leaflet')): void {
 
     if (this.manualDsGeoJson) {
       this.manualDsGeoJson.features.forEach((f, i) => {
-        const color = this.dsAreaPalette[i % this.dsAreaPalette.length];
+        const color = this.mohAreaPalette[i % this.mohAreaPalette.length];
         L.geoJSON(f, { style: { color, weight: 1.5, fillColor: color, fillOpacity: 0.15 } })
           .bindTooltip((f.properties as any)?.['name'] ?? 'MOH area')
           .addTo(group);
