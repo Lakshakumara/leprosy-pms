@@ -64,7 +64,7 @@
 }
 
 <!-- Add this after the map container -->
-<div class="floating-actions" *ngIf="isMobile()">
+<div class="floating-actions" *ngIf="isMobileView()">
   <button 
     pButton 
     type="button" 
@@ -149,7 +149,7 @@
     <p-button 
       label="Save Location" 
       (click)="saveLocation()" 
-      severity="primary" 
-      [disabled]="isPickingLocation()" />
+      severity="primary" />
   </ng-template>
 </p-dialog>
+<p-confirmDialog ></p-confirmDialog>

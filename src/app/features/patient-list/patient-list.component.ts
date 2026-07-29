@@ -197,7 +197,7 @@ export class PatientListComponent implements OnInit {
   }
 
   protected async syncNow(): Promise<void> {
-    const year = this.filter().enrolledFrom?.slice(0, 4);
+    const year = this.filter().year;
     await this.patientService.pullFromServer(Number(year))
     await this.loadDistinctValues();
   }

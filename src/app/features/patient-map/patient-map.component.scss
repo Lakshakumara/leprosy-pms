@@ -1,4 +1,747 @@
-.page-head__sub { color: var(--color-muted); font-size: 0.85rem; margin: 0 0 16px; }
+// ============================================
+// VARIABLES & UTILITIES
+// ============================================
+.page-head__sub {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  margin: 0 0 16px;
+}
+
+.muted {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+.legend {
+  margin-top: 14px;
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 0.82rem;
+  color: var(--color-muted);
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+  vertical-align: middle;
+
+  &--2026 { background-color: #1d4ed8; }
+  &--2025 { background-color: #b5532c; }
+  &--2024 { background-color: #b08900; }
+  &--2023 { background-color: #0d9488; }
+  &--2022 { background-color: #7c3aed; }
+}
+
+// ============================================
+// MAP LAYOUT & CONTAINERS
+// ============================================
+.map-card {
+  padding: 6px;
+  overflow: hidden;
+  margin-top: 0;
+  border-radius: 12px;
+  border: 1px solid #f0f0f0;
+}
+
+.map-container {
+  height: calc(100vh - 200px);
+  min-height: 400px;
+  width: 100%;
+  border-radius: 10px;
+
+  @media (max-width: 640px) {
+    height: calc(100vh - 180px);
+    min-height: 300px;
+  }
+
+  @media (max-width: 480px) {
+    height: calc(100vh - 160px);
+    min-height: 250px;
+  }
+}
+
+// ============================================
+// HEADER & TOP ACTIONS
+// ============================================
+.map-header {
+  margin-bottom: 12px;
+  background: white;
+  border-radius: 12px;
+  padding: 12px 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  border: 1px solid #f0f0f0;
+
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    flex: 1;
+
+    h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin: 0;
+      color: #1f2937;
+      white-space: nowrap;
+
+      @media (max-width: 480px) {
+        font-size: 0.95rem;
+      }
+    }
+
+    .patient-count {
+      font-size: 0.7rem;
+      color: #6b7280;
+      background: #f3f4f6;
+      padding: 2px 8px;
+      border-radius: 12px;
+      white-space: nowrap;
+
+      @media (max-width: 480px) {
+        font-size: 0.65rem;
+        padding: 1px 5px;
+      }
+    }
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+
+    .header-btn {
+      height: 32px !important;
+      padding: 0 10px !important;
+      font-size: 0.75rem !important;
+      min-width: 32px !important;
+
+      .btn-label {
+        @media (max-width: 480px) {
+          display: none;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .p-button-icon {
+          margin-right: 0 !important;
+          font-size: 0.75rem !important;
+        }
+      }
+    }
+  }
+
+  .notice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: #fef2f2;
+    border-radius: 8px;
+    border-left: 3px solid #ef4444;
+    font-size: 0.8rem;
+    color: #991b1b;
+
+    i {
+      font-size: 0.9rem;
+      color: #ef4444;
+      flex-shrink: 0;
+    }
+
+    span {
+      flex: 1;
+      word-break: break-word;
+    }
+  }
+
+  @media (max-width: 640px) {
+    padding: 10px 12px;
+    border-radius: 10px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 8px 10px;
+    margin-bottom: 8px;
+  }
+}
+
+// ============================================
+// SELECTED PATIENT BANNER
+// ============================================
+.selected-info {
+  margin-top: 12px;
+  padding: 10px 14px !important;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+
+  .selected-content {
+    flex: 1;
+    min-width: 0;
+
+    .selected-main {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 2px;
+
+      strong {
+        font-size: 0.9rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+
+        @media (max-width: 640px) { font-size: 0.8rem; }
+        @media (max-width: 480px) { font-size: 0.75rem; }
+      }
+
+      .badge {
+        font-size: 0.65rem;
+        padding: 1px 8px;
+        border-radius: 12px;
+        font-weight: 600;
+        flex-shrink: 0;
+
+        &--mb {
+          background: #fef3c7;
+          color: #92400e;
+        }
+
+        &--pb {
+          background: #dbeafe;
+          color: #1e40af;
+        }
+
+        @media (max-width: 480px) {
+          font-size: 0.55rem;
+          padding: 1px 6px;
+        }
+      }
+    }
+
+    .muted {
+      font-size: 0.75rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+
+      @media (max-width: 640px) { font-size: 0.65rem; }
+      @media (max-width: 480px) { font-size: 0.6rem; }
+    }
+  }
+
+  .close-selected {
+    flex-shrink: 0;
+    width: 28px !important;
+    height: 28px !important;
+    color: #6b7280;
+
+    &:hover {
+      color: #ef4444;
+    }
+
+    @media (max-width: 480px) {
+      width: 22px !important;
+      height: 22px !important;
+
+      .p-button-icon {
+        font-size: 0.7rem !important;
+      }
+    }
+  }
+
+  @media (max-width: 640px) { padding: 8px 12px !important; }
+  @media (max-width: 480px) {
+    padding: 6px 10px !important;
+    margin-top: 8px;
+  }
+}
+
+// ============================================
+// FLOATING & SPEEDDIAL ACTIONS
+// ============================================
+.floating-actions {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 1000;
+
+  .p-button {
+    width: 50px !important;
+    height: 50px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  @media (min-width: 769px) {
+    display: none !important;
+  }
+}
+
+.mobile-speeddial {
+  position: fixed;
+  bottom: 30px;
+  right: 20px;
+  z-index: 1000;
+
+  @media (min-width: 769px) {
+    display: none !important;
+  }
+}
+
+@media (pointer: coarse) {
+  .header-btn, .close-selected {
+    min-height: 34px !important;
+    min-width: 34px !important;
+  }
+}
+
+// ============================================
+// DIALOG INTERNAL COMPONENTS
+// ============================================
+.dialog-content {
+  .patient-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: #f0fdf4;
+    border-radius: 8px;
+    margin-bottom: 16px;
+
+    .patient-name {
+      font-weight: 600;
+      color: #1f2937;
+    }
+
+    .patient-id {
+      font-size: 0.85rem;
+      color: #6b7280;
+      background: white;
+      padding: 2px 10px;
+      border-radius: 12px;
+    }
+  }
+}
+
+.edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+
+  label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  input[pInputText] {
+    width: 100% !important;
+    border: 1.5px solid #d1d5db !important;
+    border-radius: 8px !important;
+    padding: 8px 12px !important;
+    font-size: 0.9rem !important;
+    color: #1f2937 !important;
+    background: #f3efef !important;
+    transition: all 0.15s;
+
+    &:focus {
+      border-color: #0b4f4a !important;
+      box-shadow: 0 0 0 3px rgba(11, 79, 74, 0.12) !important;
+      outline: none !important;
+    }
+
+    &:hover {
+      border-color: #1a7a74 !important;
+    }
+  }
+}
+
+.location-picker-section {
+  margin: 8px 0 12px;
+
+  .p-button {
+    width: 100%;
+    justify-content: center;
+
+    &.p-button-success {
+      background: #0b4f4a;
+      border-color: #0b4f4a;
+
+      &:hover {
+        background: #083d39;
+        border-color: #083d39;
+      }
+    }
+  }
+
+  .picking-hint {
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: #fef3c7;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    color: #92400e;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: pulse-hint 2s ease-in-out infinite;
+  }
+}
+
+@keyframes pulse-hint {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.edit-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: #6b7280;
+  background: #e6f3f2;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-top: 12px;
+
+  i {
+    font-size: 0.9rem;
+    color: #0b4f4a;
+  }
+}
+
+// ============================================
+// DEEP OVERRIDES (LEAFLET & PRIMENG)
+// ============================================
+:host ::ng-deep {
+
+  // --- LEAFLET LAYER CONTROLS ---
+  .leaflet-control-layers {
+    border-radius: 8px;
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+  }
+
+  .leaflet-control-layers-selector {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    min-width: 14px;
+    border: 1.5px solid var(--color-line, #d1d5db);
+    border-radius: 3px;
+    background: #fff;
+    cursor: pointer;
+    position: relative;
+    margin-right: 6px;
+    vertical-align: middle;
+    display: inline-block;
+
+    &:checked {
+      background: var(--color-teal-700, #0b4f4a);
+      border-color: var(--color-teal-700, #0b4f4a);
+    }
+
+    &:checked::after {
+      content: '';
+      position: absolute;
+      left: 3px;
+      top: -1px;
+      width: 4px;
+      height: 8px;
+      border: solid white;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+  }
+
+  // --- LEAFLET CUSTOM MAP CONTROLS & SEARCH ---
+  .custom-map-controls {
+    display: flex;
+    flex-direction: column;
+
+    > a {
+      border-bottom: 1px solid #ccc;
+    }
+  }
+
+  .search-control-container {
+    display: flex;
+    align-items: center;
+    position: relative;
+    background: #ffffff;
+    border-radius: 999px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: width 0.25s ease;
+
+    .search-icon-btn {
+      width: 34px;
+      height: 34px;
+      min-width: 34px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-teal-700, #0b4f4a);
+      font-size: 15px;
+    }
+
+    .search-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      width: 200px;
+      padding-right: 8px;
+      transition: width 0.25s ease, opacity 0.2s ease;
+    }
+
+    .search-input {
+      border: none;
+      outline: none;
+      font-size: 13px;
+      width: 100%;
+      padding: 6px 0;
+    }
+
+    .search-clear {
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      color: #9ca3af;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+
+      &:hover {
+        color: #6b7280;
+      }
+    }
+
+    &.search-control-container--collapsed {
+      .search-wrapper {
+        width: 0;
+        padding-right: 0;
+        opacity: 0;
+        pointer-events: none;
+        display: none;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .search-wrapper .search-input {
+        width: 150px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .search-wrapper .search-input {
+        width: 120px;
+        font-size: 12px;
+      }
+    }
+  }
+
+  // --- MAP MARKERS ---
+  .cluster-marker div {
+    transition: transform 0.2s ease;
+    &:hover { transform: scale(1.1); }
+  }
+
+  .patient-marker div {
+    transition: transform 0.2s ease;
+    &:hover { transform: scale(1.3) !important; }
+  }
+
+  // --- PRIMENG DIALOG OVERRIDES ---
+  .p-dialog {
+    border-radius: 12px;
+    overflow: visible;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+
+    .p-dialog-header {
+      background: #0b4f4a;
+      color: white;
+      padding: 16px 20px;
+      border-radius: 12px 12px 0 0;
+      cursor: move;
+
+      .p-dialog-title {
+        font-weight: 700;
+        font-size: 1rem;
+        color: white;
+      }
+
+      .p-dialog-header-icon {
+        color: rgba(255, 255, 255, 0.8);
+
+        &:hover {
+          color: white;
+          background: rgba(255, 255, 255, 0.15);
+          border-radius: 50%;
+        }
+      }
+    }
+
+    .p-dialog-content {
+      padding: 20px;
+      background: #f9fafb;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+
+    .p-dialog-footer {
+      padding: 12px 20px 16px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      border-top: 1px solid #e5e7eb;
+      background: white;
+      border-radius: 0 0 12px 12px;
+
+      .p-button {
+        min-width: 80px;
+
+        &.p-button-secondary.p-button-text {
+          color: #6b7280;
+          &:hover { background: rgba(107, 114, 128, 0.1); }
+        }
+
+        &.p-button-primary {
+          background: #0b4f4a;
+          border-color: #0b4f4a;
+
+          &:hover:not(:disabled) {
+            background: #083d39;
+            border-color: #083d39;
+          }
+
+          &:disabled { opacity: 0.6; }
+        }
+      }
+    }
+  }
+
+  // --- PRIMENG SPEEDDIAL OVERRIDES ---
+  .speeddial-custom {
+    .p-speeddial-button {
+      width: 56px !important;
+      height: 56px !important;
+      background: #0b4f4a !important;
+      border-color: #0b4f4a !important;
+      box-shadow: 0 4px 16px rgba(11, 79, 74, 0.3) !important;
+
+      &:hover {
+        background: #083d39 !important;
+        border-color: #083d39 !important;
+        transform: scale(1.05);
+      }
+
+      .p-button-icon {
+        font-size: 1.4rem !important;
+      }
+    }
+
+    .p-speeddial-list {
+      margin-bottom: 8px;
+    }
+
+    .p-speeddial-item {
+      .p-button {
+        width: 44px !important;
+        height: 44px !important;
+        border-radius: 50% !important;
+        background: white !important;
+        color: #1f2937 !important;
+        border: 1px solid #e5e7eb !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+        transition: all 0.2s ease !important;
+
+        &:hover {
+          transform: scale(1.1) !important;
+          background: #f8fafc !important;
+          border-color: #0b4f4a !important;
+          color: #0b4f4a !important;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+        }
+
+        .p-button-icon {
+          font-size: 1rem !important;
+        }
+
+        &.p-button-success {
+          background: #10b981 !important;
+          color: white !important;
+          border-color: #10b981 !important;
+          &:hover {
+            background: #059669 !important;
+            border-color: #059669 !important;
+          }
+        }
+
+        &.p-button-warning {
+          background: #f59e0b !important;
+          color: white !important;
+          border-color: #f59e0b !important;
+          &:hover {
+            background: #d97706 !important;
+            border-color: #d97706 !important;
+          }
+        }
+
+        &.p-button-info {
+          background: #3b82f6 !important;
+          color: white !important;
+          border-color: #3b82f6 !important;
+          &:hover {
+            background: #2563eb !important;
+            border-color: #2563eb !important;
+          }
+        }
+
+        &.p-button-danger {
+          background: #ef4444 !important;
+          color: white !important;
+          border-color: #ef4444 !important;
+          &:hover {
+            background: #dc2626 !important;
+            border-color: #dc2626 !important;
+          }
+        }
+      }
+    }
+  }
+}
+
+
+
+
+/*.page-head__sub { color: var(--color-muted); font-size: 0.85rem; margin: 0 0 16px; }
 // Replace your .map-card and .map-container rules with this.
 //
 // The old version only capped height on mobile (max-width: 640px) and left
@@ -843,3 +1586,180 @@
     display: none !important;
   }
 }
+
+
+
+
+
+.mobile-speeddial {
+  position: fixed;
+  bottom: 30px;
+  right: 20px;
+  z-index: 1000;
+
+  @media (min-width: 769px) {
+    display: none !important;
+  }
+}
+
+// Custom SpeedDial styling
+:host ::ng-deep {
+  .speeddial-custom {
+    .p-speeddial-button {
+      width: 56px !important;
+      height: 56px !important;
+      background: #0b4f4a !important;
+      border-color: #0b4f4a !important;
+      box-shadow: 0 4px 16px rgba(11, 79, 74, 0.3) !important;
+      
+      &:hover {
+        background: #083d39 !important;
+        border-color: #083d39 !important;
+        transform: scale(1.05);
+      }
+      
+      .p-button-icon {
+        font-size: 1.4rem !important;
+      }
+    }
+
+    .p-speeddial-list {
+      margin-bottom: 8px;
+    }
+
+    .p-speeddial-item {
+      .p-button {
+        width: 44px !important;
+        height: 44px !important;
+        border-radius: 50% !important;
+        background: white !important;
+        color: #1f2937 !important;
+        border: 1px solid #e5e7eb !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+        transition: all 0.2s ease !important;
+
+        &:hover {
+          transform: scale(1.1) !important;
+          background: #f8fafc !important;
+          border-color: #0b4f4a !important;
+          color: #0b4f4a !important;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+        }
+
+        .p-button-icon {
+          font-size: 1rem !important;
+        }
+
+        // Different colors for different actions
+        &.p-button-success {
+          background: #10b981 !important;
+          color: white !important;
+          border-color: #10b981 !important;
+          
+          &:hover {
+            background: #059669 !important;
+            border-color: #059669 !important;
+          }
+        }
+
+        &.p-button-warning {
+          background: #f59e0b !important;
+          color: white !important;
+          border-color: #f59e0b !important;
+          
+          &:hover {
+            background: #d97706 !important;
+            border-color: #d97706 !important;
+          }
+        }
+
+        &.p-button-info {
+          background: #3b82f6 !important;
+          color: white !important;
+          border-color: #3b82f6 !important;
+          
+          &:hover {
+            background: #2563eb !important;
+            border-color: #2563eb !important;
+          }
+        }
+
+        &.p-button-danger {
+          background: #ef4444 !important;
+          color: white !important;
+          border-color: #ef4444 !important;
+          
+          &:hover {
+            background: #dc2626 !important;
+            border-color: #dc2626 !important;
+          }
+        }
+      }
+    }
+  }
+}
+
+.custom-map-controls {
+  display: flex;
+  flex-direction: column;
+  background: #f50404;
+}
+
+.custom-map-controls > a {
+  border-bottom: 1px solid #ccc;
+}
+
+.search-control-container {
+  display: flex;
+  align-items: center;
+  position: relative;
+  background: #fff;
+}
+
+.search-icon-btn {
+  width: 34px;
+  height: 34px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #374151;
+}
+
+.search-control-container--collapsed .search-wrapper {
+  display: none;
+}
+
+.search-wrapper {
+  display: flex;
+  align-items: center;
+  position: absolute;
+  left: 34px;
+  top: 0;
+  height: 34px;
+  background: #ffffff;
+  border-radius: 0 4px 4px 0;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+  padding: 0 8px;
+  z-index: 1000;
+}
+
+.search-input {
+  border: none;
+  outline: none;
+  font-size: 0.875rem;
+  width: 180px;
+}
+
+.search-clear {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  color: #6b7280;
+}*/

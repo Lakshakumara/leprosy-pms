@@ -16,6 +16,8 @@ export const TEI_ATTRIBUTE_MAP: Record<string, string> = {
     patientSex: 'C9FV3HiPEkA',
     ethnicGroup: 'cw1sJo3q9UF',
     patientAge: 'C0ZoykFjsTP',
+    latitude: 'gm91XYLCpsS',  // This is the GPS coordinates attribute
+    longitude: 'gm91XYLCpsS',
 };
 
 export const FIRST_VISIT_DE_MAP: Record<string, string> = {
@@ -477,10 +479,6 @@ private async getEnrollmentDetails(enrollmentId: string): Promise<any> {
 
 
 
-
-
-
-
     // dhis2-updater.service.ts - Add this complete method
 
 /**
@@ -745,4 +743,164 @@ async changeOrgUnitEnrollmentOnly(patient: any, newOrgUnitId: string, newOrgUnit
         throw error;
     }
 }
+
+
+
+
+// dhis2-updater.service.ts - Updated GPS update
+
+async updatePatientGpsCoordinates(patient: any, latitude: number, longitude: number): Promise<void> {
+  const teiId = patient.teiId || patient.id;
+  
+  // Get all events for the patient
+  const events = await this.getPatientEvents(teiId);
+  
+  // Format: [longitude, latitude] without spaces for DHIS2 COORDINATE type
+  const gpsValue = `[${longitude},${latitude}]`;
+  const gpsDataElementId = 'gm91XYLCpsS';
+
+  let targetEvent: any = null;
+  let hasGpsElement = false;
+
+  // 1. First search: Look for an event that ALREADY contains the GPS data element
+  for (const event of events) {
+    if (event.dataValues?.some((dv: any) => dv.dataElement === gpsDataElementId)) {
+      targetEvent = event;
+      hasGpsElement = true;
+      break;
+    }
+  }
+
+  // 2. Fallback: If no event has the GPS element, pick the most recent event (or first event)
+  if (!targetEvent) {
+    if (!events || events.length === 0) {
+      throw new Error('No events found for this patient to attach GPS coordinates.');
+    }
+    targetEvent = events[0]; // Uses the first available event
+    hasGpsElement = false;
+  }
+
+  // 3. Build dataValues array
+  let updatedDataValues: any[] = [];
+
+  if (hasGpsElement) {
+    // Update existing dataElement value
+    updatedDataValues = targetEvent.dataValues.map((dv: any) => {
+      if (dv.dataElement === gpsDataElementId) {
+        return { ...dv, value: gpsValue };
+      }
+      return dv;
+    });
+  } else {
+    // Append the new GPS dataElement to existing dataValues
+    updatedDataValues = [
+      ...(targetEvent.dataValues || []),
+      {
+        dataElement: gpsDataElementId,
+        value: gpsValue
+      }
+    ];
+  }
+
+  // 4. Construct payload
+  const payload = {
+    events: [{
+      event: targetEvent.event,
+      program: targetEvent.program,
+      programStage: targetEvent.programStage,
+      orgUnit: targetEvent.orgUnit,
+      trackedEntity: teiId,
+      enrollment: targetEvent.enrollment,
+      status: targetEvent.status || 'COMPLETED',
+      occurredAt: targetEvent.occurredAt || new Date().toISOString(),
+      scheduledAt: targetEvent.scheduledAt || targetEvent.occurredAt || new Date().toISOString(),
+      dataValues: updatedDataValues
+    }]
+  };
+
+  console.log('Updating GPS with payload:', JSON.stringify(payload, null, 2));
+
+  await firstValueFrom(
+    this.http.post(`${this.baseUrl}/tracker?async=false&importStrategy=UPDATE`, payload)
+  );
+}
+
+/*async updatePatientGpsCoordinates(patient: any, latitude: number, longitude: number): Promise<void> {
+    const teiId = patient.teiId || patient.id;
+    
+    // Get the first event that has GPS data
+    const events = await this.getPatientEvents(teiId);
+    let targetEvent = null;
+    let targetDataValueIndex = -1;
+    
+    for (const event of events) {
+        const dataValues = event.dataValues || [];
+        for (let i = 0; i < dataValues.length; i++) {
+            if (dataValues[i].dataElement === 'gm91XYLCpsS') {
+                targetEvent = event;
+                targetDataValueIndex = i;
+                break;
+            }
+        }
+        if (targetEvent) break;
+    }
+    
+    if (!targetEvent) {
+        throw new Error('No event found with GPS data element');
+    }
+    
+    // Format: [longitude, latitude] as shown in your data
+    const gpsValue = `[${longitude},${latitude}]`;
+    
+    // Update the data value
+    const payload = {
+        events: [{
+            event: targetEvent.event,
+            program: targetEvent.program,
+            programStage: targetEvent.programStage,
+            orgUnit: targetEvent.orgUnit,
+            trackedEntity: teiId,
+            enrollment: targetEvent.enrollment,
+            status: targetEvent.status || 'COMPLETED',
+            occurredAt: targetEvent.occurredAt || new Date().toISOString(),
+            scheduledAt: targetEvent.scheduledAt || new Date().toISOString(),
+            dataValues: targetEvent.dataValues.map((dv: any, idx: number) => {
+                if (idx === targetDataValueIndex) {
+                    return { ...dv, value: gpsValue };
+                }
+                return dv;
+            })
+        }]
+    };
+    
+    console.log('Updating GPS with payload:', JSON.stringify(payload, null, 2));
+    
+    await firstValueFrom(
+        this.http.post(`${this.baseUrl}/tracker?async=false&importStrategy=UPDATE`, payload)
+    );
+}
+*/
+private async getPatientEvents(teiId: string): Promise<any[]> {
+    try {
+        const response = await firstValueFrom(
+            this.http.get(`${this.baseUrl}/tracker/trackedEntities/${teiId}`, {
+                params: {
+                    fields: 'enrollments[events[event,program,programStage,orgUnit,status,occurredAt,scheduledAt,enrollment,dataValues[dataElement,value]]]'
+                }
+            })
+        );
+        const enrollments = (response as any)?.enrollments || [];
+        const events: any[] = [];
+        for (const enrollment of enrollments) {
+            if (enrollment.events) {
+                events.push(...enrollment.events);
+            }
+        }
+        return events;
+    } catch (error) {
+        console.error('Failed to get patient events:', error);
+        return [];
+    }
+}
+
 }

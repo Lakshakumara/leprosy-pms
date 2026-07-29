@@ -77,6 +77,8 @@ export interface Patient {
   // ── Geography ──────────────────────────────────────────────────────────────
   latitude?: number;
   longitude?: number;
+  //"dataElement": "gm91XYLCpsS",  // ← This is the GPS attribute
+  //  "value": "[80.604,6.625]",     // ← This is the coordinate
 
   // ── Meta ───────────────────────────────────────────────────────────────────
   createdAt: string;
