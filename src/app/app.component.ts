@@ -11,7 +11,7 @@ import { ToastModule } from 'primeng/toast';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule, ToastModule, DialogModule],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
 })
