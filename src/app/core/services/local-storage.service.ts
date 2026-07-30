@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
 import { createStore, entries, get, set, del } from 'idb-keyval';
 import { Patient } from './patient.model';
-
 /**
  * Offline-first persistence layer using IndexedDB (idb-keyval).
  *
@@ -14,8 +13,35 @@ import { Patient } from './patient.model';
  */
 @Injectable({ providedIn: 'root' })
 export class LocalStorageService {
-  private readonly store    = createStore('leprosy-pms-db', 'patients');
+  private readonly store = createStore('leprosy-pms-db', 'patients');
   private readonly metaStore = createStore('leprosy-pms-db', 'meta');
+  constructor() {
+    // ensure both stores exist on first run
+    this.initDb();
+  }
+
+  private initDb(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open('leprosy-pms-db', 2);
+
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains('patients')) {
+          db.createObjectStore('patients');
+        }
+        if (!db.objectStoreNames.contains('meta')) {
+          db.createObjectStore('meta');
+        }
+      };
+
+      request.onsuccess = () => {
+        request.result.close(); // close to allow idb-keyval to use it
+        resolve();
+      };
+      request.onerror = () => reject(request.error);
+      request.onblocked = () => console.warn('DB upgrade blocked, close other tabs');
+    });
+  }
 
   async getAllPatients(): Promise<Patient[]> {
     const all = await entries<string, Patient>(this.store);
@@ -56,5 +82,23 @@ export class LocalStorageService {
       }
     }
     return [...set_].sort((a, b) => a.localeCompare(b));
+  }
+  async getYears(top: number): Promise<string[]> {
+    const all = await this.getAllPatients();
+    const set_ = new Set<string>();
+    for (const p of all) {
+      let year = '' + new Date().getFullYear()
+      if (p.enrolledAt) {
+        const extractedYear = p.enrolledAt.slice(0, 4);
+        if (extractedYear && !isNaN(Number(extractedYear))) {
+          year = extractedYear;
+          set_.add(extractedYear.trim());
+        }
+      }
+    }
+    const sorted = [...set_].sort((a, b) => b.localeCompare(a));
+
+    // top 5, if less than 5 return all
+    return sorted.slice(0, top);
   }
 }

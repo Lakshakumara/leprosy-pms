@@ -36,7 +36,13 @@ export const routes: Routes = [
   },
   {
     path: 'update/:id',
-    //canActivate: [authGuard],
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/updater/updater').then(m => m.PatientUpdateComponent),
+  },
+  {
+    path: 'update/:id/:field',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/updater/updater').then(m => m.PatientUpdateComponent),
   },

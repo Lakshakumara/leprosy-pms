@@ -16,14 +16,22 @@
             "outputPath": "dist/leprosy-pms",
             "index": "src/index.html",
             "browser": "src/main.ts",
-            "polyfills": ["zone.js"],
+            "polyfills": [
+              "zone.js"
+            ],
             "tsConfig": "tsconfig.app.json",
             "assets": [
-              { "glob": "**/*", "input": "src/assets", "output": "assets" },
+              {
+                "glob": "**/*",
+                "input": "src/assets",
+                "output": "assets"
+              },
               "src/manifest.webmanifest"
             ],
             "styles": [
               "node_modules/leaflet/dist/leaflet.css",
+              "node_modules/leaflet.markercluster/dist/MarkerCluster.css",
+              "node_modules/leaflet.markercluster/dist/MarkerCluster.Default.css",
               "node_modules/primeicons/primeicons.css",
               "src/styles.scss"
             ],
@@ -33,13 +41,23 @@
           "configurations": {
             "production": {
               "budgets": [
-                { "type": "initial", "maximumWarning": "1mb", "maximumError": "2mb" },
-                { "type": "anyComponentStyle", "maximumWarning": "16kb", "maximumError": "16kb" }
+                {
+                  "type": "initial",
+                  "maximumWarning": "1mb",
+                  "maximumError": "2mb"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "16kb",
+                  "maximumError": "16kb"
+                }
               ],
               "outputHashing": "all",
               "sourceMap": true,
               "serviceWorker": "ngsw-config.json",
-              "optimization": { "fonts": false },
+              "optimization": {
+                "fonts": false
+              },
               "fileReplacements": [
                 {
                   "replace": "src/environments/environment.ts",
@@ -57,13 +75,18 @@
           "defaultConfiguration": "production"
         },
         "serve": {
-          
           "builder": "@angular/build:dev-server",
           "configurations": {
-            "production": { "buildTarget": "leprosy-pms:build:production" },
-            "development": { "buildTarget": "leprosy-pms:build:development" }
+            "production": {
+              "buildTarget": "leprosy-pms:build:production"
+            },
+            "development": {
+              "buildTarget": "leprosy-pms:build:development"
+            }
           },
-          "options": {"proxyConfig": "proxy.config.json"},
+          "options": {
+            "proxyConfig": "proxy.config.json"
+          },
           "defaultConfiguration": "development"
         }
       }

@@ -1,11 +1,40 @@
-<h1>Patient map</h1>
-<p class="page-head__sub">{{ mappable().length }} of {{ patientService.districtPatients().length }} patients have recorded coordinates.</p>
-
-@if (districtLoadError(); as err) {
-  <div class="card notice">
-    <strong>{{ err }}</strong>
+<!-- Header Section - Space Saving Design -->
+<div class="map-header">
+  <div class="header-top">
+    <div class="header-left">
+      <h1>Patient Map</h1>
+      <span class="patient-count">{{ mappable().length }} / {{ patientService.districtPatients().length }}</span>
+    </div>
+    
+    <div class="header-actions">
+      <button 
+        pButton 
+        type="button" 
+        icon="pi pi-download" 
+        [disabled]="exporting()" 
+        (click)="exportMapImage()" 
+        class="p-button-outlined p-button-sm header-btn">
+        <span class="btn-label">{{ exporting() ? 'Exporting…' : 'Export' }}</span>
+      </button>
+      
+      <button 
+        pButton 
+        type="button" 
+        icon="pi pi-refresh" 
+        (click)="refreshMap()" 
+        class="p-button-outlined p-button-sm header-btn"
+        title="Refresh map">
+      </button>
+    </div>
   </div>
-}
+
+  @if (districtLoadError(); as err) {
+    <div class="notice">
+      <i class="pi pi-exclamation-triangle"></i>
+      <span>{{ err }}</span>
+    </div>
+  }
+</div>
 
 <div class="card map-card">
   <div #mapContainer class="map-container"></div>
@@ -13,15 +42,114 @@
 
 @if (selected(); as p) {
   <div class="card selected-info">
-    <div>
-      <strong>{{ p.patientName }}</strong>
-      @if (p.treatmentClassification) {
-        <span class="badge" [class.badge--mb]="p.treatmentClassification.toUpperCase().startsWith('MB')"
-              [class.badge--pb]="p.treatmentClassification.toUpperCase().startsWith('PB')">
-          {{ p.treatmentClassification }}
-        </span>
-      }
+    <div class="selected-content">
+      <div class="selected-main">
+        <strong>{{ p.patientName }}</strong>
+        @if (p.treatmentClassification) {
+          <span class="badge" [class.badge--mb]="p.treatmentClassification.toUpperCase().startsWith('MB')"
+                [class.badge--pb]="p.treatmentClassification.toUpperCase().startsWith('PB')">
+            {{ p.treatmentClassification }}
+          </span>
+        }
+      </div>
+      <div class="muted">{{ p.patientHomeAddress || 'No address on file' }}</div>
     </div>
-    <div class="muted">{{ p.patientHomeAddress || 'No address on file' }}</div>
+    <button 
+      pButton 
+      icon="pi pi-times" 
+      (click)="selected.set(null)" 
+      class="p-button-rounded p-button-text p-button-sm close-selected">
+    </button>
   </div>
 }
+
+<!-- Add this after the map container -->
+<div class="floating-actions" *ngIf="isMobileView()">
+  <button 
+    pButton 
+    type="button" 
+    icon="pi pi-download" 
+    (click)="exportMapImage()" 
+    class="p-button-rounded p-button-success"
+    title="Export map">
+  </button>
+  <button 
+    pButton 
+    type="button" 
+    icon="pi pi-refresh" 
+    (click)="refreshMap()" 
+    class="p-button-rounded p-button-secondary"
+    title="Refresh map">
+  </button>
+</div>
+
+
+<!-- Dialog remains the same -->
+<p-dialog 
+  header="Edit Patient Location {{ selectedPatient()?.alcNum }}"
+  [(visible)]="showEditDialog" 
+  [modal]="false"
+  [closable]="true"
+  [dismissableMask]="false"
+  [draggable]="true"
+  [resizable]="true"
+  [style]="{'width':'420px', 'max-width':'90vw'}"
+  (onHide)="cancelEdit()">
+  
+  <!-- Dialog content remains the same -->
+  <div class="dialog-content">
+    <div class="patient-info">
+      <span class="patient-name">{{ selectedPatient()?.patientName }}</span>
+      <span class="patient-id"> - {{ selectedPatient()?.patientHomeAddress }}</span>
+    </div>
+    <div class="edit-field">
+      <label for="editLat">Latitude</label>
+      <input id="editLat" pInputText type="number" [(ngModel)]="editLat" step="0.000001" />
+    </div>
+    
+    <div class="edit-field">
+      <label for="editLng">Longitude</label>
+      <input id="editLng" pInputText type="number" [(ngModel)]="editLng" step="0.000001" />
+    </div>
+
+    <div class="location-picker-section">
+      <button pButton 
+        [label]="isPickingLocation() ? 'Click on map to select...' : 'Pick from Map'" 
+        icon="pi pi-map-marker" 
+        (click)="pickLocationFromMap()" 
+        [severity]="isPickingLocation() ? 'success' : 'secondary'"
+        [outlined]="!isPickingLocation()"
+        styleClass="w-full">
+      </button>
+      
+      @if (isPickingLocation()) {
+        <div class="picking-hint">
+          <i class="pi pi-info-circle"></i>
+          Click anywhere on the map to set the location
+        </div>
+      }
+    </div>
+
+    <div class="edit-hint">
+      <i class="pi pi-info-circle"></i>&nbsp; 
+      @if (isPickingLocation()) {
+        Click on the map to select a new location
+      } @else {
+        Click "Pick from Map" to select location from the map
+      }
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <p-button 
+      label="Cancel" 
+      (click)="cancelEdit()" 
+      severity="secondary" 
+      text="true" />
+    <p-button 
+      label="Save Location" 
+      (click)="saveLocation()" 
+      severity="primary" />
+  </ng-template>
+</p-dialog>
+<p-confirmDialog ></p-confirmDialog>

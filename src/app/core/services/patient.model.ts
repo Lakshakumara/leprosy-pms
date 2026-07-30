@@ -22,8 +22,7 @@ export type SyncStatus = 'synced' | 'pending' | 'error' | 'local-only';
 
 export interface Patient {
   /** Local ID = DHIS2 trackedEntity UID */
-  id: string;
-  /** DHIS2 trackedEntity UID (same as id for DHIS2-sourced records) */
+  id: string; /** DHIS2 trackedEntity UID (same as id for DHIS2-sourced records) */
   teiId?: string;
 
   // ── TEI Attributes ─────────────────────────────────────────────────────────
@@ -78,6 +77,8 @@ export interface Patient {
   // ── Geography ──────────────────────────────────────────────────────────────
   latitude?: number;
   longitude?: number;
+  //"dataElement": "gm91XYLCpsS",  // ← This is the GPS attribute
+  //  "value": "[80.604,6.625]",     // ← This is the coordinate
 
   // ── Meta ───────────────────────────────────────────────────────────────────
   createdAt: string;
@@ -102,11 +103,12 @@ export interface PatientFilter {
   enrolledFrom?: string;
   enrolledTo?: string;
   outsideDistrict?: boolean;
+  year?: string;
   /** Dashboard drill-down: grade2 | relapse | defaulter | noContact | delayed | child | mb */
   alert?: string;
 }
 
 export const createDefaultPatientFilter = (): PatientFilter => ({
   enrolledFrom: `${new Date().getFullYear()}-01-01`,
-  enrolledTo: new Date().toISOString().split('T')[0]
+  enrolledTo: `${new Date().getFullYear()}-12-31`
 });

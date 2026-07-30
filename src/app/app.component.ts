@@ -6,11 +6,12 @@ import { filter, map } from 'rxjs/operators';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { PatientService } from './core/services/patient.service';
 import { AuthService } from './core/services/auth.service';
+import { ToastModule } from 'primeng/toast';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule, DialogModule],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
 })

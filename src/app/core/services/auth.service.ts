@@ -54,7 +54,6 @@ export class AuthService {
 
       const user = this.storage.getJSON<Dhis2UserInfo>(STORAGE_KEYS.USER_DATA);
       if (user) {
-        console.log('current user', user)
         this.currentUser.set(user);
         this.authMode.set(mode);
       }

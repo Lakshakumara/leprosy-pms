@@ -1,4 +1,4 @@
-import { Injectable, inject, signal, computed } from '@angular/core';
+import { Injectable, inject, signal, computed, Signal } from '@angular/core';
 import { catchError, of } from 'rxjs';
 import { LocalStorageService } from './local-storage.service';
 import { Dhis2Service } from './dhis2.service';
@@ -33,6 +33,8 @@ export class PatientService {
   readonly districtPatients = computed(() => {
     return this.allPatients().filter(p => p.patientDistrict === this.userDistricts());
   });
+
+  readonly yearsTop5 = computed(()=> {return this.localStorage.getYears(5)})
 
   readonly outerDistrictPatients = computed(() => {
     return this.allPatients().filter(p => p.patientDistrict != this.userDistricts());
@@ -110,6 +112,9 @@ export class PatientService {
       // Enrolled date range
       if (filter.enrolledFrom && p.enrolledAt < filter.enrolledFrom) return false;
       if (filter.enrolledTo && p.enrolledAt > filter.enrolledTo) return false;
+
+      if (filter.year && p.enrolledAt.slice(0,4) !==  filter.year) return false;
+
       if (filter.alert === 'grade2' && !hasGrade2Disability(p)) return false;
       if (filter.alert === 'relapse' && !isRelapse(p)) return false;
       if (filter.alert === 'defaulter' && !isDefaulter(p)) return false;
@@ -214,7 +219,9 @@ export class PatientService {
   getDistinctValues(field: keyof Patient): Promise<string[]> {
     return this.localStorage.getDistinctValues(field);
   }
-
+  async getYears(top:number): Promise<string[]> {
+    return await this.localStorage.getYears(top)
+  }
   // patient.service.ts - Add this method
   async updateLocalPatient(patient: Patient): Promise<void> {
     await this.localStorage.savePatient(patient);

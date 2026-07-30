@@ -1,0 +1,9 @@
+{
+    "env":{
+        "ANTHROPIC_AUTH_TOKEN":"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",
+        "ANTHROPIC_BASE_URL":"https://openrouter.ai/api",
+        "ANTRROPIC_DEFAULT_HAIKU_MODEL":"poolside/laguna-s-2.1:free",
+        "ANTRHOPIC_DEFAULT_OPUS_MODEL":"poolside/laguna-s-2.1:free",
+        "ANTHROPIC_DEFAULT_SONNET_MODEL":"poolside/laguna-s-2.1:free"
+    }
+}
