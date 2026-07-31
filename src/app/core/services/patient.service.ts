@@ -220,7 +220,8 @@ export class PatientService {
     return this.localStorage.getDistinctValues(field);
   }
   async getYears(top:number): Promise<string[]> {
-    return await this.localStorage.getYears(top)
+    const years = await this.localStorage.getYears(top)
+    return years?.length? years : [];
   }
   // patient.service.ts - Add this method
   async updateLocalPatient(patient: Patient): Promise<void> {

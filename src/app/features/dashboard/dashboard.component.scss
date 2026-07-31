@@ -1,33 +1,145 @@
+/* ==========================================================================
+   1. Header & Filters Section
+   ========================================================================== */
+
 .dash-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
   margin-bottom: 20px;
 
-  h1 {
+  &__top {
     display: flex;
-    align-items: baseline;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
     flex-wrap: wrap;
-    gap: 8px;
-    font-size: 1.35rem;
-    margin: 0;
+
+    @media (max-width: 640px) {
+      align-items: center;
+    }
   }
 
-  &__subtitle {
-    margin: 6px 0 0;
-    font-size: 0.85rem;
-    color: var(--color-muted);
-    max-width: 520px;
+  &__title {
+    h1 {
+      display: flex;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 1.35rem;
+      font-weight: 800;
+      margin: 0;
+      color: var(--color-teal-900);
+
+      @media (max-width: 640px) {
+        font-size: 1.1rem;
+      }
+    }
+
+    &__subtitle,
+    .dash-header__subtitle {
+      margin: 6px 0 0;
+      font-size: 0.85rem;
+      color: var(--color-muted);
+      max-width: 520px;
+
+      @media (max-width: 640px) {
+        display: none; /* Drop subtitle on mobile to keep bar compact */
+      }
+    }
   }
 
+  /* Desktop Header Container Toggle */
+  &--desktop {
+    @media (max-width: 991px) {
+      display: none;
+    }
+  }
+
+  /* Filter Panel Overlay / Container */
   &__filters {
     display: flex;
-    align-items: center;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 14px;
+    margin-top: 14px;
+    padding: 14px 16px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-md);
+
+    @media (max-width: 640px) {
+      flex-direction: column;
+    }
   }
+}
+
+/* ==========================================================================
+   2. Filter Controls Grid & Reusable Fields
+   ========================================================================== */
+
+.filter-controls-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  width: 100%;
+
+  @media (max-width: 991px) {
+    flex-direction: column;
+
+    .filter-field {
+      width: 100%;
+    }
+  }
+}
+
+.filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-muted);
+  min-width: 160px;
+
+  @media (max-width: 640px) {
+    min-width: 0;
+  }
+
+  &--actions {
+    justify-content: flex-end;
+  }
+}
+
+.filter-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  height: 100%;
+}
+
+.btn-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-teal-900);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover {
+    background: var(--color-teal-100);
+  }
+}
+
+.count-pill {
+  background: var(--color-teal-700);
+  color: #ffffff;
+  border-radius: 999px;
+  padding: 1px 7px;
+  font-size: 0.72rem;
+  font-weight: 700;
 }
 
 .link-btn {
@@ -38,8 +150,21 @@
   font-weight: 600;
   cursor: pointer;
   padding: 4px 6px;
-  &:hover { text-decoration: underline; }
+
+  &:hover {
+    text-decoration: underline;
+  }
 }
+
+.population-note {
+  font-size: 0.7rem;
+  color: var(--color-muted);
+  margin: -10px 0 16px;
+}
+
+/* ==========================================================================
+   3. Indicator Strip & Summary Stats
+   ========================================================================== */
 
 .indicator-strip {
   display: grid;
@@ -47,8 +172,13 @@
   gap: 10px;
   margin-bottom: 18px;
 
-  @media (max-width: 1100px) { grid-template-columns: repeat(3, 1fr); }
-  @media (max-width: 560px) { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 1100px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  @media (max-width: 560px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .indicator {
@@ -83,7 +213,9 @@
   gap: 12px;
   margin-bottom: 18px;
 
-  @media (max-width: 900px) { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .stat {
@@ -96,6 +228,7 @@
   &--clickable {
     cursor: pointer;
     transition: transform 0.12s, box-shadow 0.12s;
+
     &:hover {
       transform: translateY(-2px);
       box-shadow: 0 6px 18px rgba(11, 79, 74, 0.12);
@@ -108,8 +241,13 @@
     font-weight: 800;
     color: var(--color-teal-900);
 
-    &--mb { color: var(--color-mb); }
-    &--pb { color: var(--color-pb); }
+    &--mb {
+      color: var(--color-mb);
+    }
+
+    &--pb {
+      color: var(--color-pb);
+    }
   }
 
   &__label {
@@ -125,10 +263,19 @@
     font-weight: 600;
     color: var(--color-muted);
 
-    &--up { color: var(--color-mb); }
-    &--down { color: var(--color-teal-700); }
+    &--up {
+      color: var(--color-mb);
+    }
+
+    &--down {
+      color: var(--color-teal-700);
+    }
   }
 }
+
+/* ==========================================================================
+   4. Section Headers & Priority Alerts
+   ========================================================================== */
 
 .section-head {
   display: flex;
@@ -147,7 +294,10 @@
   }
 }
 
-.muted { color: var(--color-muted); font-size: 0.78rem; }
+.muted {
+  color: var(--color-muted);
+  font-size: 0.78rem;
+}
 
 .alerts {
   padding: 18px 20px;
@@ -175,35 +325,52 @@
   font: inherit;
   transition: background 0.12s;
 
-  &:hover { background: var(--color-teal-100); }
+  &:hover {
+    background: var(--color-teal-100);
+  }
 
   &--high {
     border-left: 4px solid var(--color-mb);
     .alert__icon { color: var(--color-mb); }
   }
+
   &--medium {
     border-left: 4px solid var(--color-pb);
     .alert__icon { color: var(--color-pb); }
   }
+
   &--info {
     border-left: 4px solid var(--color-teal-700);
     .alert__icon { color: var(--color-teal-700); }
   }
 
-  &__icon { font-size: 1.1rem; }
+  &__icon {
+    font-size: 1.1rem;
+  }
+
   &__body {
     display: flex;
     flex-direction: column;
     gap: 2px;
-    strong { font-size: 0.85rem; color: var(--color-teal-900); }
-    span { font-size: 0.78rem; color: var(--color-muted); }
+
+    strong {
+      font-size: 0.85rem;
+      color: var(--color-teal-900);
+    }
+
+    span {
+      font-size: 0.78rem;
+      color: var(--color-muted);
+    }
   }
+
   &__count {
     font-family: var(--font-display);
     font-weight: 800;
     font-size: 1.1rem;
     color: var(--color-teal-900);
   }
+
   &__action {
     font-size: 0.72rem;
     font-weight: 600;
@@ -213,24 +380,37 @@
 
   @media (max-width: 640px) {
     grid-template-columns: auto 1fr;
-    .alert__count, .alert__action { grid-column: 2; }
+
+    .alert__count,
+    .alert__action {
+      grid-column: 2;
+    }
   }
 }
+
+/* ==========================================================================
+   5. Dashboard Grid & Visual Charts
+   ========================================================================== */
 
 .dash-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 16px;
 
-  @media (max-width: 860px) { grid-template-columns: 1fr; }
+  @media (max-width: 860px) {
+    grid-template-columns: 1fr;
+  }
 }
 
 .chart {
   padding: 18px 20px;
 
-  &--wide { grid-column: 1 / -1; }
+  &--wide {
+    grid-column: 1 / -1;
+  }
 }
 
+/* Vertical Bar Chart */
 .bars {
   display: flex;
   align-items: flex-end;
@@ -258,7 +438,11 @@
   &--interactive {
     cursor: pointer;
     border-radius: 6px 6px 0 0;
-    &:hover, &--active { background: rgba(16, 107, 99, 0.06); }
+
+    &:hover,
+    &--active {
+      background: rgba(16, 107, 99, 0.06);
+    }
   }
 }
 
@@ -280,8 +464,17 @@
   &--pb { background: var(--color-pb); }
 }
 
-.bar-label { font-size: 0.68rem; color: var(--color-muted); margin-top: 6px; }
-.bar-count { font-size: 0.68rem; font-weight: 700; color: var(--color-teal-900); }
+.bar-label {
+  font-size: 0.68rem;
+  color: var(--color-muted);
+  margin-top: 6px;
+}
+
+.bar-count {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--color-teal-900);
+}
 
 .bar-tooltip {
   position: absolute;
@@ -289,7 +482,7 @@
   left: 50%;
   transform: translateX(-50%);
   background: var(--color-teal-900);
-  color: #fff;
+  color: #ffffff;
   font-size: 0.65rem;
   padding: 4px 8px;
   border-radius: 4px;
@@ -303,7 +496,12 @@
   margin-top: 10px;
   font-size: 0.75rem;
   color: var(--color-muted);
-  span { display: flex; align-items: center; gap: 6px; }
+
+  span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
 }
 
 .dot {
@@ -311,10 +509,12 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
+
   &--mb { background: var(--color-mb); }
   &--pb { background: var(--color-pb); }
 }
 
+/* Split Panel Donut Visuals */
 .split-panel {
   display: flex;
   align-items: center;
@@ -339,8 +539,16 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    strong { font-size: 1.1rem; color: var(--color-teal-900); }
-    span { font-size: 0.65rem; color: var(--color-muted); }
+
+    strong {
+      font-size: 1.1rem;
+      color: var(--color-teal-900);
+    }
+
+    span {
+      font-size: 0.65rem;
+      color: var(--color-muted);
+    }
   }
 }
 
@@ -372,10 +580,14 @@
     cursor: pointer;
     border-radius: 4px;
     padding: 4px 6px;
-    &:hover { background: var(--color-teal-100); }
+
+    &:hover {
+      background: var(--color-teal-100);
+    }
   }
 }
 
+/* Horizontal Progress Bars */
 .h-bars {
   display: flex;
   flex-direction: column;
@@ -399,7 +611,11 @@
     cursor: pointer;
     border-radius: 4px;
     padding: 4px 6px;
-    &:hover, &--active { background: var(--color-teal-100); }
+
+    &:hover,
+    &--active {
+      background: var(--color-teal-100);
+    }
   }
 }
 
@@ -425,9 +641,17 @@
   min-width: 2px;
   transition: width 0.3s ease;
 
-  &--warn { background: var(--color-mb); }
-  &--moh { background: linear-gradient(90deg, var(--color-teal-700), #1a8a7f); }
-  &--phi { background: var(--color-pb); }
+  &--warn {
+    background: var(--color-mb);
+  }
+
+  &--moh {
+    background: linear-gradient(90deg, var(--color-teal-700), #1a8a7f);
+  }
+
+  &--phi {
+    background: var(--color-pb);
+  }
 }
 
 .h-bar-count {
@@ -443,214 +667,143 @@
   text-align: center;
   color: var(--color-muted);
 
-  i { font-size: 2rem; display: block; margin-bottom: 12px; color: var(--color-teal-700); }
-  p { margin: 0 0 12px; }
-}
-
-// Title bar selects (district + year)
-:host ::ng-deep .district-title-select,
-:host ::ng-deep .year-title-select,
-:host ::ng-deep .facility-select {
-  display: inline-flex;
-  align-items: baseline;
-
-  &,
-  * {
-    font-size: inherit !important;
-    font-family: inherit !important;
-    font-weight: inherit !important;
-    color: inherit !important;
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    outline: none !important;
+  i {
+    font-size: 2rem;
+    display: block;
+    margin-bottom: 12px;
+    color: var(--color-teal-700);
   }
 
-  [class*="chip"],
-  [class*="token"] {
-    font-size: 0.85rem !important;
-    font-weight: 700 !important;
-    color: var(--color-teal-900) !important;
-    background: var(--color-teal-100) !important;
-    border-radius: 6px !important;
-    padding: 2px 8px !important;
+  p {
+    margin: 0 0 12px;
   }
 }
 
-:host ::ng-deep .facility-select {
-  min-width: 160px;
-  border: 1px solid var(--color-line) !important;
-  border-radius: var(--radius-sm) !important;
-  padding: 4px 8px !important;
-  background: var(--color-surface) !important;
-}
+/* ==========================================================================
+   6. PrimeNG Mobile Filter Drawer & Field Component Deep Scoping
+   ========================================================================== */
 
-
-
-
-
-
-
-
-
-
-
-// Replace your existing ".dash-header" block AND the "Title bar selects"
-// ::ng-deep block at the bottom entirely with everything below.
-
-.dash-header {
-  margin-bottom: 20px;
-}
-
-.dash-header__top {
+/* Drawer Structural Layout */
+.drawer-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-}
+  width: 100%;
 
-.dash-header__title {
-  h1 {
-    font-size: 1.35rem;
-    font-weight: 800;
-    margin: 0;
-    color: var(--color-teal-900);
-  }
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 
-  &__subtitle,
-  .dash-header__subtitle {
-    margin: 6px 0 0;
-    font-size: 0.85rem;
-    color: var(--color-muted);
-    max-width: 520px;
+    h3 {
+      margin: 0;
+      font-size: 1.1rem;
+      color: var(--color-teal-900, #0b4f4a);
+    }
   }
 }
 
-.btn-filter {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  color: var(--color-teal-900);
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-
-  &:hover { background: var(--color-teal-100); }
+.mobile-filter-body {
+  padding: 8px 0;
 }
 
-.count-pill {
-  background: var(--color-teal-700);
-  color: #fff;
-  border-radius: 999px;
-  padding: 1px 7px;
-  font-size: 0.72rem;
+.btn-apply {
+  width: 100%;
+  padding: 12px;
+  background: var(--color-teal-700, #106b63);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-md, 8px);
+  font-size: 0.95rem;
   font-weight: 700;
-}
+  cursor: pointer;
+  transition: background 0.15s ease;
 
-// ── Filter panel - normal, clearly visible controls, no disguise ────────
-.dash-header__filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-  margin-top: 14px;
-  padding: 14px 16px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-md);
-}
-
-.filter-field {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--color-muted);
-  min-width: 160px;
-
-  &--actions {
-    justify-content: flex-end;
+  &:hover {
+    background: var(--color-teal-900, #0b4f4a);
   }
 }
 
-.filter-actions {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  height: 100%;
+/* Global PrimeNG Drawer Overrides */
+::ng-deep .mobile-filter-drawer {
+  border-radius: 16px 16px 0 0 !important;
+  max-height: 85vh !important;
+
+  .p-drawer-content {
+    padding: 16px 20px !important;
+  }
+
+  .p-drawer-footer {
+    padding: 12px 20px 20px !important;
+    border-top: 1px solid var(--color-line, #e5e5e5);
+  }
 }
 
-// Every p-select / p-multiSelect in the filter panel gets NORMAL visible
-// styling - a real border, real background, real contrast on the
-// selected/placeholder text. This deliberately replaces the earlier
-// "disguised as title text" treatment, which made it hard to tell there
-// was a dropdown there at all, let alone read its contents clearly.
-:host ::ng-deep .dash-header__filters {
-  .p-select,
-  .p-multiselect {
-    width: 100%;
+/* Filter Panel Select / MultiSelect Styling */
+:host ::ng-deep {
+  .dash-header__filters,
+  .mobile-filter-body {
+    .p-select,
+    .p-multiselect {
+      width: 100%;
+      border: 1px solid var(--color-line) !important;
+      border-radius: var(--radius-sm) !important;
+      background: var(--color-paper) !important;
+      padding: 6px 10px !important;
+    }
+
+    .p-select-label,
+    .p-multiselect-label {
+      color: var(--color-ink) !important;
+      font-size: 0.88rem !important;
+      font-weight: 500 !important;
+    }
+
+    [class*="chip"],
+    [class*="token"] {
+      background: var(--color-teal-100) !important;
+      color: var(--color-teal-900) !important;
+      font-weight: 700 !important;
+      border-radius: 6px !important;
+      padding: 2px 8px !important;
+    }
+  }
+
+  /* Compact Title Bar Embedded Selects */
+  .district-title-select,
+  .year-title-select,
+  .facility-select {
+    display: inline-flex;
+    align-items: baseline;
+
+    &,
+    * {
+      font-size: inherit !important;
+      font-family: inherit !important;
+      font-weight: inherit !important;
+      color: inherit !important;
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      outline: none !important;
+    }
+
+    [class*="chip"],
+    [class*="token"] {
+      font-size: 0.85rem !important;
+      font-weight: 700 !important;
+      color: var(--color-teal-900) !important;
+      background: var(--color-teal-100) !important;
+      border-radius: 6px !important;
+      padding: 2px 8px !important;
+    }
+  }
+
+  .facility-select {
+    min-width: 160px;
     border: 1px solid var(--color-line) !important;
     border-radius: var(--radius-sm) !important;
-    background: var(--color-paper) !important;
-    padding: 6px 10px !important;
-  }
-
-  .p-select-label,
-  .p-multiselect-label {
-    color: var(--color-ink) !important;
-    font-size: 0.88rem !important;
-    font-weight: 500 !important;
-  }
-
-  [class*="chip"],
-  [class*="token"] {
-    background: var(--color-teal-100) !important;
-    color: var(--color-teal-900) !important;
-    font-weight: 700 !important;
-    border-radius: 6px !important;
-    padding: 2px 8px !important;
-  }
-}
-
-.link-btn {
-  background: none;
-  border: none;
-  color: var(--color-teal-700);
-  font-size: 0.78rem;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 4px 6px;
-  &:hover { text-decoration: underline; }
-}
-
-.population-note {
-  font-size: 0.7rem;
-  color: var(--color-muted);
-  margin: -10px 0 16px;
-}
-
-// ── Mobile: collapse into a compact top bar ──────────────────────────────
-@media (max-width: 640px) {
-  .dash-header__top {
-    align-items: center;
-  }
-  .dash-header__title h1 {
-    font-size: 1.1rem;
-  }
-  .dash-header__title__subtitle,
-  .dash-header__subtitle {
-    display: none; // drop the subtitle on mobile to keep the bar compact
-  }
-  .dash-header__filters {
-    flex-direction: column;
-  }
-  .filter-field {
-    min-width: 0;
+    padding: 4px 8px !important;
+    background: var(--color-surface) !important;
   }
 }

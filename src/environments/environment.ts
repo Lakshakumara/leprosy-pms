@@ -157,3 +157,21 @@ export type Dhis2Environment = typeof environment;
       level: 3,
       path: '/GYBZ1og9bk7/G8wNqDYI245/Sa955F8q271',
     },*/
+/*    
+Visit #	Stage Name	Stage ID	Status
+1	Individial Patient forms - 1st visit	x0vRwubw5S7	✅ Has data elements
+2	2nd visit	MJHs4by4KDD	❌ Empty! No data elements
+3	3rd visit	U6IkW19zK7J	✅ Has data elements
+4	4th Visit	LxB9ArHmMGC	✅ Has data elements
+5	5th Visit	z6AnZV6phI8	✅ Has data elements
+6	6th Visit	x95G5bOeDN1	✅ Has data elements
+7	7th Visit	DhtWICcZhwK	✅ Has data elements
+8	8th Visit	xSGWfQwwD93	✅ Has data elements
+9	9th Visit	iE4QnfmTuKe	✅ Has data elements
+10	10th Visit	QdVsBuNTCrm	✅ Has data elements
+11	11th Visit	SYJtmQu4E30	✅ Has data elements
+12	12th visit	h1TrdlCaFSc	✅ Has data elements
+-	Extended visit	jpvOb2i5Jai	✅ Has data elements
+-	Treatment outcome	LqgKGaiwXua	✅ Has data elements
+-	Follow up visit	gqBvokwE2TP	✅ Has many data elements
+*/

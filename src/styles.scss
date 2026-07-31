@@ -82,3 +82,10 @@ a { color: var(--color-teal-700); }
 
 // PrimeNG density tweak for data-dense clinical tables
 .p-datatable .p-datatable-tbody > tr > td { padding: 0.6rem 0.9rem; }
+
+// Hide desktop header on mobile - moves to topbar
+@media (max-width: 860px) {
+  .map-header {
+    display: none !important;
+  }
+}

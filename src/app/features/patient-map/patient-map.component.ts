@@ -1,4 +1,4 @@
-import { Component, inject, computed, signal, OnInit, AfterViewInit, ElementRef, ViewChild, effect, NgZone, ChangeDetectorRef, OnDestroy } from '@angular/core';
+import { Component, inject, computed, signal, OnInit, AfterViewInit, ElementRef, ViewChild, effect, NgZone, ChangeDetectorRef, OnDestroy, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PatientService } from '../../core/services/patient.service';
 import { Dhis2Service, OrgUnitGeometry } from '../../core/services/dhis2.service';
@@ -16,27 +16,8 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
 import { Dhis2UpdaterService } from '../../core/services/dhis2-updater.service';
 import type { SyncStatus } from '../../core/services/patient.model';
+import { MobileHeaderService } from '../../core/services/mobile-header.service';
 
-/**
- * Free map view using Leaflet + OpenStreetMap tiles - no API key, no
- * billing account required.
- *
- * Layers:
- *  - District boundary (real polygon geometry pulled live from DHIS2 -
- *    confirmed Ratnapura RDHS has this; other districts may or may not,
- *    handled gracefully if geometry is missing)
- *  - MOH area layer - attempts to fetch geometry per MOH-area org unit
- *    under the district. If DHIS2 doesn't have polygon data for these yet,
- *    this layer is simply empty (no error) - manualDsGeoJson below is the
- *    slot for dropping in real boundary data later from any source
- *    (Survey Dept, HDX, etc.) without touching the rest of this component.
- *  - One layer per year (2022-2026), color-coded, each patient marker has
- *    a popup with ALC number / name / address. Leaflet's layer control
- *    renders as a toggle menu in the map corner.
- *
- * Install: npm install leaflet @types/leaflet leaflet.markercluster @types/leaflet.markercluster --save
- * Also add "node_modules/leaflet/dist/leaflet.css" to angular.json's styles array.
- */
 @Component({
   selector: 'app-patient-map',
   standalone: true,
@@ -48,6 +29,7 @@ import type { SyncStatus } from '../../core/services/patient.model';
 export class PatientMapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   @ViewChild('mapContainer', { static: true }) mapContainer!: ElementRef<HTMLDivElement>;
+  private mobileHeader = inject(MobileHeaderService);
   private readonly ngZone = inject(NgZone);
   private readonly cdr = inject(ChangeDetectorRef); // Add this
   protected readonly patientService = inject(PatientService);
@@ -127,15 +109,35 @@ yearColors: Record<string, string> = {}; // NOT readonly, we build it
     this.applySearchFilter();
   }, 300);
 
-  constructor() {
-    // React to patient data changes
-    effect(() => {
-      const patients = this.mappable();
-      if (this.isMapInitialized && patients.length > 0) {
-        this.updatePatientMarkers(patients);
-      }
+ constructor() {
+  // 1. marker update
+  effect(() => {
+    const patients = this.mappable();
+    if (this.isMapInitialized && patients.length > 0) {
+      this.updatePatientMarkers(patients);
+    }
+  });
+
+  // 2. mobile toolbar - put HERE, not in method
+  effect(() => {
+    const countMapped = this.mappable().length;
+    const countTotal = this.patientService.districtPatients().length;
+    const exporting = this.exporting();
+
+    untracked(() => {
+      this.mobileHeader.set({
+        title: 'Patient Map',
+        count: `${countMapped} / ${countTotal}`,
+        actions: [
+          { icon: 'pi pi-download', label: 'Export', command: () => this.exportMapImage(), disabled: exporting }
+        ],
+        overflow: [
+          { label: 'Refresh map', icon: 'pi pi-refresh', command: () => this.refreshMap() },
+        ]
+      });
     });
-  }
+  });
+}
   
   async ngOnInit(): Promise<void> {
     try {
@@ -160,6 +162,7 @@ yearColors: Record<string, string> = {}; // NOT readonly, we build it
   }
 
   ngOnDestroy(): void {
+    this.mobileHeader.clear();
     if (this.map && this.mapClickHandler) {
       this.map.off('click', this.mapClickHandler);
     }

@@ -15,6 +15,7 @@ element1.json
 element2.json
 pt.json
 *.code
+test.json
 
 # IDEs and editors
 /.idea

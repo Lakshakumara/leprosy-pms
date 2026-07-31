@@ -23,6 +23,7 @@ export interface SavedBasicCreds {
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
+  
   private readonly http = inject(HttpClient);
   private readonly storage = inject(DeviceStorageService);
   private readonly base = environment.dhis2.baseUrl;
@@ -89,7 +90,7 @@ export class AuthService {
       this.authMode.set('basic');
 
       if (!remember) {
-       // this.storage.setJSON<SavedBasicCreds>(STORAGE_KEYS.BASIC_CREDS, { username: username.trim(), password: '' });
+        // this.storage.setJSON<SavedBasicCreds>(STORAGE_KEYS.BASIC_CREDS, { username: username.trim(), password: '' });
       }
       return user;
     } catch (err) {

@@ -1,16 +1,40 @@
-// ── Shell layout ──────────────────────────────────────────────────────────────
+/* ==========================================================================
+   1. Main Shell Layout Grid
+   ========================================================================== */
+
 .shell {
   display: grid;
   grid-template-columns: 260px 1fr;
   min-height: 100vh;
+  background-color: #f8fafc;
+
   @media (max-width: 860px) {
     grid-template-columns: 1fr;
-    grid-template-rows: 1fr auto; // content + bottom nav
-    padding-bottom: 64px; // space for bottom nav
+    padding-bottom: 60px; /* Offset for fixed bottom navigation */
+  }
+
+  &__main {
+    display: flex;
+    flex-direction: column;
+    min-width: 0; /* Prevents flex children from overflowing horizontally */
+    width: 100%;
+  }
+
+  &__content {
+    flex: 1;
+    padding: 28px 32px;
+    background: #f8fafc;
+
+    @media (max-width: 860px) {
+      padding: 16px;
+    }
   }
 }
 
-// ── Sidebar ───────────────────────────────────────────────────────────────────
+/* ==========================================================================
+   2. Desktop Sidebar Navigation
+   ========================================================================== */
+
 .shell__nav {
   background: linear-gradient(160deg, #0b4f4a 0%, #0d6159 100%);
   color: #eaf3f1;
@@ -22,137 +46,169 @@
   top: 0;
   height: 100vh;
   overflow-y: auto;
+  z-index: 100;
+
   @media (max-width: 860px) {
-    display: none; // replaced by bottom nav on mobile
+    display: none; /* Hide desktop sidebar on mobile/tablet screens */
   }
 }
 
-// ── Brand ─────────────────────────────────────────────────────────────────────
 .shell__brand {
   display: flex;
   align-items: center;
   gap: 12px;
 }
+
 .shell__brand-mark {
   width: 38px;
   height: 38px;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.92);
-  color: var(--color-teal-900);
-  font-family: var(--font-display);
+  color: #0b4f4a;
   font-weight: 800;
   font-size: 1.1rem;
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
+
 .shell__brand-name {
-  font-family: var(--font-display);
   font-weight: 700;
   font-size: 0.95rem;
   line-height: 1.2;
 }
+
 .shell__brand-sub {
   font-size: 0.7rem;
   color: #9fc2bd;
-  margin-top: 2px;
 }
 
-// ── Nav links ─────────────────────────────────────────────────────────────────
+.shell__info-btn {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: rgba(234, 243, 241, 0.6);
+  cursor: pointer;
+  padding: 4px;
+
+  &:hover {
+    color: #ffffff;
+  }
+}
+
 .shell__links {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
+
   a {
     color: rgba(207, 228, 224, 0.85);
     text-decoration: none;
     padding: 10px 14px;
-    border-radius: var(--radius-sm);
+    border-radius: 6px;
     font-size: 0.9rem;
     font-weight: 500;
     display: flex;
     align-items: center;
     gap: 10px;
-    transition: background 0.15s, color 0.15s;
-    i { font-size: 0.95rem; opacity: 0.8; }
-    &:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+
+    i {
+      font-size: 0.95rem;
+    }
+
+    &:hover,
     &.is-active {
       background: rgba(255, 255, 255, 0.14);
-      color: #fff;
-      i { opacity: 1; }
+      color: #ffffff;
     }
   }
 }
 
-// ── Status panel ──────────────────────────────────────────────────────────────
 .shell__status {
   margin-top: auto;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  border-top: 1px solid rgba(255,255,255,0.1);
+  gap: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   padding-top: 18px;
 }
-.shell__status .dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: currentColor;
-  display: inline-block;
+
+.shell__status-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
+
+.shell__sync-icon-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #ffffff;
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+}
+
+.offline-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 12px;
+
+  .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  &--online {
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+  }
+
+  &--offline {
+    background: rgba(239, 68, 68, 0.15);
+    color: #fca5a5;
+  }
+}
+
 .shell__sync-info {
   font-size: 0.72rem;
   color: #9fc2bd;
-  line-height: 1.5;
-  strong { color: #cfe4e0; }
-}
-.shell__sync-btn {
-  background: rgba(234, 243, 241, 0.12);
-  border: 1px solid rgba(234, 243, 241, 0.2);
-  color: #eaf3f1;
-  border-radius: var(--radius-sm);
-  padding: 9px 12px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  transition: background 0.15s;
-  &:hover:not(:disabled) { background: rgba(234, 243, 241, 0.2); }
-  &:disabled { opacity: 0.5; cursor: default; }
-  i { font-size: 0.9rem; }
 }
 
-// ── User info & logout ─────────────────────────────────────────────────────────
 .shell__user {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  border-top: 1px solid rgba(255,255,255,0.08);
+  gap: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   padding-top: 12px;
 }
+
 .shell__user-info {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 0.78rem;
   color: #9fc2bd;
-  i { font-size: 0.85rem; }
 }
-.shell__user-name {
-  font-weight: 600;
-  color: #cfe4e0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+
 .shell__logout-btn {
   background: rgba(239, 68, 68, 0.12);
   border: 1px solid rgba(239, 68, 68, 0.2);
   color: #fca5a5;
-  border-radius: var(--radius-sm);
+  border-radius: 6px;
   padding: 7px 12px;
   font-size: 0.8rem;
   font-weight: 600;
@@ -160,43 +216,145 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  transition: background 0.15s;
-  &:hover { background: rgba(239, 68, 68, 0.22); }
-  i { font-size: 0.88rem; }
-}
 
-// ── Main content ──────────────────────────────────────────────────────────────
-.shell__content {
-  padding: 28px 32px;
-  min-height: 100vh;
-  background: var(--color-paper);
-  @media (max-width: 640px) { padding: 16px; }
- /* @media (max-width: 860px) { padding: 20px 16px; min-height: auto; }*/
-  @media (max-width: 480px) { padding: 14px 12px; }
-  @media (max-width: 860px) {
-  .shell__content {
-    overflow-x: hidden;
-    width: 100%;
-    box-sizing: border-box;
+  &:hover {
+    background: rgba(239, 68, 68, 0.22);
   }
 }
+
+/* ==========================================================================
+   3. Mobile Top Navigation Bar (Branded Colors)
+   ========================================================================== */
+
+.mobile-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 56px;
+  padding: 0 16px;
+  background: #0b4f4a; /* Styled deep teal header color */
+  color: #ffffff;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+
+  /* Hide Top Bar on Desktop views */
+  @media (min-width: 861px) {
+    display: none;
+  }
+
+  &__left,
+  &__right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  &__title {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+
+    h2 {
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #ffffff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.2;
+    }
+
+    small {
+      font-size: 0.72rem;
+      color: #9fc2bd;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.2;
+      margin-top: 2px;
+    }
+  }
 }
 
-// ── Mobile bottom navigation ──────────────────────────────────────────────────
+/* Header Icon Buttons */
+.btn-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+
+  i {
+    font-size: 1.15rem;
+  }
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+  }
+
+  &:active {
+    background-color: rgba(255, 255, 255, 0.25);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: transparent;
+  }
+
+  .badge {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    background-color: #ef4444;
+    color: #ffffff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    border-radius: 9px;
+    border: 2px solid #0b4f4a;
+    line-height: 1;
+  }
+}
+
+/* ==========================================================================
+   4. Mobile Bottom Navigation
+   ========================================================================== */
+
 .bottom-nav {
   display: none;
+
   @media (max-width: 860px) {
     display: flex;
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    height: 64px;
+    height: 60px;
     background: #0b4f4a;
-    border-top: 1px solid rgba(255,255,255,0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
     z-index: 1000;
-    box-shadow: 0 -4px 16px rgba(0,0,0,0.2);
-    a, button {
+
+    a {
       flex: 1;
       display: flex;
       flex-direction: column;
@@ -205,135 +363,100 @@
       gap: 3px;
       color: rgba(207, 228, 224, 0.7);
       text-decoration: none;
-      font-size: 0.65rem;
+      font-size: 0.68rem;
       font-weight: 600;
-      letter-spacing: 0.02em;
-      transition: color 0.15s, background 0.15s;
-      border: none;
-      background: transparent;
-      cursor: pointer;
-      padding: 0;
-      i { font-size: 1.15rem; }
-      &.is-active, &:not(:disabled):hover {
-        color: #fff;
-        background: rgba(255,255,255,0.08);
+
+      i {
+        font-size: 1.15rem;
       }
-      &:disabled { opacity: 0.4; }
+
+      &.is-active {
+        color: #ffffff;
+        background: rgba(255, 255, 255, 0.08);
+      }
     }
   }
 }
 
-// Append these to your existing app.component.scss
+/* ==========================================================================
+   5. Modal & Overlay Component Customization
+   ========================================================================== */
 
-// ── Info button next to the desktop sidebar brand ────────────────────────
-.shell__brand {
-  position: relative; // so the info button can sit at the far right cleanly
-}
-.shell__info-btn {
-  margin-left: auto;
-  background: none;
-  border: none;
-  color: rgba(234, 243, 241, 0.6);
-  cursor: pointer;
-  padding: 4px;
-  flex-shrink: 0;
+::ng-deep .p-menu {
+  border-radius: 8px !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 16px rgba(11, 79, 74, 0.12) !important;
 
-  &:hover { color: #fff; }
-  i { font-size: 1rem; }
-}
+  .p-menuitem-link {
+    padding: 10px 16px !important;
+    gap: 10px !important;
 
-// ── Mobile-only compact top bar ───────────────────────────────────────────
-// The sidebar (which normally holds brand/credentials) is display:none
-// below 860px, so this fills that gap with a minimal persistent header -
-// just enough to identify the app and reach the About dialog, without
-// competing with the bottom nav for space.
-.mobile-topbar {
-  display: none;
+    .p-menuitem-text {
+      color: #0b4f4a !important;
+      font-size: 0.85rem !important;
+      font-weight: 500 !important;
+    }
 
-  @media (max-width: 860px) {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 16px;
-    background: linear-gradient(160deg, #0b4f4a 0%, #0d6159 100%);
-    color: #eaf3f1;
-    position: sticky;
-    top: 0;
-    z-index: 900;
+    .p-menuitem-icon {
+      color: #106b63 !important;
+      font-size: 1rem !important;
+    }
+
+    &:hover {
+      background-color: #e8f5f4 !important;
+    }
   }
 }
-.mobile-topbar__brand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 0.9rem;
-}
-.shell__brand-mark--sm {
-  width: 26px;
-  height: 26px;
-  font-size: 0.85rem;
-  border-radius: 8px;
-}
-.mobile-topbar__info {
-  background: none;
-  border: none;
-  color: rgba(234, 243, 241, 0.75);
-  cursor: pointer;
-  padding: 4px;
 
-  &:hover, &:active { color: #fff; }
-  i { font-size: 1.15rem; }
-}
-
-// ── About dialog content ──────────────────────────────────────────────────
 .about-content {
   text-align: center;
-  padding: 8px 4px 4px;
 
   &__mark {
-    width: 52px;
-    height: 52px;
-    margin: 0 auto 14px;
-    border-radius: 14px;
-    background: linear-gradient(160deg, #0b4f4a 0%, #0d6159 100%);
-    color: #fff;
-    font-family: var(--font-display);
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 12px;
+    border-radius: 12px;
+    background: #0b4f4a;
+    color: #ffffff;
     font-weight: 800;
-    font-size: 1.4rem;
+    font-size: 1.3rem;
     display: grid;
     place-items: center;
   }
 
   h3 {
     margin: 0 0 4px;
-    font-size: 1.05rem;
-    color: var(--color-teal-900);
+    font-size: 1rem;
+    color: #0b4f4a;
   }
 
   &__version {
     font-size: 0.78rem;
-    color: var(--color-muted);
-    margin: 0 0 14px;
+    color: #64748b;
+    margin: 0 0 12px;
   }
 
-  p {
+  &__footer {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  &__logout-btn {
+    background: #ef4444;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-weight: 600;
     font-size: 0.85rem;
-    margin: 0 0 8px;
-    color: var(--color-ink);
-  }
-
-  &__sub {
-    color: var(--color-muted) !important;
-    font-size: 0.8rem !important;
-  }
-
-  &__sync {
-    font-size: 0.75rem !important;
-    color: var(--color-muted) !important;
-    border-top: 1px solid var(--color-line);
-    padding-top: 10px;
-    margin-top: 10px !important;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
   }
 }

@@ -1,4 +1,4 @@
-import { Component, inject, computed, model, OnInit, signal } from '@angular/core';
+import { Component, inject, computed, model, OnInit, signal, effect, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -7,6 +7,7 @@ import { Patient } from '../../core/services/patient.model';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { SelectModule } from 'primeng/select';
 import { TooltipModule } from 'primeng/tooltip';
+import { DrawerModule } from 'primeng/drawer'; // PrimeNG 18 (formerly Sidebar)
 import { STORAGE_KEYS } from '../../core/util/util';
 import { DeviceStorageService } from '../../core/services/device-storage.service';
 import {
@@ -26,10 +27,15 @@ import {
   type CountRow,
   type DashboardAlert,
 } from '../../core/util/dashboard-analytics';
+import { MobileHeaderService } from '../../core/services/mobile-header.service';
 
 interface SelectOption {
   label: string;
   value: string;
+}
+interface FilterOption {
+  label: string;
+  value: string | number;
 }
 
 @Component({
@@ -42,21 +48,20 @@ interface SelectOption {
     MultiSelectModule,
     SelectModule,
     TooltipModule,
+    DrawerModule
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
+  private mobileHeader = inject(MobileHeaderService);
   private readonly storage = inject(DeviceStorageService);
   private readonly router = inject(Router);
   protected readonly patientService = inject(PatientService);
 
-  private readonly currentYear = new Date().getFullYear();
+  private readonly currentYear = '' + new Date().getFullYear();
 
-  protected readonly yearOptions = Array.from(
-    { length: this.currentYear - 2022 + 1 },
-    (_, i) => this.currentYear - i
-  );
+  protected yearOptions: string[] = []
   protected readonly disabilityText = [
     { label: 'Grade 2', value: '3' },
     { label: 'Grade 1', value: '2' },
@@ -64,47 +69,13 @@ export class DashboardComponent implements OnInit {
   ];
 
   protected readonly districtOptions: SelectOption[] = this.patientService.healthDistricts();
-  /*protected readonly districtOptions: SelectOption[] = [
-    { label: 'Ampara', value: 'Ampara' },
-    { label: 'Anuradhapura', value: 'Anuradhapura' },
-    { label: 'Badulla', value: 'Badulla' },
-    { label: 'Batticaloa', value: 'Batticaloa' },
-    { label: 'Colombo', value: 'Colombo' },
-    { label: 'CMC', value: 'CMC' },
-    { label: 'Galle', value: 'Galle' },
-    { label: 'Gampaha', value: 'Gampaha' },
-    { label: 'Hambantota', value: 'Hambantota' },
-    { label: 'Jaffna', value: 'Jaffna' },
-    { label: 'Kalutara', value: 'Kalutara' },
-    { label: 'Kandy', value: 'Kandy' },
-    { label: 'Kegalle', value: 'Kegalle' },
-    { label: 'Kilinochchi', value: 'Kilinochchi' },
-    { label: 'Kurunegala', value: 'Kurunegala' },
-    { label: 'Mannar', value: 'Mannar' },
-    { label: 'Matale', value: 'Matale' },
-    { label: 'Matara', value: 'Matara' },
-    { label: 'Monaragala', value: 'Monaragala' },
-    { label: 'Mullaitivu', value: 'Mullaitivu' },
-    { label: 'NIHS', value: 'NIHS' },
-    { label: 'Nuwara Eliya', value: 'NuwaraEliya' },
-    { label: 'Polonnaruwa', value: 'Polonnaruwa' },
-    { label: 'Puttalam', value: 'Puttalam' },
-    { label: 'Ratnapura', value: 'Ratnapura' },
-    { label: 'Trincomalee', value: 'Trincomalee' },
-    { label: 'Vavuniya', value: 'Vavuniya' },
-  ];*/
 
   protected readonly selectedDistrict = model(this.patientService.healthDistricts()[0].value);
-  protected readonly selectedYears = model<number[]>([this.currentYear]);
+  protected readonly selectedYears = model<string[]>([this.currentYear]);
   protected readonly selectedFacility = model<string>('ALL');
 
   protected readonly hoveredMoh = model<string | null>(null);
   protected readonly hoveredYear = model<number | null>(null);
-
-
-
-
-  // Add near your other model()/signal() declarations:
 
   /** Controls the collapsible filter panel - collapsed by default on mobile. */
   protected readonly showFilters = signal(false);
@@ -119,18 +90,12 @@ export class DashboardComponent implements OnInit {
    */
   protected readonly populationEstimate = signal(1_200_000);
 
-  /**
-   * New Case Detection Rate per 100,000 population - the standard WHO/
-   * national leprosy program indicator. Uses `total()` (registered cases
-   * within the current filter selection) as the case count.
-   */
   protected readonly ncdr = computed(() => {
     const population = this.populationEstimate();
     if (!population) return 0;
     return Math.round((this.total() / population) * 100000 * 10) / 10; // one decimal place
   });
 
-  /** How many of district/years/facility are actively narrowing the view - drives the filter count badge. */
   protected readonly activeFilterCount = computed(() => {
     let count = 0;
     if (this.selectedDistrict()) count++;
@@ -157,7 +122,7 @@ export class DashboardComponent implements OnInit {
       if (district && p.patientDistrict !== district) return false;
       if (facility !== 'ALL' && p.orgUnitId !== facility) return false;
       if (years === null || years.length === 0) return true;
-      const year = yearOf(p.enrolledAt);
+      const year = p.enrolledAt.slice(0, 4)
       return year != null && years.includes(year);
     });
   });
@@ -169,7 +134,7 @@ export class DashboardComponent implements OnInit {
     return all.filter(p => {
       if (facility !== 'ALL' && p.orgUnitId !== facility) return false;
       if (years === null || years.length === 0) return true;
-      const year = yearOf(p.enrolledAt);
+      const year = p.enrolledAt.slice(0, 4)
       return year != null && years.includes(year);
     });
   });
@@ -268,11 +233,56 @@ export class DashboardComponent implements OnInit {
   );
   protected readonly maxMohCount = computed(() => Math.max(1, ...this.byMoh().map(r => r.count)));
 
+  constructor() {
+    // Automatically update the header filter action badge whenever activeFilterCount changes
+    effect(() => {
+
+      const count = this.activeFilterCount();
+
+      this.mobileHeader.update({
+        actions: [
+          {
+            icon: 'pi pi-filter',
+            label: 'Filter',
+            badge: count > 0 ? count : undefined,
+            command: () => this.showFilters.set(!this.showFilters())
+          }
+        ]
+      });
+    });
+  }
+
   async ngOnInit(): Promise<void> {
+this.loadYearsInBackground()
+    this.mobileHeader.set({
+      title: 'Leprosy Control Dashboard',
+      subtitle: 'Decision support for Active Case Finding',
+      showInfo: true,
+      showMenu: true,
+      menuCommand: () => this.openNavigationDrawer()
+    });
     if (this.patientService.allPatients().length === 0) {
       await this.patientService.pullFromServer();
     }
   }
+  ngOnDestroy(): void {
+    // Reset mobile header when navigating away
+    this.mobileHeader.clear();
+  }
+
+  private async loadYearsInBackground() {
+  try {
+    const years = await this.patientService.getYears(10);
+    this.yearOptions = years;
+  } catch (e) {
+    console.warn('year load failed', e);
+    
+  }
+}
+  private openNavigationDrawer(): void {
+    // Toggle side menu or navigation sheet
+  }
+
 
   protected selectAllYears(): void {
     this.selectedYears.set([...this.yearOptions]);
@@ -342,5 +352,10 @@ export class DashboardComponent implements OnInit {
       return;
     }
     this.navigateWithFilter(alert.queryParams);
+  }
+  resetAllFilters(): void {
+    this.selectedDistrict.set(this.patientService.healthDistricts()[0].value);
+    this.clearYears();
+    this.selectedFacility.set('ALL');
   }
 }
