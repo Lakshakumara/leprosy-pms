@@ -52,6 +52,12 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/patient-map/patient-map.component').then(m => m.PatientMapComponent),
   },
+  {
+    path: 'visits/:patientId/:visitNumber',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/visits/visits').then(m => m.VisitFormComponent),
+  },
 
   // Default redirects
   { path: '', pathMatch: 'full', redirectTo: 'dashboard' },

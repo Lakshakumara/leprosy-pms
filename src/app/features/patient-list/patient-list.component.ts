@@ -260,7 +260,7 @@ export class PatientListComponent implements OnInit {
   }
 
   protected goToPatient(id: string): void {
-    this.router.navigate(['/patients', id]);
+    this.router.navigate(['/visits', id, 1]);
   }
 
   protected toggleViewMode(): void {

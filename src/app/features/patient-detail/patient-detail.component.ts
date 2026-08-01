@@ -37,6 +37,7 @@ export class PatientDetailComponent implements OnInit {
 
     const found = await this.patientService.getById(id);
     if (found) {
+      console.log(found)
       this.patient.set(found);
     } else {
       this.notFound.set(true);

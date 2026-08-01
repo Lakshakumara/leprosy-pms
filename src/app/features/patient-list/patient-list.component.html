@@ -207,7 +207,7 @@
                     {{ p.enrolledAt | date:'yyyy-MM-dd' }}
                 </td>
                 <td class="actions">
-                    <a [routerLink]="['/patients', p.id]" pButton icon="pi pi-eye" class="p-button-text p-button-sm"
+                    <a [routerLink]="['/visits', p.id,3]" pButton icon="pi pi-eye" class="p-button-text p-button-sm"
                         title="View details"></a>
                     <a [routerLink]="['/update', p.id]" pButton icon="pi pi-pencil" class="p-button-text p-button-sm"
                         title="View details"></a>
