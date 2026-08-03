@@ -1,0 +1,56 @@
+curl -s -X GET "https://phsmis.health.gov.lk/api/events/MYGFjgknp3G" -H "Authorization: ApiToken d2pat_xDvgejPgu5QW9GojtAxn7dfycUSpMfSj0148869625"
+{
+    "href": "https://phsmis.health.gov.lk/api/events/MYGFjgknp3G",
+    "event": "MYGFjgknp3G",
+    "status": "ACTIVE",
+    "program": "sqsddKuTGlJ",
+    "programStage": "U6IkW19zK7J",
+    "enrollment": "FJtm0wWipO5",
+    "enrollmentStatus": "ACTIVE",
+    "orgUnit": "LCZgWKWn71b",
+    "orgUnitName": "TH-Rathnapura",
+    "trackedEntityInstance": "NmYSBvjvK6h",
+    "relationships": [],
+    "eventDate": "2026-06-22T00:00:00.000",
+    "dueDate": "2026-07-14T13:09:35.531",
+    "storedBy": "ALC-RPra-PHI1",
+    "dataValues": [
+        {
+            "created": "2026-08-01T03:10:48.358",
+            "createdByUserInfo": {
+                "uid": "NsLsuAj4aHV",
+                "username": "ALC-RPra-PHI1",
+                "firstName": "ALC",
+                "surname": "LC-Ratnapura"
+            },
+            "lastUpdated": "2026-08-01T03:10:48.358",
+            "lastUpdatedByUserInfo": {
+                "uid": "NsLsuAj4aHV",
+                "username": "ALC-RPra-PHI1",
+                "firstName": "ALC",
+                "surname": "LC-Ratnapura"
+            },
+            "value": "false",
+            "dataElement": "wO4A0MXJC14",
+            "providedElsewhere": false
+        }
+    ],
+    "notes": [],
+    "deleted": false,
+    "created": "2026-07-14T13:09:35.532",
+    "createdByUserInfo": {
+        "uid": "eagEjfMmVPj",
+        "username": "Ashan01",
+        "firstName": "Ashan ",
+        "surname": "Diunugala"
+    },
+    "lastUpdated": "2026-08-01T03:10:48.362",
+    "lastUpdatedByUserInfo": {
+        "uid": "NsLsuAj4aHV",
+        "username": "ALC-RPra-PHI1",
+        "firstName": "ALC",
+        "surname": "LC-Ratnapura"
+    },
+    "attributeOptionCombo": "HllvX50cXC0",
+    "attributeCategoryOptions": "xYerKDKCefk"
+}
