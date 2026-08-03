@@ -87,9 +87,10 @@ export class Dhis2Service {
   private readonly orgScope = inject(OrgScopeService);
   private readonly base = environment.dhis2.baseUrl;
 
-  userDistricts() {
+  userDistrict() {
     return this.orgScope.healthDistricts()[0].trim();
   }
+
   healthDistricts() {
     return this.orgScope.healthDistrictsNew();
   }

@@ -31,16 +31,16 @@ export class PatientService {
   readonly lastSyncedAt = signal<string | null>(null);
 
   readonly districtPatients = computed(() => {
-    return this.allPatients().filter(p => p.patientDistrict === this.userDistricts());
+    return this.allPatients().filter(p => p.patientDistrict === this.userDistrict());
   });
 
   readonly yearsTop5 = computed(() => { return this.localStorage.getYears(5) })
 
   readonly outerDistrictPatients = computed(() => {
-    return this.allPatients().filter(p => p.patientDistrict != this.userDistricts());
+    return this.allPatients().filter(p => p.patientDistrict != this.userDistrict());
   });
-  userDistricts() {
-    return this.dhis2.userDistricts();
+  userDistrict() {
+    return this.dhis2.userDistrict();
   }
   healthDistricts() {
     return this.dhis2.healthDistricts();
@@ -62,7 +62,7 @@ export class PatientService {
     const ci = (s: string) => s.toLowerCase();
     return this._patients().filter(p => {
       if (filter.outsideDistrict) {
-        if (p.patientDistrict === this.userDistricts()) return false;
+        if (p.patientDistrict === this.userDistrict()) return false;
       } else {
         if (filter.district && filter.district !== 'ALL') {
           if (p.patientDistrict !== filter.district) return false;

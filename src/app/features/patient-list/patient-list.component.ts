@@ -48,7 +48,7 @@ export class PatientListComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // State
   protected readonly filter = signal<PatientFilter>({
-    district: this.patientService.userDistricts(),
+    district: this.patientService.userDistrict(),
     search: '',
     classification: 'ALL',
     orgUnitId: 'ALL',
@@ -245,7 +245,7 @@ export class PatientListComponent implements OnInit, AfterViewInit, OnDestroy {
 
   protected clearFilters(): void {
     this.filter.set({
-      district: this.patientService.userDistricts(),
+      district: this.patientService.userDistrict(),
       search: '',
       classification: 'ALL',
       orgUnitId: 'ALL',

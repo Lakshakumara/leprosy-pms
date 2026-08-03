@@ -92,116 +92,116 @@ export class Dhis2UpdaterService {
      */
     // dhis2-updater.service.ts - Use this method instead
 
-/**
- * Change orgUnit - Updates ENROLLMENT (this is what matters)
- */
-async changeOrgUnit(patient: any, newOrgUnitId: string, newOrgUnitName?: string): Promise<void> {
-    const teiId = patient.teiId || patient.id;
-    const enrollmentId = patient.enrollmentId;
+    /**
+     * Change orgUnit - Updates ENROLLMENT (this is what matters)
+     */
+    async changeOrgUnit(patient: any, newOrgUnitId: string, newOrgUnitName?: string): Promise<void> {
+        const teiId = patient.teiId || patient.id;
+        const enrollmentId = patient.enrollmentId;
 
-    if (!enrollmentId) {
-        throw new Error('Patient has no enrollmentId. Cannot change orgUnit.');
-    }
-
-    try {
-        // 1. Get current enrollment details to preserve required fields
-        console.log(`Fetching enrollment details for: ${enrollmentId}`);
-        const enrollmentDetails = await this.getEnrollmentDetails(enrollmentId);
-        
-        if (!enrollmentDetails) {
-            throw new Error(`Could not fetch enrollment details for ${enrollmentId}`);
+        if (!enrollmentId) {
+            throw new Error('Patient has no enrollmentId. Cannot change orgUnit.');
         }
 
-        // 2. Update the ENROLLMENT orgUnit (THIS IS WHAT MATTERS)
-        const payload = {
-            enrollments: [{
-                enrollment: enrollmentId,
-                trackedEntity: teiId,
-                program: this.programId,
-                orgUnit: newOrgUnitId,
-                status: enrollmentDetails.status || 'ACTIVE',
-                enrolledAt: enrollmentDetails.enrolledAt || new Date().toISOString(),
-                occurredAt: enrollmentDetails.occurredAt || new Date().toISOString()
-            }]
-        };
-
-        console.log('Updating ENROLLMENT with payload:', JSON.stringify(payload, null, 2));
-
-        const response = await firstValueFrom(
-            this.http.post(
-                `${this.baseUrl}/tracker?async=false&importStrategy=UPDATE`,
-                payload
-            )
-        );
-        
-        console.log('Enrollment update response:', response);
-
-        // 3. Also update TEI orgUnit (optional, for consistency)
         try {
-            const teiPayload = {
-                trackedEntities: [{
+            // 1. Get current enrollment details to preserve required fields
+            console.log(`Fetching enrollment details for: ${enrollmentId}`);
+            const enrollmentDetails = await this.getEnrollmentDetails(enrollmentId);
+
+            if (!enrollmentDetails) {
+                throw new Error(`Could not fetch enrollment details for ${enrollmentId}`);
+            }
+
+            // 2. Update the ENROLLMENT orgUnit (THIS IS WHAT MATTERS)
+            const payload = {
+                enrollments: [{
+                    enrollment: enrollmentId,
                     trackedEntity: teiId,
-                    trackedEntityType: this.trackedEntityTypeId,
-                    orgUnit: newOrgUnitId
+                    program: this.programId,
+                    orgUnit: newOrgUnitId,
+                    status: enrollmentDetails.status || 'ACTIVE',
+                    enrolledAt: enrollmentDetails.enrolledAt || new Date().toISOString(),
+                    occurredAt: enrollmentDetails.occurredAt || new Date().toISOString()
                 }]
             };
-            
-            console.log('Updating TEI with payload:', JSON.stringify(teiPayload, null, 2));
-            
-            await firstValueFrom(
-                this.http.post(`${this.baseUrl}/tracker?async=false&importStrategy=UPDATE`, teiPayload)
+
+            console.log('Updating ENROLLMENT with payload:', JSON.stringify(payload, null, 2));
+
+            const response = await firstValueFrom(
+                this.http.post(
+                    `${this.baseUrl}/tracker?async=false&importStrategy=UPDATE`,
+                    payload
+                )
             );
-        } catch (teiError) {
-            console.warn('TEI update failed but enrollment was updated:', teiError);
+
+            console.log('Enrollment update response:', response);
+
+            // 3. Also update TEI orgUnit (optional, for consistency)
+            try {
+                const teiPayload = {
+                    trackedEntities: [{
+                        trackedEntity: teiId,
+                        trackedEntityType: this.trackedEntityTypeId,
+                        orgUnit: newOrgUnitId
+                    }]
+                };
+
+                console.log('Updating TEI with payload:', JSON.stringify(teiPayload, null, 2));
+
+                await firstValueFrom(
+                    this.http.post(`${this.baseUrl}/tracker?async=false&importStrategy=UPDATE`, teiPayload)
+                );
+            } catch (teiError) {
+                console.warn('TEI update failed but enrollment was updated:', teiError);
+            }
+
+            // 4. Update local object
+            patient.orgUnitId = newOrgUnitId;
+            if (newOrgUnitName) patient.orgUnitName = newOrgUnitName;
+            patient.syncStatus = 'synced';
+            patient.updatedAt = new Date().toISOString();
+
+            // 5. TRANSFER PROGRAM OWNERSHIP - THE KEY STEP!
+            console.log('Transferring program ownership...');
+            await this.transferProgramOwnership(teiId, this.programId, newOrgUnitId);
+
+
+
+            if (this.patientService) {
+                await this.patientService.updateLocalPatient(patient);
+            }
+
+            console.log('✅ Org unit changed successfully!');
+
+        } catch (error) {
+            console.error('❌ Failed to change org unit:', error);
+            throw error;
         }
+    }
 
-        // 4. Update local object
-        patient.orgUnitId = newOrgUnitId;
-        if (newOrgUnitName) patient.orgUnitName = newOrgUnitName;
-        patient.syncStatus = 'synced';
-        patient.updatedAt = new Date().toISOString();
-
-        // 5. TRANSFER PROGRAM OWNERSHIP - THE KEY STEP!
-        console.log('Transferring program ownership...');
-        await this.transferProgramOwnership(teiId, this.programId, newOrgUnitId);
-
-        
-
-        if (this.patientService) {
-            await this.patientService.updateLocalPatient(patient);
+    /**
+     * Get complete enrollment details with ALL required fields
+     */
+    private async getEnrollmentDetails(enrollmentId: string): Promise<any> {
+        try {
+            const response = await firstValueFrom(
+                this.http.get(`${this.baseUrl}/tracker/enrollments/${enrollmentId}`, {
+                    params: {
+                        fields: 'enrollment,program,orgUnit,status,enrolledAt,occurredAt,geometry,trackedEntity'
+                    }
+                })
+            );
+            return response;
+        } catch (error) {
+            console.error('Failed to get enrollment details:', error);
+            // Return minimal required data as fallback
+            return {
+                status: 'ACTIVE',
+                enrolledAt: new Date().toISOString(),
+                occurredAt: new Date().toISOString()
+            };
         }
-
-        console.log('✅ Org unit changed successfully!');
-
-    } catch (error) {
-        console.error('❌ Failed to change org unit:', error);
-        throw error;
     }
-}
-
-/**
- * Get complete enrollment details with ALL required fields
- */
-private async getEnrollmentDetails(enrollmentId: string): Promise<any> {
-    try {
-        const response = await firstValueFrom(
-            this.http.get(`${this.baseUrl}/tracker/enrollments/${enrollmentId}`, {
-                params: {
-                    fields: 'enrollment,program,orgUnit,status,enrolledAt,occurredAt,geometry,trackedEntity'
-                }
-            })
-        );
-        return response;
-    } catch (error) {
-        console.error('Failed to get enrollment details:', error);
-        // Return minimal required data as fallback
-        return {
-            status: 'ACTIVE',
-            enrolledAt: new Date().toISOString(),
-            occurredAt: new Date().toISOString()
-        };
-    }
-}
 
     /**
      * Alternative: Update only TEI orgUnit (simpler, might be sufficient)
@@ -402,25 +402,25 @@ private async getEnrollmentDetails(enrollmentId: string): Promise<any> {
         }
     }
 
-   /* private async getEnrollmentDetails(enrollmentId: string): Promise<any> {
-        try {
-            const response = await firstValueFrom(
-                this.http.get(`${this.baseUrl}/tracker/enrollments/${enrollmentId}`, {
-                    params: {
-                        fields: 'enrollment,program,orgUnit,status,enrolledAt,occurredAt,geometry,trackedEntity'
-                    }
-                })
-            );
-            return response;
-        } catch (error) {
-            console.error('Failed to get enrollment details:', error);
-            return {
-                status: 'ACTIVE',
-                enrolledAt: new Date().toISOString(),
-                occurredAt: new Date().toISOString()
-            };
-        }
-    }*/
+    /* private async getEnrollmentDetails(enrollmentId: string): Promise<any> {
+         try {
+             const response = await firstValueFrom(
+                 this.http.get(`${this.baseUrl}/tracker/enrollments/${enrollmentId}`, {
+                     params: {
+                         fields: 'enrollment,program,orgUnit,status,enrolledAt,occurredAt,geometry,trackedEntity'
+                     }
+                 })
+             );
+             return response;
+         } catch (error) {
+             console.error('Failed to get enrollment details:', error);
+             return {
+                 status: 'ACTIVE',
+                 enrolledAt: new Date().toISOString(),
+                 occurredAt: new Date().toISOString()
+             };
+         }
+     }*/
 
     private async getEnrollmentId(teiId: string): Promise<string> {
         try {
@@ -481,426 +481,426 @@ private async getEnrollmentDetails(enrollmentId: string): Promise<any> {
 
     // dhis2-updater.service.ts - Add this complete method
 
-/**
- * Change orgUnit for EVERYTHING including Program Owner
- * This ensures the patient appears in the new facility everywhere in DHIS2
- */
-async changeOrgUnitComplete(patient: any, newOrgUnitId: string, newOrgUnitName?: string): Promise<void> {
-    const teiId = patient.teiId || patient.id;
-    const enrollmentId = patient.enrollmentId;
+    /**
+     * Change orgUnit for EVERYTHING including Program Owner
+     * This ensures the patient appears in the new facility everywhere in DHIS2
+     */
+    async changeOrgUnitComplete(patient: any, newOrgUnitId: string, newOrgUnitName?: string): Promise<void> {
+        const teiId = patient.teiId || patient.id;
+        const enrollmentId = patient.enrollmentId;
 
-    if (!enrollmentId) {
-        throw new Error('Patient has no enrollmentId. Cannot change orgUnit.');
-    }
-
-    try {
-        // 1. Get current enrollment details with all events
-        console.log(`Fetching complete enrollment details for: ${enrollmentId}`);
-        const enrollmentDetails = await this.getCompleteEnrollmentDetails(enrollmentId);
-        
-        if (!enrollmentDetails) {
-            throw new Error(`Could not fetch enrollment details for ${enrollmentId}`);
+        if (!enrollmentId) {
+            throw new Error('Patient has no enrollmentId. Cannot change orgUnit.');
         }
 
-        // 2. Update ENROLLMENT
-        const enrollmentPayload = {
-            enrollments: [{
-                enrollment: enrollmentId,
-                trackedEntity: teiId,
-                program: this.programId,
-                orgUnit: newOrgUnitId,
-                status: enrollmentDetails.status || 'ACTIVE',
-                enrolledAt: enrollmentDetails.enrolledAt || new Date().toISOString(),
-                occurredAt: enrollmentDetails.occurredAt || new Date().toISOString()
-            }]
-        };
+        try {
+            // 1. Get current enrollment details with all events
+            console.log(`Fetching complete enrollment details for: ${enrollmentId}`);
+            const enrollmentDetails = await this.getCompleteEnrollmentDetails(enrollmentId);
 
-        console.log('Updating ENROLLMENT with payload:', JSON.stringify(enrollmentPayload, null, 2));
-
-        await firstValueFrom(
-            this.http.post(`${this.baseUrl}/tracker?async=false&importStrategy=UPDATE`, enrollmentPayload)
-        );
-
-        // 3. Update ALL EVENTS with the new orgUnit
-        const events = enrollmentDetails.events || [];
-        console.log(`Found ${events.length} events to update`);
-
-        for (const event of events) {
-            if (event.event) {
-                const eventPayload = {
-                    events: [{
-                        event: event.event,
-                        program: this.programId,
-                        programStage: event.programStage,
-                        orgUnit: newOrgUnitId,
-                        trackedEntity: teiId,
-                        enrollment: enrollmentId,
-                        status: event.status || 'COMPLETED',
-                        occurredAt: event.occurredAt || new Date().toISOString(),
-                        scheduledAt: event.scheduledAt || new Date().toISOString(),
-                        dataValues: event.dataValues || []
-                    }]
-                };
-
-                console.log(`Updating EVENT ${event.event} with payload:`, JSON.stringify(eventPayload, null, 2));
-
-                await firstValueFrom(
-                    this.http.post(`${this.baseUrl}/tracker?async=false&importStrategy=UPDATE`, eventPayload)
-                );
+            if (!enrollmentDetails) {
+                throw new Error(`Could not fetch enrollment details for ${enrollmentId}`);
             }
-        }
 
-        // 4. Update TEI orgUnit
-        const teiPayload = {
-            trackedEntities: [{
-                trackedEntity: teiId,
-                trackedEntityType: this.trackedEntityTypeId,
-                orgUnit: newOrgUnitId
-            }]
-        };
+            // 2. Update ENROLLMENT
+            const enrollmentPayload = {
+                enrollments: [{
+                    enrollment: enrollmentId,
+                    trackedEntity: teiId,
+                    program: this.programId,
+                    orgUnit: newOrgUnitId,
+                    status: enrollmentDetails.status || 'ACTIVE',
+                    enrolledAt: enrollmentDetails.enrolledAt || new Date().toISOString(),
+                    occurredAt: enrollmentDetails.occurredAt || new Date().toISOString()
+                }]
+            };
 
-        console.log('Updating TEI with payload:', JSON.stringify(teiPayload, null, 2));
+            console.log('Updating ENROLLMENT with payload:', JSON.stringify(enrollmentPayload, null, 2));
 
-        await firstValueFrom(
-            this.http.post(`${this.baseUrl}/tracker?async=false&importStrategy=UPDATE`, teiPayload)
-        );
+            await firstValueFrom(
+                this.http.post(`${this.baseUrl}/tracker?async=false&importStrategy=UPDATE`, enrollmentPayload)
+            );
 
-        // 5. UPDATE PROGRAM OWNER - THIS IS THE KEY FIX!
-        // Program Owner determines where the patient appears in Tracker Capture
-        console.log('Updating Program Owner...');
-        
-        const programOwnerPayload = {
-            programOwners: [{
-                trackedEntity: teiId,
-                program: this.programId,
-                orgUnit: newOrgUnitId
-            }]
-        };
+            // 3. Update ALL EVENTS with the new orgUnit
+            const events = enrollmentDetails.events || [];
+            console.log(`Found ${events.length} events to update`);
 
-        console.log('Updating Program Owner with payload:', JSON.stringify(programOwnerPayload, null, 2));
+            for (const event of events) {
+                if (event.event) {
+                    const eventPayload = {
+                        events: [{
+                            event: event.event,
+                            program: this.programId,
+                            programStage: event.programStage,
+                            orgUnit: newOrgUnitId,
+                            trackedEntity: teiId,
+                            enrollment: enrollmentId,
+                            status: event.status || 'COMPLETED',
+                            occurredAt: event.occurredAt || new Date().toISOString(),
+                            scheduledAt: event.scheduledAt || new Date().toISOString(),
+                            dataValues: event.dataValues || []
+                        }]
+                    };
 
-        await firstValueFrom(
-            this.http.post(`${this.baseUrl}/tracker?async=false&importStrategy=UPDATE`, programOwnerPayload)
-        );
+                    console.log(`Updating EVENT ${event.event} with payload:`, JSON.stringify(eventPayload, null, 2));
 
-        // 6. Update local object
-        patient.orgUnitId = newOrgUnitId;
-        if (newOrgUnitName) patient.orgUnitName = newOrgUnitName;
-        patient.syncStatus = 'synced';
-        patient.updatedAt = new Date().toISOString();
-
-        if (this.patientService) {
-            await this.patientService.updateLocalPatient(patient);
-        }
-
-        console.log('✅ Complete org unit change successful!');
-        console.log(`   - Enrollment: ${newOrgUnitId}`);
-        console.log(`   - ${events.length} Events: ${newOrgUnitId}`);
-        console.log(`   - TEI: ${newOrgUnitId}`);
-        console.log(`   - Program Owner: ${newOrgUnitId} (FIXED!)`);
-
-    } catch (error) {
-        console.error('❌ Failed to change org unit completely:', error);
-        throw error;
-    }
-}
-
-/**
- * Alternative: Simplified method - just update Program Owner
- * Use this if you want to update only the Program Owner
- */
-async changeProgramOwner(patient: any, newOrgUnitId: string): Promise<void> {
-    const teiId = patient.teiId || patient.id;
-
-    try {
-        const payload = {
-            programOwners: [{
-                trackedEntity: teiId,
-                program: this.programId,
-                orgUnit: newOrgUnitId
-            }]
-        };
-
-        console.log('Updating Program Owner with payload:', JSON.stringify(payload, null, 2));
-
-        await firstValueFrom(
-            this.http.post(`${this.baseUrl}/tracker?async=false&importStrategy=UPDATE`, payload)
-        );
-
-        console.log('✅ Program Owner updated successfully!');
-
-    } catch (error) {
-        console.error('❌ Failed to update Program Owner:', error);
-        throw error;
-    }
-    
-}
-
-
-async transferProgramOwnership(teiId: string, programId: string, newOrgUnitId: string): Promise<void> {
-    try {
-        const url = `${this.baseUrl}/tracker/ownership/transfer`;
-        const params = {
-            trackedEntityInstance: teiId,
-            program: programId,
-            ou: newOrgUnitId
-        };
-
-        console.log('Transferring program ownership with params:', params);
-
-        const response = await firstValueFrom(
-            this.http.put(url, null, { params: params })
-        );
-        
-        console.log('✅ Program ownership transferred successfully!', response);
-        //return response;
-
-    } catch (error) {
-        console.error('❌ Failed to transfer program ownership:', error);
-        throw error;
-    }
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/**
- * Get complete enrollment details with ALL events
- */
-private async getCompleteEnrollmentDetails(enrollmentId: string): Promise<any> {
-    try {
-        const response = await firstValueFrom(
-            this.http.get(`${this.baseUrl}/tracker/enrollments/${enrollmentId}`, {
-                params: {
-                    fields: 'enrollment,program,orgUnit,status,enrolledAt,occurredAt,geometry,trackedEntity,events[*]'
+                    await firstValueFrom(
+                        this.http.post(`${this.baseUrl}/tracker?async=false&importStrategy=UPDATE`, eventPayload)
+                    );
                 }
-            })
-        );
-        return response;
-    } catch (error) {
-        console.error('Failed to get complete enrollment details:', error);
-        throw error;
+            }
+
+            // 4. Update TEI orgUnit
+            const teiPayload = {
+                trackedEntities: [{
+                    trackedEntity: teiId,
+                    trackedEntityType: this.trackedEntityTypeId,
+                    orgUnit: newOrgUnitId
+                }]
+            };
+
+            console.log('Updating TEI with payload:', JSON.stringify(teiPayload, null, 2));
+
+            await firstValueFrom(
+                this.http.post(`${this.baseUrl}/tracker?async=false&importStrategy=UPDATE`, teiPayload)
+            );
+
+            // 5. UPDATE PROGRAM OWNER - THIS IS THE KEY FIX!
+            // Program Owner determines where the patient appears in Tracker Capture
+            console.log('Updating Program Owner...');
+
+            const programOwnerPayload = {
+                programOwners: [{
+                    trackedEntity: teiId,
+                    program: this.programId,
+                    orgUnit: newOrgUnitId
+                }]
+            };
+
+            console.log('Updating Program Owner with payload:', JSON.stringify(programOwnerPayload, null, 2));
+
+            await firstValueFrom(
+                this.http.post(`${this.baseUrl}/tracker?async=false&importStrategy=UPDATE`, programOwnerPayload)
+            );
+
+            // 6. Update local object
+            patient.orgUnitId = newOrgUnitId;
+            if (newOrgUnitName) patient.orgUnitName = newOrgUnitName;
+            patient.syncStatus = 'synced';
+            patient.updatedAt = new Date().toISOString();
+
+            if (this.patientService) {
+                await this.patientService.updateLocalPatient(patient);
+            }
+
+            console.log('✅ Complete org unit change successful!');
+            console.log(`   - Enrollment: ${newOrgUnitId}`);
+            console.log(`   - ${events.length} Events: ${newOrgUnitId}`);
+            console.log(`   - TEI: ${newOrgUnitId}`);
+            console.log(`   - Program Owner: ${newOrgUnitId} (FIXED!)`);
+
+        } catch (error) {
+            console.error('❌ Failed to change org unit completely:', error);
+            throw error;
+        }
     }
-}
 
-/**
- * Simplified: Change orgUnit for enrollment only (for comparison)
- */
-async changeOrgUnitEnrollmentOnly(patient: any, newOrgUnitId: string, newOrgUnitName?: string): Promise<void> {
-    const teiId = patient.teiId || patient.id;
-    const enrollmentId = patient.enrollmentId;
+    /**
+     * Alternative: Simplified method - just update Program Owner
+     * Use this if you want to update only the Program Owner
+     */
+    async changeProgramOwner(patient: any, newOrgUnitId: string): Promise<void> {
+        const teiId = patient.teiId || patient.id;
 
-    if (!enrollmentId) {
-        throw new Error('Patient has no enrollmentId. Cannot change orgUnit.');
-    }
+        try {
+            const payload = {
+                programOwners: [{
+                    trackedEntity: teiId,
+                    program: this.programId,
+                    orgUnit: newOrgUnitId
+                }]
+            };
 
-    try {
-        const enrollmentDetails = await this.getEnrollmentDetails(enrollmentId);
-        
-        const payload = {
-            enrollments: [{
-                enrollment: enrollmentId,
-                trackedEntity: teiId,
-                program: this.programId,
-                orgUnit: newOrgUnitId,
-                status: enrollmentDetails.status || 'ACTIVE',
-                enrolledAt: enrollmentDetails.enrolledAt || new Date().toISOString(),
-                occurredAt: enrollmentDetails.occurredAt || new Date().toISOString()
-            }]
-        };
+            console.log('Updating Program Owner with payload:', JSON.stringify(payload, null, 2));
 
-        console.log('Updating ENROLLMENT only:', JSON.stringify(payload, null, 2));
+            await firstValueFrom(
+                this.http.post(`${this.baseUrl}/tracker?async=false&importStrategy=UPDATE`, payload)
+            );
 
-        await firstValueFrom(
-            this.http.post(`${this.baseUrl}/tracker?async=false&importStrategy=UPDATE`, payload)
-        );
+            console.log('✅ Program Owner updated successfully!');
 
-        // Update local object
-        patient.orgUnitId = newOrgUnitId;
-        if (newOrgUnitName) patient.orgUnitName = newOrgUnitName;
-        patient.syncStatus = 'synced';
-        patient.updatedAt = new Date().toISOString();
-
-        if (this.patientService) {
-            await this.patientService.updateLocalPatient(patient);
+        } catch (error) {
+            console.error('❌ Failed to update Program Owner:', error);
+            throw error;
         }
 
-        console.log('✅ Enrollment org unit changed successfully!');
-
-    } catch (error) {
-        console.error('❌ Failed to change enrollment org unit:', error);
-        throw error;
     }
-}
 
 
+    async transferProgramOwnership(teiId: string, programId: string, newOrgUnitId: string): Promise<void> {
+        try {
+            const url = `${this.baseUrl}/tracker/ownership/transfer`;
+            const params = {
+                trackedEntityInstance: teiId,
+                program: programId,
+                ou: newOrgUnitId
+            };
 
+            console.log('Transferring program ownership with params:', params);
 
-// dhis2-updater.service.ts - Updated GPS update
+            const response = await firstValueFrom(
+                this.http.put(url, null, { params: params })
+            );
 
-async updatePatientGpsCoordinates(patient: any, latitude: number, longitude: number): Promise<void> {
-  const teiId = patient.teiId || patient.id;
-  
-  // Get all events for the patient
-  const events = await this.getPatientEvents(teiId);
-  
-  // Format: [longitude, latitude] without spaces for DHIS2 COORDINATE type
-  const gpsValue = `[${longitude},${latitude}]`;
-  const gpsDataElementId = 'gm91XYLCpsS';
+            console.log('✅ Program ownership transferred successfully!', response);
+            //return response;
 
-  let targetEvent: any = null;
-  let hasGpsElement = false;
-
-  // 1. First search: Look for an event that ALREADY contains the GPS data element
-  for (const event of events) {
-    if (event.dataValues?.some((dv: any) => dv.dataElement === gpsDataElementId)) {
-      targetEvent = event;
-      hasGpsElement = true;
-      break;
+        } catch (error) {
+            console.error('❌ Failed to transfer program ownership:', error);
+            throw error;
+        }
     }
-  }
 
-  // 2. Fallback: If no event has the GPS element, pick the most recent event (or first event)
-  if (!targetEvent) {
-    if (!events || events.length === 0) {
-      throw new Error('No events found for this patient to attach GPS coordinates.');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Get complete enrollment details with ALL events
+     */
+    private async getCompleteEnrollmentDetails(enrollmentId: string): Promise<any> {
+        try {
+            const response = await firstValueFrom(
+                this.http.get(`${this.baseUrl}/tracker/enrollments/${enrollmentId}`, {
+                    params: {
+                        fields: 'enrollment,program,orgUnit,status,enrolledAt,occurredAt,geometry,trackedEntity,events[*]'
+                    }
+                })
+            );
+            return response;
+        } catch (error) {
+            console.error('Failed to get complete enrollment details:', error);
+            throw error;
+        }
     }
-    targetEvent = events[0]; // Uses the first available event
-    hasGpsElement = false;
-  }
 
-  // 3. Build dataValues array
-  let updatedDataValues: any[] = [];
+    /**
+     * Simplified: Change orgUnit for enrollment only (for comparison)
+     */
+    async changeOrgUnitEnrollmentOnly(patient: any, newOrgUnitId: string, newOrgUnitName?: string): Promise<void> {
+        const teiId = patient.teiId || patient.id;
+        const enrollmentId = patient.enrollmentId;
 
-  if (hasGpsElement) {
-    // Update existing dataElement value
-    updatedDataValues = targetEvent.dataValues.map((dv: any) => {
-      if (dv.dataElement === gpsDataElementId) {
-        return { ...dv, value: gpsValue };
-      }
-      return dv;
-    });
-  } else {
-    // Append the new GPS dataElement to existing dataValues
-    updatedDataValues = [
-      ...(targetEvent.dataValues || []),
-      {
-        dataElement: gpsDataElementId,
-        value: gpsValue
-      }
-    ];
-  }
+        if (!enrollmentId) {
+            throw new Error('Patient has no enrollmentId. Cannot change orgUnit.');
+        }
 
-  // 4. Construct payload
-  const payload = {
-    events: [{
-      event: targetEvent.event,
-      program: targetEvent.program,
-      programStage: targetEvent.programStage,
-      orgUnit: targetEvent.orgUnit,
-      trackedEntity: teiId,
-      enrollment: targetEvent.enrollment,
-      status: targetEvent.status || 'COMPLETED',
-      occurredAt: targetEvent.occurredAt || new Date().toISOString(),
-      scheduledAt: targetEvent.scheduledAt || targetEvent.occurredAt || new Date().toISOString(),
-      dataValues: updatedDataValues
-    }]
-  };
+        try {
+            const enrollmentDetails = await this.getEnrollmentDetails(enrollmentId);
 
-  console.log('Updating GPS with payload:', JSON.stringify(payload, null, 2));
+            const payload = {
+                enrollments: [{
+                    enrollment: enrollmentId,
+                    trackedEntity: teiId,
+                    program: this.programId,
+                    orgUnit: newOrgUnitId,
+                    status: enrollmentDetails.status || 'ACTIVE',
+                    enrolledAt: enrollmentDetails.enrolledAt || new Date().toISOString(),
+                    occurredAt: enrollmentDetails.occurredAt || new Date().toISOString()
+                }]
+            };
 
-  await firstValueFrom(
-    this.http.post(`${this.baseUrl}/tracker?async=false&importStrategy=UPDATE`, payload)
-  );
-}
+            console.log('Updating ENROLLMENT only:', JSON.stringify(payload, null, 2));
 
-/*async updatePatientGpsCoordinates(patient: any, latitude: number, longitude: number): Promise<void> {
-    const teiId = patient.teiId || patient.id;
-    
-    // Get the first event that has GPS data
-    const events = await this.getPatientEvents(teiId);
-    let targetEvent = null;
-    let targetDataValueIndex = -1;
-    
-    for (const event of events) {
-        const dataValues = event.dataValues || [];
-        for (let i = 0; i < dataValues.length; i++) {
-            if (dataValues[i].dataElement === 'gm91XYLCpsS') {
+            await firstValueFrom(
+                this.http.post(`${this.baseUrl}/tracker?async=false&importStrategy=UPDATE`, payload)
+            );
+
+            // Update local object
+            patient.orgUnitId = newOrgUnitId;
+            if (newOrgUnitName) patient.orgUnitName = newOrgUnitName;
+            patient.syncStatus = 'synced';
+            patient.updatedAt = new Date().toISOString();
+
+            if (this.patientService) {
+                await this.patientService.updateLocalPatient(patient);
+            }
+
+            console.log('✅ Enrollment org unit changed successfully!');
+
+        } catch (error) {
+            console.error('❌ Failed to change enrollment org unit:', error);
+            throw error;
+        }
+    }
+
+
+
+
+    // dhis2-updater.service.ts - Updated GPS update
+
+    async updatePatientGpsCoordinates(patient: any, latitude: number, longitude: number): Promise<void> {
+        const teiId = patient.teiId || patient.id;
+
+        // Get all events for the patient
+        const events = await this.getPatientEvents(teiId);
+
+        // Format: [longitude, latitude] without spaces for DHIS2 COORDINATE type
+        const gpsValue = `[${longitude},${latitude}]`;
+        const gpsDataElementId = 'gm91XYLCpsS';
+
+        let targetEvent: any = null;
+        let hasGpsElement = false;
+
+        // 1. First search: Look for an event that ALREADY contains the GPS data element
+        for (const event of events) {
+            if (event.dataValues?.some((dv: any) => dv.dataElement === gpsDataElementId)) {
                 targetEvent = event;
-                targetDataValueIndex = i;
+                hasGpsElement = true;
                 break;
             }
         }
-        if (targetEvent) break;
-    }
-    
-    if (!targetEvent) {
-        throw new Error('No event found with GPS data element');
-    }
-    
-    // Format: [longitude, latitude] as shown in your data
-    const gpsValue = `[${longitude},${latitude}]`;
-    
-    // Update the data value
-    const payload = {
-        events: [{
-            event: targetEvent.event,
-            program: targetEvent.program,
-            programStage: targetEvent.programStage,
-            orgUnit: targetEvent.orgUnit,
-            trackedEntity: teiId,
-            enrollment: targetEvent.enrollment,
-            status: targetEvent.status || 'COMPLETED',
-            occurredAt: targetEvent.occurredAt || new Date().toISOString(),
-            scheduledAt: targetEvent.scheduledAt || new Date().toISOString(),
-            dataValues: targetEvent.dataValues.map((dv: any, idx: number) => {
-                if (idx === targetDataValueIndex) {
+
+        // 2. Fallback: If no event has the GPS element, pick the most recent event (or first event)
+        if (!targetEvent) {
+            if (!events || events.length === 0) {
+                throw new Error('No events found for this patient to attach GPS coordinates.');
+            }
+            targetEvent = events[0]; // Uses the first available event
+            hasGpsElement = false;
+        }
+
+        // 3. Build dataValues array
+        let updatedDataValues: any[] = [];
+
+        if (hasGpsElement) {
+            // Update existing dataElement value
+            updatedDataValues = targetEvent.dataValues.map((dv: any) => {
+                if (dv.dataElement === gpsDataElementId) {
                     return { ...dv, value: gpsValue };
                 }
                 return dv;
-            })
-        }]
-    };
-    
-    console.log('Updating GPS with payload:', JSON.stringify(payload, null, 2));
-    
-    await firstValueFrom(
-        this.http.post(`${this.baseUrl}/tracker?async=false&importStrategy=UPDATE`, payload)
-    );
-}
-*/
-private async getPatientEvents(teiId: string): Promise<any[]> {
-    try {
-        const response = await firstValueFrom(
-            this.http.get(`${this.baseUrl}/tracker/trackedEntities/${teiId}`, {
-                params: {
-                    fields: 'enrollments[events[event,program,programStage,orgUnit,status,occurredAt,scheduledAt,enrollment,dataValues[dataElement,value]]]'
+            });
+        } else {
+            // Append the new GPS dataElement to existing dataValues
+            updatedDataValues = [
+                ...(targetEvent.dataValues || []),
+                {
+                    dataElement: gpsDataElementId,
+                    value: gpsValue
                 }
-            })
-        );
-        const enrollments = (response as any)?.enrollments || [];
-        const events: any[] = [];
-        for (const enrollment of enrollments) {
-            if (enrollment.events) {
-                events.push(...enrollment.events);
-            }
+            ];
         }
-        return events;
-    } catch (error) {
-        console.error('Failed to get patient events:', error);
-        return [];
+
+        // 4. Construct payload
+        const payload = {
+            events: [{
+                event: targetEvent.event,
+                program: targetEvent.program,
+                programStage: targetEvent.programStage,
+                orgUnit: targetEvent.orgUnit,
+                trackedEntity: teiId,
+                enrollment: targetEvent.enrollment,
+                status: targetEvent.status || 'COMPLETED',
+                occurredAt: targetEvent.occurredAt || new Date().toISOString(),
+                scheduledAt: targetEvent.scheduledAt || targetEvent.occurredAt || new Date().toISOString(),
+                dataValues: updatedDataValues
+            }]
+        };
+
+        console.log('Updating GPS with payload:', JSON.stringify(payload, null, 2));
+
+        await firstValueFrom(
+            this.http.post(`${this.baseUrl}/tracker?async=false&importStrategy=UPDATE`, payload)
+        );
     }
-}
+
+    /*async updatePatientGpsCoordinates(patient: any, latitude: number, longitude: number): Promise<void> {
+        const teiId = patient.teiId || patient.id;
+        
+        // Get the first event that has GPS data
+        const events = await this.getPatientEvents(teiId);
+        let targetEvent = null;
+        let targetDataValueIndex = -1;
+        
+        for (const event of events) {
+            const dataValues = event.dataValues || [];
+            for (let i = 0; i < dataValues.length; i++) {
+                if (dataValues[i].dataElement === 'gm91XYLCpsS') {
+                    targetEvent = event;
+                    targetDataValueIndex = i;
+                    break;
+                }
+            }
+            if (targetEvent) break;
+        }
+        
+        if (!targetEvent) {
+            throw new Error('No event found with GPS data element');
+        }
+        
+        // Format: [longitude, latitude] as shown in your data
+        const gpsValue = `[${longitude},${latitude}]`;
+        
+        // Update the data value
+        const payload = {
+            events: [{
+                event: targetEvent.event,
+                program: targetEvent.program,
+                programStage: targetEvent.programStage,
+                orgUnit: targetEvent.orgUnit,
+                trackedEntity: teiId,
+                enrollment: targetEvent.enrollment,
+                status: targetEvent.status || 'COMPLETED',
+                occurredAt: targetEvent.occurredAt || new Date().toISOString(),
+                scheduledAt: targetEvent.scheduledAt || new Date().toISOString(),
+                dataValues: targetEvent.dataValues.map((dv: any, idx: number) => {
+                    if (idx === targetDataValueIndex) {
+                        return { ...dv, value: gpsValue };
+                    }
+                    return dv;
+                })
+            }]
+        };
+        
+        console.log('Updating GPS with payload:', JSON.stringify(payload, null, 2));
+        
+        await firstValueFrom(
+            this.http.post(`${this.baseUrl}/tracker?async=false&importStrategy=UPDATE`, payload)
+        );
+    }
+    */
+    private async getPatientEvents(teiId: string): Promise<any[]> {
+        try {
+            const response = await firstValueFrom(
+                this.http.get(`${this.baseUrl}/tracker/trackedEntities/${teiId}`, {
+                    params: {
+                        fields: 'enrollments[events[event,program,programStage,orgUnit,status,occurredAt,scheduledAt,enrollment,dataValues[dataElement,value]]]'
+                    }
+                })
+            );
+            const enrollments = (response as any)?.enrollments || [];
+            const events: any[] = [];
+            for (const enrollment of enrollments) {
+                if (enrollment.events) {
+                    events.push(...enrollment.events);
+                }
+            }
+            return events;
+        } catch (error) {
+            console.error('Failed to get patient events:', error);
+            return [];
+        }
+    }
 
 }
