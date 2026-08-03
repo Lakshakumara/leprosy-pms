@@ -880,6 +880,7 @@ async updatePatientGpsCoordinates(patient: any, latitude: number, longitude: num
     );
 }
 */
+
 private async getPatientEvents(teiId: string): Promise<any[]> {
     try {
         const response = await firstValueFrom(

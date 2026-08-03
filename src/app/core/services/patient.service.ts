@@ -34,11 +34,12 @@ export class PatientService {
     return this.allPatients().filter(p => p.patientDistrict === this.userDistricts());
   });
 
-  readonly yearsTop5 = computed(()=> {return this.localStorage.getYears(5)})
+  readonly yearsTop5 = computed(() => { return this.localStorage.getYears(5) })
 
   readonly outerDistrictPatients = computed(() => {
     return this.allPatients().filter(p => p.patientDistrict != this.userDistricts());
   });
+  
   userDistricts() {
     return this.dhis2.userDistricts();
   }
@@ -113,7 +114,7 @@ export class PatientService {
       if (filter.enrolledFrom && p.enrolledAt < filter.enrolledFrom) return false;
       if (filter.enrolledTo && p.enrolledAt > filter.enrolledTo) return false;
 
-      if (filter.year && p.enrolledAt.slice(0,4) !==  filter.year) return false;
+      if (filter.year && p.enrolledAt.slice(0, 4) !== filter.year) return false;
 
       if (filter.alert === 'grade2' && !hasGrade2Disability(p)) return false;
       if (filter.alert === 'relapse' && !isRelapse(p)) return false;
@@ -219,9 +220,9 @@ export class PatientService {
   getDistinctValues(field: keyof Patient): Promise<string[]> {
     return this.localStorage.getDistinctValues(field);
   }
-  async getYears(top:number): Promise<string[]> {
+  async getYears(top: number): Promise<string[]> {
     const years = await this.localStorage.getYears(top)
-    return years?.length? years : [];
+    return years?.length ? years : [];
   }
   // patient.service.ts - Add this method
   async updateLocalPatient(patient: Patient): Promise<void> {
