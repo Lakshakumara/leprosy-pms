@@ -17,11 +17,13 @@ import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
 import { Dhis2UpdaterService } from '../../core/services/dhis2-updater.service';
 import type { SyncStatus } from '../../core/services/patient.model';
 import { MobileHeaderService } from '../../core/services/mobile-header.service';
+import { DrawerModule } from 'primeng/drawer';
 
 @Component({
   selector: 'app-patient-map',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonModule, DialogModule, SpeedDialModule, ConfirmDialogModule],
+  imports: [CommonModule, FormsModule, ButtonModule, 
+    DialogModule, SpeedDialModule, ConfirmDialogModule, DrawerModule],
  
   templateUrl: './patient-map.component.html',
   styleUrl: './patient-map.component.scss'
@@ -99,7 +101,7 @@ yearColors: Record<string, string> = {}; // NOT readonly, we build it
   private isMapInitialized = false;
 
   private yearLayerGroups: Record<string, any> = {};
-  private currentMode: 'year' | 'cluster' = 'year';
+  public currentMode= signal<string>('year');
 
   private activeYears: Set<string> = new Set<string>()
   private isSwitching = false;
@@ -109,6 +111,21 @@ yearColors: Record<string, string> = {}; // NOT readonly, we build it
     this.applySearchFilter();
   }, 300);
 
+  // Edit Drawer State
+  showEditDrawer = signal<boolean>(false);
+  //isPickingLocation = signal<boolean>(false);
+  //selectedPatient = signal<any | null>(null);
+ // editLat = signal<number | null>(null);
+  //editLng = signal<number | null>(null);
+  
+  selectedPatient = signal<Patient | null>(null);
+  showEditDialog = signal(false);
+  editLat = signal<number>(0);
+  editLng = signal<number>(0);
+  isPickingLocation = signal(false);
+  // Map marker for selected location
+  private tempMarker: any = null;
+  private mapClickHandler: any = null;
  constructor() {
   // 1. marker update
   effect(() => {
@@ -147,7 +164,6 @@ yearColors: Record<string, string> = {}; // NOT readonly, we build it
     this.yearColors[year] = this.colorPalette[index % this.colorPalette.length];
   });
 
-  console.log(this.yearColors);
     } catch (e) {
       console.error(e);
     }
@@ -272,7 +288,8 @@ yearColors: Record<string, string> = {}; // NOT readonly, we build it
         if (patient) {
           // Close popup and open dialog
           this.map.closePopup();
-          this.openEditDialog(patient);
+          //this.openEditDialog(patient);
+          this.openEditLocation(patient);
         }
       };
     });
@@ -291,248 +308,89 @@ yearColors: Record<string, string> = {}; // NOT readonly, we build it
     };
     this.map.on('click', this.mapClickHandler);
 
-    this.addCustomControl(L);
+//this.addCustomControl(L);
     L.control.layers(undefined, overlays, { collapsed: false }).addTo(this.map);
     this.isMapInitialized = true;
     this.updatePatientMarkers(this.mappable());
+
+
+    queueMicrotask(() => {
+      this.setupMobileHeader();
+    });
   }
 
-  private addCustomControl(L: typeof import('leaflet')): void {
-    const self = this;
+  private setupMobileHeader(): void {
+    const totalCount = this.patientService.districtPatients()?.length || 0;
 
-  const CustomControl = L.Control.extend({
-    options: { position: 'topleft' },
+    this.mobileHeader.set({
+      title: 'Patient Map',
+      subtitle: `${this.mappable().length} / ${totalCount} mapped`,
+      
+      // 2. Search integration
+      //showSearch: true,
+      searchPlaceholder: 'Search location or patient…',
+      onSearch: (query: string) => this.onMapSearch(query),
 
-    onAdd: function () {
-      // Single unified control bar container
-      const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control custom-map-controls');
-      L.DomEvent.disableClickPropagation(container);
+      // 3. Cluster Toggle & Action Buttons
+      actions: [
+        {
+          icon: this.enableClustering() ? 'pi pi-objects-column' : 'pi pi-circle-fill',
+          label: 'Cluster',
+          tooltip: 'Toggle Clustering',
+          command: () => this.toggleClustering()
+        }
+      ],
 
-      // ==========================================
-      // 1. VIEW SWITCHER BUTTON (Cluster / Year)
-      // ==========================================
-      const btnToggle = L.DomUtil.create('a', '', container);
-      btnToggle.href = '#';
-      btnToggle.style.display = 'flex';
-      btnToggle.style.alignItems = 'center';
-      btnToggle.style.justifyContent = 'center';
-      btnToggle.style.width = '34px';
-      btnToggle.style.height = '34px';
-      btnToggle.style.textDecoration = 'none';
-      btnToggle.style.color = '#374151';
+      // 4. Export & Refresh in Overflow Menu
+      overflow: [
+        {
+          icon: 'pi pi-download',
+          label: this.exporting() ? 'Exporting…' : 'Export Image',
+          command: () => this.exportMapImage()
+        },
+        {
+          icon: 'pi pi-refresh',
+          label: 'Refresh Map',
+          command: () => this.refreshMap()
+        }
+      ]
+    });
+  }
 
-      const iconToggle = L.DomUtil.create('i', '', btnToggle);
-      iconToggle.style.fontSize = '1.1rem';
+  // --- Header Action Handlers ---
 
-      if (self.currentMode === 'year') {
-        iconToggle.className = 'pi pi-calendar';
-        btnToggle.title = 'Switch to Cluster View';
-      } else {
-        iconToggle.className = 'pi pi-sitemap';
-        btnToggle.title = 'Switch to Year View';
-      }
+  // Cluster Toggle State
+  enableClustering = signal<boolean>(true);
+  
+  toggleClustering(): void {
+    this.enableClustering.update(val => !val);
 
-      L.DomEvent.disableClickPropagation(btnToggle);
-      L.DomEvent.on(btnToggle, 'click', L.DomEvent.stop);
-      L.DomEvent.on(btnToggle, 'click', (e: Event) => {
-        e.preventDefault();
-        self.isSwitching = true;
+    this.isSwitching = true;
 
-        if (self.currentMode === 'year') {
-          Object.values(self.yearLayerGroups).forEach((g: any) => self.map.removeLayer(g));
-          self.map.addLayer(self.markerClusterGroup);
-          self.currentMode = 'cluster';
-
-          iconToggle.className = 'pi pi-sitemap';
-          btnToggle.title = 'Switch to Year View';
+        if (this.currentMode() === 'year') {
+          Object.values(this.yearLayerGroups).forEach((g: any) => this.map.removeLayer(g));
+          this.map.addLayer(this.markerClusterGroup);
+          this.currentMode.set('cluster');
         } else {
-          self.map.removeLayer(self.markerClusterGroup);
-          for (const y of self.activeYears) {
-            if (self.yearLayerGroups[y]) self.map.addLayer(self.yearLayerGroups[y]);
+          this.map.removeLayer(this.markerClusterGroup);
+          for (const y of this.activeYears) {
+            if (this.yearLayerGroups[y]) this.map.addLayer(this.yearLayerGroups[y]);
           }
-          self.currentMode = 'year';
-
-          iconToggle.className = 'pi pi-calendar';
-          btnToggle.title = 'Switch to Cluster View';
+          this.currentMode.set('year');
         }
 
-        setTimeout(() => (self.isSwitching = false), 100);
-      });
+        setTimeout(() => (this.isSwitching = false), 100);
 
-      // ==========================================
-      // 2. ADD / UPDATE PATIENT LOCATION BUTTON
-      // ==========================================
-      const btnAddLocation = L.DomUtil.create('a', '', container);
-      btnAddLocation.href = '#';
-      btnAddLocation.style.display = 'flex';
-      btnAddLocation.style.alignItems = 'center';
-      btnAddLocation.style.justifyContent = 'center';
-      btnAddLocation.style.width = '34px';
-      btnAddLocation.style.height = '34px';
-      btnAddLocation.style.textDecoration = 'none';
-      btnAddLocation.style.color = '#0b4f4a';
-      btnAddLocation.title = 'Add Patient Location';
+    this.setupMobileHeader(); // Refresh action icon
+    // TODO: Apply cluster layer toggle in Leaflet map instance
+  }
 
-      const iconAdd = L.DomUtil.create('i', 'pi pi-map-marker', btnAddLocation);
-      iconAdd.style.fontSize = '1.1rem';
+  onMapSearch(query: string): void {
+    this.searchQuery.set(query);
+    this.debouncedSearch();
+  }
 
-      L.DomEvent.disableClickPropagation(btnAddLocation);
-      L.DomEvent.on(btnAddLocation, 'click', L.DomEvent.stop);
-      L.DomEvent.on(btnAddLocation, 'click', (e: Event) => {
-        e.preventDefault();
-        self.openAddPatientLocationDialog();
-      });
 
-      // ==========================================
-      // 3. COLLAPSIBLE SEARCH CONTROL
-      // ==========================================
-      const searchContainer = L.DomUtil.create('div', 'search-control-container search-control-container--collapsed', container);
-
-      // Icon-only trigger button
-      const iconBtn = L.DomUtil.create('button', 'search-icon-btn', searchContainer) as HTMLButtonElement;
-      iconBtn.innerHTML = '<i class="pi pi-search"></i>';
-      iconBtn.type = 'button';
-      iconBtn.title = 'Search patients';
-
-      // Expandable input wrapper
-      const wrapper = L.DomUtil.create('div', 'search-wrapper', searchContainer);
-      const input = L.DomUtil.create('input', 'search-input', wrapper) as HTMLInputElement;
-      input.type = 'text';
-      input.placeholder = 'Search patients…';
-
-      const clearBtn = L.DomUtil.create('button', 'search-clear', wrapper) as HTMLButtonElement;
-      clearBtn.type = 'button';
-      clearBtn.innerHTML = '<i class="pi pi-times"></i>';
-
-      const collapse = () => {
-        if (input.value.length > 0) return; // Don't collapse while actively searching
-        searchContainer.classList.add('search-control-container--collapsed');
-      };
-
-      const expand = () => {
-        searchContainer.classList.remove('search-control-container--collapsed');
-        setTimeout(() => input.focus(), 50);
-      };
-
-      iconBtn.addEventListener('click', expand);
-
-      input.addEventListener('input', (e) => {
-        const value = (e.target as HTMLInputElement).value;
-        self.searchQuery.set(value);
-        self.debouncedSearch();
-        clearBtn.style.display = value.length > 0 ? 'flex' : 'none';
-      });
-
-      input.addEventListener('blur', () => setTimeout(collapse, 150));
-
-      clearBtn.addEventListener('click', () => {
-        input.value = '';
-        self.searchQuery.set('');
-        self.applySearchFilter();
-        clearBtn.style.display = 'none';
-        collapse();
-      });
-
-      self.searchInput = input;
-
-      return container;
-    }
-  });
-
-  new CustomControl().addTo(this.map);
-}
-
-private addClusterControl(L: typeof import('leaflet')): void {
-  const self = this;
-  const MapControls = L.Control.extend({
-    options: { position: 'topleft' },
-    onAdd: function () {
-      // Container styled to hold multiple Leaflet control buttons
-      const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-
-      // ==========================================
-      // 1. VIEW SWITCHER BUTTON (Cluster / Year)
-      // ==========================================
-      const btnToggle = L.DomUtil.create('a', '', container);
-      btnToggle.href = '#';
-      btnToggle.style.display = 'flex';
-      btnToggle.style.alignItems = 'center';
-      btnToggle.style.justifyContent = 'center';
-      btnToggle.style.width = '34px';
-      btnToggle.style.height = '34px';
-      btnToggle.style.textDecoration = 'none';
-      btnToggle.style.color = '#374151';
-
-      const iconToggle = L.DomUtil.create('i', '', btnToggle);
-      iconToggle.style.fontSize = '1.1rem';
-
-      if (self.currentMode === 'year') {
-        iconToggle.className = 'pi pi-calendar';
-        btnToggle.title = 'Switch to Cluster View';
-      } else {
-        iconToggle.className = 'pi pi-sitemap';
-        btnToggle.title = 'Switch to Year View';
-      }
-
-      L.DomEvent.disableClickPropagation(btnToggle);
-      L.DomEvent.on(btnToggle, 'click', L.DomEvent.stop);
-      L.DomEvent.on(btnToggle, 'click', (e: Event) => {
-        e.preventDefault();
-        self.isSwitching = true;
-
-        if (self.currentMode === 'year') {
-          Object.values(self.yearLayerGroups).forEach((g: any) => self.map.removeLayer(g));
-          self.map.addLayer(self.markerClusterGroup);
-          self.currentMode = 'cluster';
-
-          iconToggle.className = 'pi pi-sitemap';
-          btnToggle.title = 'Switch to Year View';
-        } else {
-          self.map.removeLayer(self.markerClusterGroup);
-          for (const y of self.activeYears) {
-            if (self.yearLayerGroups[y]) self.map.addLayer(self.yearLayerGroups[y]);
-          }
-          self.currentMode = 'year';
-
-          iconToggle.className = 'pi pi-calendar';
-          btnToggle.title = 'Switch to Cluster View';
-        }
-
-        setTimeout(() => (self.isSwitching = false), 100);
-      });
-
-      // ==========================================
-      // 2. ADD / UPDATE PATIENT LOCATION BUTTON
-      // ==========================================
-      const btnAddLocation = L.DomUtil.create('a', '', container);
-      btnAddLocation.href = '#';
-      btnAddLocation.style.display = 'flex';
-      btnAddLocation.style.alignItems = 'center';
-      btnAddLocation.style.justifyContent = 'center';
-      btnAddLocation.style.width = '34px';
-      btnAddLocation.style.height = '34px';
-      btnAddLocation.style.textDecoration = 'none';
-      btnAddLocation.style.color = '#0b4f4a'; // Primary green accent
-      btnAddLocation.title = 'Add or Update Patient Location';
-
-      const iconAdd = L.DomUtil.create('i', 'pi pi-map-marker', btnAddLocation);
-      iconAdd.style.fontSize = '1.1rem';
-
-      L.DomEvent.disableClickPropagation(btnAddLocation);
-      L.DomEvent.on(btnAddLocation, 'click', L.DomEvent.stop);
-      L.DomEvent.on(btnAddLocation, 'click', (e: Event) => {
-        e.preventDefault();
-        
-        // Open your patient selection dialog / drawer to initiate location edit
-        self.openAddPatientLocationDialog();
-      });
-
-      return container;
-    }
-  });
-
-  new MapControls().addTo(this.map);
-}
   openAddPatientLocationDialog() {
     this.messageService.add({
         severity: 'info',
@@ -542,47 +400,11 @@ private addClusterControl(L: typeof import('leaflet')): void {
       });
   }
 
- /* private addClusterControl(L: typeof import('leaflet')): void {
-    const self = this;
-    const ClusterControl = L.Control.extend({
-      options: { position: 'topleft' },
-      onAdd: function () {
-        const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-        container.style.width = '34px'; container.style.height = '34px'; container.style.background = 'white';
-        const btn = L.DomUtil.create('a', '', container);
-        btn.href = '#'; btn.innerHTML = ''; btn.title = 'Year view';
-        btn.style.fontSize = '18px'; btn.style.lineHeight = '34px'; btn.style.textAlign = 'center'; btn.style.textDecoration = 'none';
-        L.DomEvent.disableClickPropagation(container);
-        L.DomEvent.on(btn, 'click', L.DomEvent.stop);
-        L.DomEvent.on(btn, 'click', (e: any) => {
-          e.preventDefault();
-          self.isSwitching = true;
-
-          if (self.currentMode === 'year') {
-            // year -> cluster
-            Object.values(self.yearLayerGroups).forEach((g: any) => self.map.removeLayer(g));
-            self.map.addLayer(self.markerClusterGroup);
-            self.currentMode = 'cluster';
-            btn.innerHTML = '🔗';
-          } else {
-            // cluster -> year
-            self.map.removeLayer(self.markerClusterGroup);
-            for (const y of self.activeYears) {
-              if (self.yearLayerGroups[y]) self.map.addLayer(self.yearLayerGroups[y]);
-            }
-            self.currentMode = 'year';
-            btn.innerHTML = '📅';
-          }
-          setTimeout(() => self.isSwitching = false, 100);
-        });
-        return container;
-      }
-    });
-    new ClusterControl().addTo(this.map);
-  }*/
-
   private refreshCluster() {
     if (!this.L || !this.markerClusterGroup) return;
+
+
+
     this.markerClusterGroup.clearLayers();
     const all = this.mappable();
     for (const p of all) {
@@ -630,69 +452,6 @@ private addClusterControl(L: typeof import('leaflet')): void {
     marker.bindPopup(this.popupHtml(patient));
     marker.on('click', () => this.selected.set(patient));
     return marker;
-  }
-
-  private addSearchControl(L: typeof import('leaflet')): void {
-    const self = this;
-    const SearchControl = L.Control.extend({
-      options: { position: 'topleft' },
-
-      onAdd: function () {
-        const container = L.DomUtil.create('div', 'search-control-container search-control-container--collapsed');
-        L.DomEvent.disableClickPropagation(container);
-
-        // Icon-only button shown by default
-        const iconBtn = L.DomUtil.create('button', 'search-icon-btn', container) as HTMLButtonElement;
-        iconBtn.innerHTML = '<i class="pi pi-search"></i>';
-        iconBtn.type = 'button';
-        iconBtn.title = 'Search patients';
-
-        // Input + clear button, hidden until expanded
-        const wrapper = L.DomUtil.create('div', 'search-wrapper', container);
-        const input = L.DomUtil.create('input', 'search-input', wrapper) as HTMLInputElement;
-        input.type = 'text';
-        input.placeholder = 'Search patients…';
-
-        const clearBtn = L.DomUtil.create('button', 'search-clear', wrapper) as HTMLButtonElement;
-        clearBtn.type = 'button';
-        clearBtn.innerHTML = '<i class="pi pi-times"></i>';
-
-        const collapse = () => {
-          if (input.value.length > 0) return; // don't collapse if there's an active search
-          container.classList.add('search-control-container--collapsed');
-        };
-
-        const expand = () => {
-          container.classList.remove('search-control-container--collapsed');
-          setTimeout(() => input.focus(), 50);
-        };
-
-        iconBtn.addEventListener('click', expand);
-
-        input.addEventListener('input', (e) => {
-          const value = (e.target as HTMLInputElement).value;
-          self.searchQuery.set(value);
-          self.debouncedSearch();
-          clearBtn.style.display = value.length > 0 ? 'flex' : 'none';
-        });
-
-        input.addEventListener('blur', () => setTimeout(collapse, 150));
-
-        clearBtn.addEventListener('click', () => {
-          input.value = '';
-          self.searchQuery.set('');
-          self.applySearchFilter();
-          clearBtn.style.display = 'none';
-          collapse();
-        });
-
-        self.searchInput = input;
-        return container;
-      }
-    });
-
-    this.searchControl = new SearchControl();
-    this.searchControl.addTo(this.map);
   }
 
   private applySearchFilter(): void {
@@ -932,15 +691,6 @@ private addClusterControl(L: typeof import('leaflet')): void {
     return div.innerHTML;
   }
 
-  selectedPatient = signal<Patient | null>(null);
-  showEditDialog = signal(false);
-  editLat = signal<number>(0);
-  editLng = signal<number>(0);
-  isPickingLocation = signal(false);
-  // Map marker for selected location
-  private tempMarker: any = null;
-  private mapClickHandler: any = null;
-
 
   private updateTempMarker(lat: number, lng: number): void {
     const L = this.L;
@@ -973,7 +723,13 @@ private addClusterControl(L: typeof import('leaflet')): void {
     this.showEditDialog.set(true);
     this.cdr.detectChanges();
   }
-
+openEditLocation(patient: any): void {
+    this.selectedPatient.set(patient);
+    this.editLat.set(patient.latitude || null);
+    this.editLng.set(patient.longitude || null);
+    this.isPickingLocation.set(false);
+    this.showEditDrawer.set(true);
+  }
   pickLocationFromMap() {
     this.isPickingLocation.set(true);
     // Add a visual hint on the map
@@ -1009,20 +765,7 @@ private addClusterControl(L: typeof import('leaflet')): void {
     this.cdr.detectChanges();
   }
 
-  private setupMapClickForEditing(): void {
-    if (!this.map) return;
-
-    this.map.on('click', (e: any) => {
-      if (this.showEditDialog() && this.isPickingLocation()) {
-        this.ngZone.run(() => {
-          this.editLat.set(e.latlng.lat);
-          this.editLng.set(e.latlng.lng);
-          this.isPickingLocation.set(false);
-          this.cdr.detectChanges();
-        });
-      }
-    });
-  }
+ 
 
   protected readonly exporting = signal(false);
 
@@ -1251,6 +994,168 @@ private addClusterControl(L: typeof import('leaflet')): void {
   }
 }
  /*
+
+  private setupMapClickForEditing(): void {
+    if (!this.map) return;
+
+    this.map.on('click', (e: any) => {
+      if (this.showEditDialog() && this.isPickingLocation()) {
+        this.ngZone.run(() => {
+          this.editLat.set(e.latlng.lat);
+          this.editLng.set(e.latlng.lng);
+          this.isPickingLocation.set(false);
+          this.cdr.detectChanges();
+        });
+      }
+    });
+  }
+
+  private addCustomControl(L: typeof import('leaflet')): void {
+    const self = this;
+
+  const CustomControl = L.Control.extend({
+    options: { position: 'topleft' },
+
+    onAdd: function () {
+      // Single unified control bar container
+      const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control custom-map-controls');
+      L.DomEvent.disableClickPropagation(container);
+
+      // ==========================================
+      // 1. VIEW SWITCHER BUTTON (Cluster / Year)
+      // ==========================================
+      const btnToggle = L.DomUtil.create('a', '', container);
+      btnToggle.href = '#';
+      btnToggle.style.display = 'flex';
+      btnToggle.style.alignItems = 'center';
+      btnToggle.style.justifyContent = 'center';
+      btnToggle.style.width = '34px';
+      btnToggle.style.height = '34px';
+      btnToggle.style.textDecoration = 'none';
+      btnToggle.style.color = '#374151';
+
+      const iconToggle = L.DomUtil.create('i', '', btnToggle);
+      iconToggle.style.fontSize = '1.1rem';
+
+      if (self.currentMode === 'year') {
+        iconToggle.className = 'pi pi-calendar';
+        btnToggle.title = 'Switch to Cluster View';
+      } else {
+        iconToggle.className = 'pi pi-sitemap';
+        btnToggle.title = 'Switch to Year View';
+      }
+
+      L.DomEvent.disableClickPropagation(btnToggle);
+      L.DomEvent.on(btnToggle, 'click', L.DomEvent.stop);
+      L.DomEvent.on(btnToggle, 'click', (e: Event) => {
+        e.preventDefault();
+        self.isSwitching = true;
+
+        if (self.currentMode === 'year') {
+          Object.values(self.yearLayerGroups).forEach((g: any) => self.map.removeLayer(g));
+          self.map.addLayer(self.markerClusterGroup);
+          self.currentMode = 'cluster';
+
+          iconToggle.className = 'pi pi-sitemap';
+          btnToggle.title = 'Switch to Year View';
+        } else {
+          self.map.removeLayer(self.markerClusterGroup);
+          for (const y of self.activeYears) {
+            if (self.yearLayerGroups[y]) self.map.addLayer(self.yearLayerGroups[y]);
+          }
+          self.currentMode = 'year';
+
+          iconToggle.className = 'pi pi-calendar';
+          btnToggle.title = 'Switch to Cluster View';
+        }
+
+        setTimeout(() => (self.isSwitching = false), 100);
+      });
+
+      // ==========================================
+      // 2. ADD / UPDATE PATIENT LOCATION BUTTON
+      // ==========================================
+      const btnAddLocation = L.DomUtil.create('a', '', container);
+      btnAddLocation.href = '#';
+      btnAddLocation.style.display = 'flex';
+      btnAddLocation.style.alignItems = 'center';
+      btnAddLocation.style.justifyContent = 'center';
+      btnAddLocation.style.width = '34px';
+      btnAddLocation.style.height = '34px';
+      btnAddLocation.style.textDecoration = 'none';
+      btnAddLocation.style.color = '#0b4f4a';
+      btnAddLocation.title = 'Add Patient Location';
+
+      const iconAdd = L.DomUtil.create('i', 'pi pi-map-marker', btnAddLocation);
+      iconAdd.style.fontSize = '1.1rem';
+
+      L.DomEvent.disableClickPropagation(btnAddLocation);
+      L.DomEvent.on(btnAddLocation, 'click', L.DomEvent.stop);
+      L.DomEvent.on(btnAddLocation, 'click', (e: Event) => {
+        e.preventDefault();
+        self.openAddPatientLocationDialog();
+      });
+
+      // ==========================================
+      // 3. COLLAPSIBLE SEARCH CONTROL
+      // ==========================================
+      const searchContainer = L.DomUtil.create('div', 'search-control-container search-control-container--collapsed', container);
+
+      // Icon-only trigger button
+      const iconBtn = L.DomUtil.create('button', 'search-icon-btn', searchContainer) as HTMLButtonElement;
+      iconBtn.innerHTML = '<i class="pi pi-search"></i>';
+      iconBtn.type = 'button';
+      iconBtn.title = 'Search patients';
+
+      // Expandable input wrapper
+      const wrapper = L.DomUtil.create('div', 'search-wrapper', searchContainer);
+      const input = L.DomUtil.create('input', 'search-input', wrapper) as HTMLInputElement;
+      input.type = 'text';
+      input.placeholder = 'Search patients…';
+
+      const clearBtn = L.DomUtil.create('button', 'search-clear', wrapper) as HTMLButtonElement;
+      clearBtn.type = 'button';
+      clearBtn.innerHTML = '<i class="pi pi-times"></i>';
+
+      const collapse = () => {
+        if (input.value.length > 0) return; // Don't collapse while actively searching
+        searchContainer.classList.add('search-control-container--collapsed');
+      };
+
+      const expand = () => {
+        searchContainer.classList.remove('search-control-container--collapsed');
+        setTimeout(() => input.focus(), 50);
+      };
+
+      iconBtn.addEventListener('click', expand);
+
+      input.addEventListener('input', (e) => {
+        const value = (e.target as HTMLInputElement).value;
+        self.searchQuery.set(value);
+        self.debouncedSearch();
+        clearBtn.style.display = value.length > 0 ? 'flex' : 'none';
+      });
+
+      input.addEventListener('blur', () => setTimeout(collapse, 150));
+
+      clearBtn.addEventListener('click', () => {
+        input.value = '';
+        self.searchQuery.set('');
+        self.applySearchFilter();
+        clearBtn.style.display = 'none';
+        collapse();
+      });
+
+      self.searchInput = input;
+
+      return container;
+    }
+  });
+
+  new CustomControl().addTo(this.map);
+}
+
+
     private popupHtml(p: Patient): string {
       const alc = p.alcNum || '—';
       const name = p.patientName || '(no name)';

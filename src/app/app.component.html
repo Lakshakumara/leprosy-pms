@@ -1,177 +1,214 @@
 <p-toast></p-toast>
 
 @if (isLoginRoute()) {
-  <router-outlet />
+<router-outlet />
 } @else {
-  <div class="shell">
-    
-    <!-- Sidebar Navigation (Desktop) -->
-    <aside class="shell__nav">
-      <div class="shell__brand">
-        <span class="shell__brand-mark">L</span>
-        <div>
-          <div class="shell__brand-name">Leprosy PMS</div>
-          <div class="shell__brand-sub">PHI LC Ratnapura</div>
-        </div>
-        <button class="shell__info-btn" (click)="showAbout.set(true)" title="About App">
-          <i class="pi pi-info-circle"></i>
-        </button>
+<div class="shell">
+
+  <!-- Sidebar Navigation (Desktop) -->
+  <aside class="shell__nav">
+    <div class="shell__brand">
+      <span class="shell__brand-mark">L</span>
+      <div>
+        <div class="shell__brand-name">Leprosy PMS</div>
+        <div class="shell__brand-sub">PHI LC Ratnapura</div>
       </div>
-
-      <!-- Core Sidebar Navigation Links -->
-      <nav class="shell__links">
-        <a routerLink="/dashboard" routerLinkActive="is-active">
-          <i class="pi pi-chart-bar"></i> Dashboard
-        </a>
-        <a routerLink="/patients" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">
-          <i class="pi pi-users"></i> Patients
-        </a>
-        <a routerLink="/map" routerLinkActive="is-active">
-          <i class="pi pi-map"></i> Map
-        </a>
-      </nav>
-
-      <!-- Global Shell Actions & Status -->
-      <div class="shell__status">
-        <div class="shell__status-header">
-          <span 
-            class="offline-pill" 
-            [class.offline-pill--online]="patients.isOnline()"
-            [class.offline-pill--offline]="!patients.isOnline()">
-            <span class="dot"></span>
-            {{ patients.isOnline() ? 'Online' : 'Offline' }}
-          </span>
-
-          <button 
-            class="shell__sync-icon-btn" 
-            (click)="syncNow()" 
-            [disabled]="!patients.isOnline() || patients.isSyncing()"
-            title="Sync Data">
-            <i class="pi" 
-               [class.pi-refresh]="!patients.isSyncing()" 
-               [class.pi-spin]="patients.isSyncing()"
-               [class.pi-spinner]="patients.isSyncing()"></i>
-          </button>
-        </div>
-
-        @if (patients.lastSyncedAt()) {
-          <div class="shell__sync-info">
-            Last sync: <strong>{{ patients.lastSyncedAt() | date:'dd MMM HH:mm' }}</strong>
-          </div>
-        }
-
-        @if (auth.currentUser()) {
-          <div class="shell__user">
-            <div class="shell__user-info">
-              <i class="pi pi-user"></i>
-              <span class="shell__user-name">{{ auth.currentUser()!.displayName }}</span>
-            </div>
-            <button class="shell__logout-btn" (click)="logout()" title="Sign out">
-              <i class="pi pi-sign-out"></i>
-              Sign out
-            </button>
-          </div>
-        }
-      </div>
-    </aside>
-
-    <!-- Main Content Area (Mobile Topbar + Active Route Content) -->
-    <div class="shell__main">
-      
-      <!-- Dynamic Mobile Top Bar -->
-      <header class="mobile-toolbar">
-        <div class="mobile-toolbar__left">
-          @if (mobileHeader.hasBack()) {
-            <button type="button" class="btn-icon" (click)="mobileHeader.goBack()">
-              <i class="pi pi-arrow-left"></i>
-            </button>
-          } @else if (mobileHeader.showMenu()) {
-            <button type="button" class="btn-icon" (click)="mobileHeader.config().menuCommand?.()">
-              <i class="pi pi-bars"></i>
-            </button>
-          }
-        </div>
-
-        <div class="mobile-toolbar__title">
-          <h2>{{ mobileHeader.config().title }}</h2>
-          @if (mobileHeader.config().subtitle) {
-            <small>{{ mobileHeader.config().subtitle }}</small>
-          }
-        </div>
-
-        <div class="mobile-toolbar__right">
-          @for (action of mobileHeader.visibleActions(); track action.label) {
-            <button 
-              type="button" 
-              class="btn-icon" 
-              [disabled]="action.disabled" 
-              (click)="action.command()"
-              [pTooltip]="action.tooltip || ''">
-              <i [class]="action.icon"></i>
-              @if (action.badge !== undefined && action.badge !== null) {
-                <span class="badge">{{ action.badge }}</span>
-              }
-            </button>
-          }
-
-          @if (mobileHeader.hasOverflow()) {
-            <button type="button" class="btn-icon" (click)="overflowMenu.toggle($event)">
-              <i class="pi pi-ellipsis-v"></i>
-            </button>
-            <p-menu #overflowMenu [model]="overflowItems()" [popup]="true" />
-          }
-        </div>
-      </header>
-
-      <!-- Active Viewport Content -->
-      <main class="shell__content">
-        <router-outlet></router-outlet>
-      </main>
-      
+      <button class="shell__info-btn" (click)="showAbout.set(true)" title="About App">
+        <i class="pi pi-info-circle"></i>
+      </button>
     </div>
 
-    <!-- Mobile Bottom Navigation -->
-    <nav class="bottom-nav">
+    <nav class="shell__links">
       <a routerLink="/dashboard" routerLinkActive="is-active">
-        <i class="pi pi-chart-bar"></i>
-        <span>Dashboard</span>
+        <i class="pi pi-chart-bar"></i> Dashboard
       </a>
       <a routerLink="/patients" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">
-        <i class="pi pi-users"></i>
-        <span>Patients</span>
+        <i class="pi pi-users"></i> Patients
       </a>
       <a routerLink="/map" routerLinkActive="is-active">
-        <i class="pi pi-map"></i>
-        <span>Map</span>
+        <i class="pi pi-map"></i> Map
       </a>
     </nav>
 
-    <!-- About Dialog -->
-    <p-dialog 
-      header="About Leprosy PMS" 
-      [visible]="showAbout()" 
-      (visibleChange)="showAbout.set($event)"
-      [modal]="true" 
-      [dismissableMask]="true"
-      [style]="{ width: '360px' }" 
-      [breakpoints]="{ '640px': '92vw' }">
-      <div class="about-content">
-        <div class="about-content__mark">L</div>
-        <h3>Leprosy Patient Management System</h3>
-        <p class="about-content__version">Version 1.0 · {{ appBuildDate }}</p>
-        <p>Designed and maintained by <strong>PHI LC Ratnapura</strong>.</p>
-        <p class="about-content__sub">Offline-first patient registry synced with DHIS2.</p>
-        
-        <div class="about-content__footer">
-          <p class="about-content__status">
-            System status: <strong>{{ patients.isOnline() ? 'Online' : 'Offline' }}</strong>
-          </p>
-          <button class="about-content__logout-btn" (click)="logout(); showAbout.set(false)">
-            <i class="pi pi-sign-out"></i> Sign Out
-          </button>
-        </div>
+    <div class="shell__status">
+      <div class="shell__status-header">
+        <span class="offline-pill" [class.offline-pill--online]="patients.isOnline()"
+          [class.offline-pill--offline]="!patients.isOnline()">
+          <span class="dot"></span>
+          {{ patients.isOnline() ? 'Online' : 'Offline' }}
+        </span>
+
+        <button class="shell__sync-icon-btn" (click)="syncNow()"
+          [disabled]="!patients.isOnline() || patients.isSyncing()" title="Sync Data">
+          <i class="pi" [class.pi-refresh]="!patients.isSyncing()" [class.pi-spin]="patients.isSyncing()"
+            [class.pi-spinner]="patients.isSyncing()"></i>
+        </button>
       </div>
-    </p-dialog>
+
+      @if (patients.lastSyncedAt()) {
+      <div class="shell__sync-info">
+        Last sync: <strong>{{ patients.lastSyncedAt() | date:'dd MMM HH:mm' }}</strong>
+      </div>
+      }
+
+      @if (auth.currentUser()) {
+      <div class="shell__user">
+        <div class="shell__user-info">
+          <i class="pi pi-user"></i>
+          <span class="shell__user-name">{{ auth.currentUser()!.displayName }}</span>
+        </div>
+        <button class="shell__logout-btn" (click)="logout()" title="Sign out">
+          <i class="pi pi-sign-out"></i> Sign out
+        </button>
+      </div>
+      }
+    </div>
+  </aside>
+
+  <!-- Main Content Area -->
+  <div class="shell__main">
+
+    <!-- Fully Integrated Mobile Top Bar -->
+    <header class="mobile-toolbar">
+      @if (mobileHeader.showSearch()) {
+      <!-- ── Search Mode Layout (Full Width Input) ── -->
+      <div class="mobile-toolbar__search-bar">
+        <!-- Back Arrow to Exit Search -->
+        <button type="button" class="btn-icon" (click)="mobileHeader.disableSearch()" title="Close Search">
+          <i class="pi pi-arrow-left"></i>
+        </button>
+
+        <!-- Input Field -->
+        <input #searchInput type="text" [placeholder]="mobileHeader.config().searchPlaceholder || 'Search...'"
+          [value]="mobileHeader.searchQuery()" (input)="mobileHeader.updateSearch(searchInput.value)" autofocus />
+
+        <!-- Clear Button (Shown only when text exists) -->
+        @if (mobileHeader.searchQuery()) {
+        <button type="button" class="btn-icon" (click)="mobileHeader.updateSearch(''); searchInput.value = ''"
+          title="Clear">
+          <i class="pi pi-times"></i>
+        </button>
+        }
+      </div>
+
+      } @else {
+      <!-- ── Standard Header Mode Layout ── -->
+
+      <!-- Left Navigation (Back or Menu) -->
+      <div class="mobile-toolbar__left">
+        @if (mobileHeader.hasBack()) {
+        <button type="button" class="btn-icon" (click)="mobileHeader.goBack()">
+          <i class="pi pi-arrow-left"></i>
+        </button>
+        } @else if (mobileHeader.showMenu()) {
+        <button type="button" class="btn-icon" (click)="mobileHeader.config().menuCommand?.()">
+          <i class="pi pi-bars"></i>
+        </button>
+        }
+      </div>
+
+      <!-- Title & Subtitle -->
+      <div class="mobile-toolbar__title">
+        <h2>{{ mobileHeader.config().title }}</h2>
+        @if (mobileHeader.config().subtitle) {
+        <small>{{ mobileHeader.config().subtitle }}</small>
+        }
+      </div>
+
+      <!-- Right Actions -->
+      <div class="mobile-toolbar__right">
+        <!-- 🔍 Search Icon Button (Shows when search placeholder/callback is configured) -->
+        @if (mobileHeader.config().onSearch || mobileHeader.config().searchPlaceholder) {
+        <button type="button" class="btn-icon" (click)="mobileHeader.enableSearch()" title="Search">
+          <i class="pi pi-search"></i>
+        </button>
+        }
+
+        <!-- Page Specific Actions (Filter, Sync, etc.) -->
+        @for (action of mobileHeader.visibleActions(); track action.label) {
+        <button type="button" class="btn-icon" [disabled]="action.disabled" (click)="action.command()"
+          [pTooltip]="action.tooltip || ''">
+          <i [class]="action.icon"></i>
+          @if (action.badge !== undefined && action.badge !== null) {
+          <span class="badge">{{ action.badge }}</span>
+          }
+        </button>
+        }
+
+        <!-- Overflow Ellipsis Menu -->
+        @if (mobileHeader.hasOverflow()) {
+        <button type="button" class="btn-icon" (click)="overflowMenu.toggle($event)">
+          <i class="pi pi-ellipsis-v"></i>
+        </button>
+        <p-menu #overflowMenu [model]="overflowItems()" [popup]="true" [appendTo]="'body'" />
+        }
+      </div>
+      }
+    </header>
+
+    <!-- Active Content Slot -->
+    <main class="shell__content">
+      <router-outlet></router-outlet>
+    </main>
 
   </div>
+
+  <!-- Mobile Bottom Navigation -->
+  <nav class="bottom-nav">
+    <a routerLink="/dashboard" routerLinkActive="is-active">
+      <i class="pi pi-chart-bar"></i>
+      <span>Dashboard</span>
+    </a>
+    <a routerLink="/patients" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">
+      <i class="pi pi-users"></i>
+      <span>Patients</span>
+    </a>
+    <a routerLink="/map" routerLinkActive="is-active">
+      <i class="pi pi-map"></i>
+      <span>Map</span>
+    </a>
+  </nav>
+
+  <!-- Global Mobile Filter Drawer -->
+  <p-drawer [visible]="mobileHeader.showFilterDrawer()" (visibleChange)="mobileHeader.showFilterDrawer.set($event)"
+    position="bottom" styleClass="mobile-filter-drawer" [modal]="true" [blockScroll]="true">
+
+    <ng-template pTemplate="header">
+      <div class="drawer-header">
+        <i class="pi pi-filter"></i>
+        <span>Filter Data</span>
+      </div>
+    </ng-template>
+
+    <!-- 💡 Project template inside pTemplate="content" -->
+    <ng-template pTemplate="content">
+      @if (mobileHeader.config().filterTemplate) {
+      <ng-container *ngTemplateOutlet="mobileHeader.config().filterTemplate!"></ng-container>
+      }
+    </ng-template>
+
+  </p-drawer>
+
+  <!-- About Dialog -->
+  <p-dialog header="About Leprosy PMS" [visible]="showAbout()" (visibleChange)="showAbout.set($event)" [modal]="true"
+    [dismissableMask]="true" [style]="{ width: '360px' }" [breakpoints]="{ '640px': '92vw' }">
+    <div class="about-content">
+      <div class="about-content__mark">L</div>
+      <h3>Leprosy Patient Management System</h3>
+      <p class="about-content__version">Version 1.0 · {{ appBuildDate }}</p>
+      <p>Designed and maintained by <strong>PHI LC Ratnapura</strong>.</p>
+      <p class="about-content__sub">Offline-first patient registry synced with DHIS2.</p>
+
+      <div class="about-content__footer">
+        <p class="about-content__status">
+          System status: <strong>{{ patients.isOnline() ? 'Online' : 'Offline' }}</strong>
+        </p>
+        <button class="about-content__logout-btn" (click)="logout(); showAbout.set(false)">
+          <i class="pi pi-sign-out"></i> Sign Out
+        </button>
+      </div>
+    </div>
+  </p-dialog>
+
+</div>
 }

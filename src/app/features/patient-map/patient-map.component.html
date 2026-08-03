@@ -7,6 +7,15 @@
     </div>
     
     <div class="header-actions">
+       <button 
+        pButton 
+        type="button" 
+        icon="currentMode() === 'cluster' ? pi pi-objects-column : pi pi-circle-fill"
+        (click)="toggleClustering()" 
+        class="p-button-outlined p-button-sm header-btn">
+        <span class="btn-label">clustering</span>
+      </button>
+
       <button 
         pButton 
         type="button" 
@@ -54,12 +63,21 @@
       </div>
       <div class="muted">{{ p.patientHomeAddress || 'No address on file' }}</div>
     </div>
-    <button 
-      pButton 
-      icon="pi pi-times" 
-      (click)="selected.set(null)" 
-      class="p-button-rounded p-button-text p-button-sm close-selected">
-    </button>
+    <div class="selected-actions">
+      <button 
+        pButton 
+        icon="pi pi-map-marker" 
+        (click)="openEditLocation(p)" 
+        class="p-button-rounded p-button-text p-button-sm"
+        title="Edit Location">
+      </button>
+      <button 
+        pButton 
+        icon="pi pi-times" 
+        (click)="selected.set(null)" 
+        class="p-button-rounded p-button-text p-button-sm close-selected">
+      </button>
+    </div>
   </div>
 }
 
@@ -84,7 +102,7 @@
 </div>
 
 
-<!-- Dialog remains the same -->
+<!-- Dialog remains the same 
 <p-dialog 
   header="Edit Patient Location {{ selectedPatient()?.alcNum }}"
   [(visible)]="showEditDialog" 
@@ -96,7 +114,7 @@
   [style]="{'width':'420px', 'max-width':'90vw'}"
   (onHide)="cancelEdit()">
   
-  <!-- Dialog content remains the same -->
+
   <div class="dialog-content">
     <div class="patient-info">
       <span class="patient-name">{{ selectedPatient()?.patientName }}</span>
@@ -151,5 +169,74 @@
       (click)="saveLocation()" 
       severity="primary" />
   </ng-template>
-</p-dialog>
+</p-dialog>-->
+
+<p-drawer 
+  [(visible)]="showEditDrawer" 
+  position="bottom" 
+  styleClass="location-edit-drawer"
+  [style]="{ height: 'auto' }"
+  [modal]="false"
+  [blockScroll]="false"
+  [closeOnEscape]="false"
+  (onHide)="cancelEdit()">
+
+  <ng-template pTemplate="content">
+    @if (isPickingLocation()) {
+      <!-- 7. Compact Floating Bar Mode: Keeps full map clear while user taps to pick location -->
+      <div class="picking-floating-banner">
+        <div class="hint-text">
+          <i class="pi pi-spin pi-compass"></i>
+          <span>Tap anywhere on the map to set location</span>
+        </div>
+        <button 
+          pButton 
+          label="Done" 
+          icon="pi pi-check" 
+          severity="success" 
+          size="small" 
+          (click)="isPickingLocation.set(false)">
+        </button>
+      </div>
+    } @else {
+      <!-- Full Drawer View Mode -->
+      <div class="drawer-edit-content">
+        <div class="drawer-edit-header">
+          <h3>Edit Location: {{ selectedPatient()?.patientName }}</h3>
+          <span class="patient-id">{{ selectedPatient()?.alcNum }}</span>
+        </div>
+
+        <div class="edit-fields-grid">
+          <div class="edit-field">
+            <label for="editLat">Latitude</label>
+            <input id="editLat" pInputText type="number" [ngModel]="editLat()" (ngModelChange)="editLat.set($event)" step="0.000001" />
+          </div>
+          <div class="edit-field">
+            <label for="editLng">Longitude</label>
+            <input id="editLng" pInputText type="number" [ngModel]="editLng()" (ngModelChange)="editLng.set($event)" step="0.000001" />
+          </div>
+        </div>
+
+        <div class="drawer-actions">
+          <button 
+            pButton 
+            label="Pick from Map" 
+            icon="pi pi-map-marker" 
+            severity="secondary" 
+            [outlined]="true"
+            class="w-full"
+            (click)="pickLocationFromMap()">
+          </button>
+          
+          <div class="footer-buttons">
+            <button pButton label="Cancel" severity="secondary" text="true" (click)="cancelEdit()"></button>
+            <button pButton label="Save Location" severity="primary" (click)="saveLocation()"></button>
+          </div>
+        </div>
+      </div>
+    }
+  </ng-template>
+</p-drawer>
+
+
 <p-confirmDialog ></p-confirmDialog>

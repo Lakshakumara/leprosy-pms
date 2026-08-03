@@ -253,7 +253,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   async ngOnInit(): Promise<void> {
-this.loadYearsInBackground()
+    this.loadYearsInBackground()
     this.mobileHeader.set({
       title: 'Leprosy Control Dashboard',
       subtitle: 'Decision support for Active Case Finding',
@@ -271,19 +271,17 @@ this.loadYearsInBackground()
   }
 
   private async loadYearsInBackground() {
-  try {
-    const years = await this.patientService.getYears(10);
-    this.yearOptions = years;
-  } catch (e) {
-    console.warn('year load failed', e);
-    
+    try {
+      const years = await this.patientService.getYears(10);
+      this.yearOptions = years;
+    } catch (e) {
+      console.warn('year load failed', e);
+
+    }
   }
-}
   private openNavigationDrawer(): void {
     // Toggle side menu or navigation sheet
   }
-
-
   protected selectAllYears(): void {
     this.selectedYears.set([...this.yearOptions]);
   }

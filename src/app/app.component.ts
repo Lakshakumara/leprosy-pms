@@ -11,6 +11,7 @@ import { PatientService } from './core/services/patient.service';
 import { AuthService } from './core/services/auth.service';
 import { MobileHeaderService } from './core/services/mobile-header.service';
 import { TooltipModule } from 'primeng/tooltip';
+import { DrawerModule } from 'primeng/drawer';
 
 @Component({
   selector: 'app-root',
@@ -21,6 +22,7 @@ import { TooltipModule } from 'primeng/tooltip';
     ToastModule,
     DialogModule,
     MenuModule,
+    DrawerModule,
     TooltipModule
   ],
   templateUrl: './app.component.html',
@@ -58,66 +60,3 @@ export class AppComponent {
     this.auth.logout();
   }
 }
-
-
-
-/*import { Component, computed, inject, model, signal } from '@angular/core';
-import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
-import { CommonModule } from '@angular/common';
-import { DialogModule } from 'primeng/dialog';
-import { filter, map } from 'rxjs/operators';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { PatientService } from './core/services/patient.service';
-import { AuthService } from './core/services/auth.service';
-import { ToastModule } from 'primeng/toast';
-import { MobileHeaderService } from './core/services/mobile-header.service';
-import { MenuModule } from 'primeng/menu';
-
-import { MenuItem } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-
-@Component({
-  selector: 'app-root',
-  standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule, ToastModule, DialogModule,  MenuModule, ButtonModule],
-  templateUrl: './app.component.html',
-  styleUrl: './app.component.scss',
-})
-export class AppComponent {
-  protected readonly patients = inject(PatientService);
-  protected readonly auth = inject(AuthService);
-  private readonly router = inject(Router);
-  protected readonly mobileHeader = inject(MobileHeaderService);
-
-   protected readonly overflowItems = computed<MenuItem[]>(() => {
-    const cfg = this.mobileHeader.config();
-    if (!cfg.overflow?.length) return [];
-    return cfg.overflow.map(o => ({
-      label: o.label,
-      icon: o.icon,
-      disabled: o.disabled,
-      command: () => o.command()
-    }));
-  });
-
-  protected readonly showAbout = signal(false);
-
-  protected readonly appBuildDate = '2026';
-
-  protected readonly isLoginRoute = toSignal(
-  this.router.events.pipe(
-    filter(e => e instanceof NavigationEnd),
-    map(e => (e as NavigationEnd).urlAfterRedirects.startsWith('/login'))
-  ),
-  { initialValue: this.router.url.startsWith('/login') } // FIX: not always true
-);
-
-  protected syncNow(): void {
-    void this.patients.pullFromServer();
-  }
-
-  protected logout(): void {
-    this.auth.logout();
-    void this.router.navigate(['/login']);
-  }
-}*/

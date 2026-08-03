@@ -26,7 +26,7 @@
       <div>
         <h1 class="detail-patient-name">{{ p.patientName || '(no name)' }}</h1>
         <div class="detail-ids">
-          @if (p.alcNum) { <span class="id-badge id-badge--alc">ALC: {{ p.alcNum }}</span> }
+          @if (p.alcNum) { <span class="id-badge id-badge--alc"> {{ p.alcNum }}</span> }
           @if (p.clinicNum) { <span class="id-badge">Clinic: {{ p.clinicNum }}</span> }
           @if (p.nicNum) { <span class="id-badge">NIC: {{ p.nicNum }}</span> }
         </div>
@@ -64,7 +64,7 @@
         <dt>Mobile</dt>
         <dd>{{ p.telNum || '—' }}</dd>
         @if(p.mobileNum){
-        <<dt>Mobile 2</dt>
+        <dt>Mobile 2</dt>
           <dd>{{ p.mobileNum || '—' }}</dd>
           }
           @if(p.guardianName){
@@ -86,10 +86,6 @@
         <dd>{{ p.enrollmentStatus || '—' }}</dd>
         <dt>Referred by</dt>
         <dd>{{ p.patientReferredBy || '—' }}</dd>
-        <dt>Consultant</dt>
-        <dd>{{ p.nameOfConsultant || '—' }}</dd>
-        <dt>MO</dt>
-        <dd>{{ p.nameOfMO || '—' }}</dd>
       </dl>
     </section>
 

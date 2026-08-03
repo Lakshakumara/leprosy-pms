@@ -1,4 +1,5 @@
-<div class="page-head">
+<!-- ── Page Header (Desktop Only) ────────────────────────────────────────── -->
+<div class="page-head desktop-only">
     <div>
         <h1>Patient Register</h1>
         <p class="page-head__sub">
@@ -26,6 +27,7 @@
         </button>
     </div>
 </div>
+
 <!-- ── Error banner ──────────────────────────────────────────────────────────── -->
 @if (patientService.lastPullError(); as err) {
 <div class="alert alert--error" role="alert">
@@ -36,63 +38,15 @@
     </div>
 </div>
 }
-<!-- ── Filter panel ──────────────────────────────────────────────────────────── -->
-@if (showFilters()) {
-<div class="filters-panel card" id="filters-panel">
-    <div class="filters-panel__header">
-        <span class="filters-panel__title"><i class="pi pi-filter"></i> Filter Patients</span>
-        @if (activeFilterCount() > 0) {
-        <button class="btn-clear" (click)="clearFilters()" id="clear-filters-btn">
-            <i class="pi pi-times"></i> Clear all
-        </button>
-        }
-    </div>
-    <div class="filters-grid">
-        <div class="filter-field">
-            <label>Classification</label>
-            <p-select [options]="classificationOptions" optionLabel="label" optionValue="value"
-                [ngModel]="filter().classification" (ngModelChange)="updateFilter('classification', $event)"
-                id="classification-select">
-            </p-select>
-        </div>
-        <div class="filter-field">
-            <label>Hospital</label>
-            <p-select [options]="hospitalOptions" optionLabel="label" optionValue="value" [ngModel]="filter().orgUnitId"
-                (ngModelChange)="updateFilter('orgUnitId', $event)" id="hospital-select">
-            </p-select>
-        </div>
 
-        <div class="filter-field">
-            <label>PHI Area</label>
-            <p-select [options]="phiAreaOptions()" optionLabel="label" optionValue="value" [ngModel]="filter().phiArea"
-                (ngModelChange)="updateFilter('phiArea', $event)" [loading]="filtersLoading()" id="phi-select">
-            </p-select>
-        </div>
-        <div class="filter-field">
-            <label>GN Division</label>
-            <p-select [options]="gnDivisionOptions()" optionLabel="label" optionValue="value"
-                [ngModel]="filter().gnDivision" (ngModelChange)="updateFilter('gnDivision', $event)"
-                [loading]="filtersLoading()" id="gn-select">
-            </p-select>
-        </div>
-        <div class="filter-field">
-            <label for="enrolled-from">Enrolled from</label>
-            <input id="enrolled-from" pInputText type="date" [ngModel]="filter().enrolledFrom"
-                (ngModelChange)="updateFilter('enrolledFrom', $event)" />
-        </div>
-        <div class="filter-field">
-            <label for="enrolled-to">Enrolled to</label>
-            <input id="enrolled-to" pInputText type="date" [ngModel]="filter().enrolledTo"
-                (ngModelChange)="updateFilter('enrolledTo', $event)" />
-        </div>
-        <div class="filter-field filter-field--checkbox">
-            <p-checkbox inputId="Outside_District" [binary]="true" [ngModel]="filter().outsideDistrict"
-                (ngModelChange)="updateFilter('outsideDistrict', $event)" />
-            <label for="Outside_District">Outside District</label>
-        </div>
-    </div>
+<!-- ── Filter panel (Toggled via Desktop Button or Mobile Header Action) ──────── -->
+@if (showFilters()) {
+<div class="filters-panel card desktop-only" id="filters-panel">
+    <ng-container *ngTemplateOutlet="filterFormContent"></ng-container>
 </div>
+
 }
+
 <!-- ── Desktop table ─────────────────────────────────────────────────────────── -->
 <div class="card table-card desktop-only">
     @if (patientService.isSyncing() && patientService.districtPatients().length === 0) {
@@ -112,7 +66,6 @@
     } @else {
     <p-table [value]="rows()" [paginator]="true" [rows]="20" dataKey="id" responsiveLayout="scroll" [rowHover]="true"
         styleClass="p-datatable-sm">
-
 
         <ng-template pTemplate="caption">
             <div class="table-caption">
@@ -157,6 +110,7 @@
                 <th></th>
             </tr>
         </ng-template>
+
         <ng-template pTemplate="body" let-p let-rowIndex="rowIndex">
             <tr [class.row--outer-district]="isOuterDistrict(p)">
                 <td class="num-col">{{ rowNumber(rowIndex) }}</td>
@@ -177,9 +131,7 @@
                     <div class="sub-text">{{ p.telNum }}</div>
                     }
                 </td>
-                <td>
-                    {{ p.patientHomeAddress }}
-                </td>
+                <td>{{ p.patientHomeAddress }}</td>
                 <td>
                     {{ p.patientSex || '—' }}
                     @if (p.patientAge) { - {{ p.patientAge }} y }
@@ -203,17 +155,16 @@
                     <div class="sub-text">PHI: {{ p.patientPhiArea }}</div>
                     }
                 </td>
-                <td>
-                    {{ p.enrolledAt | date:'yyyy-MM-dd' }}
-                </td>
+                <td>{{ p.enrolledAt | date:'yyyy-MM-dd' }}</td>
                 <td class="actions">
                     <a [routerLink]="['/patients', p.id]" pButton icon="pi pi-eye" class="p-button-text p-button-sm"
                         title="View details"></a>
                     <a [routerLink]="['/update', p.id]" pButton icon="pi pi-pencil" class="p-button-text p-button-sm"
-                        title="View details"></a>
+                        title="Edit details"></a>
                 </td>
             </tr>
         </ng-template>
+
         <ng-template pTemplate="emptymessage">
             <tr>
                 <td colspan="10" class="empty-state">
@@ -236,7 +187,16 @@
 
 <!-- ── Mobile card list ──────────────────────────────────────────────────────── -->
 <div class="mobile-cards mobile-only">
+    <div class="caption-mobile-filters">
+        <p-select [options]="yearOptions()" optionLabel="label" optionValue="value" [ngModel]="filter().year"
+            (ngModelChange)="updateFilter('year', $event)" [loading]="filtersLoading()" id="year-select">
+        </p-select>
+        <p-select [options]="mohAreaOptions()" optionLabel="label" optionValue="value" [ngModel]="filter().mohArea"
+            (ngModelChange)="updateFilter('mohArea', $event)" [loading]="filtersLoading()" id="moh-select">
+        </p-select>
+    </div>
     @if (patientService.isSyncing() && patientService.districtPatients().length === 0) {
+
     @for (_ of [1,2,3]; track $index) {
     <div class="patient-card patient-card--skeleton">
         <p-skeleton width="100%" height="1.1rem" />
@@ -250,21 +210,21 @@
         <p>No patients found. {{ patientService.isOnline() ? '' : 'Go online to sync.' }}</p>
     </div>
     } @else {
+
     @for (p of rows(); track p.id; let i = $index) {
     <div class="patient-card" [class]="priorityClass(p)" [class.patient-card--outer-district]="isOuterDistrict(p)"
         (click)="goToPatient(p.id)">
 
-        <!-- Row 1: name only, one line -->
         <div class="patient-card__name-row">
             <span class="patient-card__index">{{ rows().length - i }}</span>
             <span class="alc-num">{{ p.alcNum }}</span>
+
             <span class="patient-card__name">{{ p.patientName }}</span>
             @if (isChildCase(p)) {
             <span class="badge badge--child">Child</span>
             }
         </div>
 
-        <!-- Row 2: index + address (left) · alcNum/classification/caseType (right) -->
         <div class="patient-card__top">
             <div class="patient-card__main">
                 <div class="patient-card__address"
@@ -272,6 +232,7 @@
                     (click)="toggleAddress(p.id, $event)">
                     {{ p.patientHomeAddress }}
                 </div>
+
             </div>
 
             <div class="patient-card__right">
@@ -311,56 +272,79 @@
             <span><i class="pi pi-calendar"></i> {{ p.enrolledAt | date:'yyyy-MM-dd' }}</span>
             <span>EHF: <strong class="ehf-badge" [class.ehf-high]="p.ehfScore >= 7"
                     [class.ehf-mid]="p.ehfScore >= 4 && p.ehfScore < 7">{{ p.ehfScore }}</strong></span>
+            <a [routerLink]="['/patients', p.id]" pButton icon="pi pi-eye" class="p-button-text p-button-sm"
+                title="View details"></a>
+            <a [routerLink]="['/update', p.id]" pButton icon="pi pi-pencil" class="p-button-text p-button-sm"
+                title="Edit details"></a>
         </div>
+
     </div>
     }
     }
+</div>
 
-
-
-    <!-- ── Mobile card list ──────────────────────────────────────────────────────── 
-<div class="mobile-cards mobile-only">
-    @if (patientService.isSyncing() && patientService.districtPatients().length === 0) {
-    @for (_ of [1,2,3]; track $index) {
-    <div class="patient-card patient-card--skeleton">
-        <p-skeleton width="100%" height="1.1rem" />
-        <p-skeleton width="60%" height="0.85rem" styleClass="mt-2" />
-        <p-skeleton width="80%" height="0.85rem" styleClass="mt-1" />
-    </div>
-    }
-    } @else if (rows().length === 0) {
-    <div class="mobile-empty">
-        <i class="pi pi-inbox"></i>
-        <p>No patients found. {{ patientService.isOnline() ? '' : 'Go online to sync.' }}</p>
-    </div>
-    } @else {
-    @for (p of rows(); track p.id; let i = $index) {
-    <a class="patient-card" [class.patient-card--outer-district]="isOuterDistrict(p)" [routerLink]="['/patients', p.id]">
-        <div class="patient-card__top">
-            <div>
-                <div class="patient-card__name">
-                    #{{ rows().length - i }}. {{ p.patientName }} - {{ p.alcNum }}
-                    @if (isChildCase(p)) {
-                    <span class="badge badge--child">Child</span>
-                    }
-                </div>
-                <div class="patient-card__alc"> {{ p.patientHomeAddress }}</div>
-                <div class="patient-card__alc"> {{ p.telNum }}, {{ p.mobileNum }}</div>
-            </div>
-            @if (p.treatmentClassification) {
-            <span class="badge" [class]="classBadge(p.treatmentClassification)">
-                {{ p.treatmentClassification }}
-            </span>
+<ng-template #filterFormContent>
+    <div class="filters-panel card" id="filters-panel">
+        <div class="filters-panel__header">
+            <span class="filters-panel__title"><i class="pi pi-filter"></i> Filter Patients</span>
+            @if (activeFilterCount() > 0) {
+            <button class="btn-clear" (click)="clearFilters()" id="clear-filters-btn">
+                <i class="pi pi-times"></i> Clear all
+            </button>
             }
         </div>
-        <div class="patient-card__meta">
-            <span><i class="pi pi-building"></i> {{ p.orgUnitName || '—' }}</span>
-            <span><i class="pi pi-map-marker"></i> {{ p.patientMohArea || '—' }}</span>
-            <span><i class="pi pi-calendar"></i> {{ p.enrolledAt | date:'yyyy-MM-dd' }}</span>
-            <span>EHF: <strong class="ehf-badge" [class.ehf-high]="p.ehfScore >= 7"
-                    [class.ehf-mid]="p.ehfScore >= 4 && p.ehfScore < 7">{{ p.ehfScore }}</strong></span>
+        <div class="filters-grid">
+            <div class="filter-field">
+                <label>District</label>
+                <p-select [options]="districtOptions()" optionLabel="label" optionValue="value"
+                    [ngModel]="filter().district" (ngModelChange)="updateFilter('district', $event)"
+                    [loading]="filtersLoading()" id="district-select">
+                </p-select>
+            </div>
+            <div class="filter-field">
+                <label>Classification</label>
+                <p-select [options]="classificationOptions" optionLabel="label" optionValue="value"
+                    [ngModel]="filter().classification" (ngModelChange)="updateFilter('classification', $event)"
+                    id="classification-select">
+                </p-select>
+            </div>
+            <div class="filter-field">
+                <label>Hospital</label>
+                <p-select [options]="hospitalOptions" optionLabel="label" optionValue="value"
+                    [ngModel]="filter().orgUnitId" (ngModelChange)="updateFilter('orgUnitId', $event)"
+                    id="hospital-select">
+                </p-select>
+            </div>
+
+            <div class="filter-field">
+                <label>PHI Area</label>
+                <p-select [options]="phiAreaOptions()" optionLabel="label" optionValue="value"
+                    [ngModel]="filter().phiArea" (ngModelChange)="updateFilter('phiArea', $event)"
+                    [loading]="filtersLoading()" id="phi-select">
+                </p-select>
+            </div>
+            <div class="filter-field">
+                <label>GN Division</label>
+                <p-select [options]="gnDivisionOptions()" optionLabel="label" optionValue="value"
+                    [ngModel]="filter().gnDivision" (ngModelChange)="updateFilter('gnDivision', $event)"
+                    [loading]="filtersLoading()" id="gn-select">
+                </p-select>
+            </div>
+            <div class="filter-field">
+                <label for="enrolled-from">Enrolled from</label>
+                <input id="enrolled-from" pInputText type="date" [ngModel]="filter().enrolledFrom"
+                    (ngModelChange)="updateFilter('enrolledFrom', $event)" />
+            </div>
+            <div class="filter-field">
+                <label for="enrolled-to">Enrolled to</label>
+                <input id="enrolled-to" pInputText type="date" [ngModel]="filter().enrolledTo"
+                    (ngModelChange)="updateFilter('enrolledTo', $event)" />
+            </div>
+            <div class="filter-field filter-field--checkbox">
+                <p-checkbox inputId="Outside_District" [binary]="true" [ngModel]="filter().outsideDistrict"
+                    (ngModelChange)="updateFilter('outsideDistrict', $event)" />
+                <label for="Outside_District">Outside District</label>
+            </div>
         </div>
-    </a>
-    }
-    }
-</div>-->
+    </div>
+</ng-template>

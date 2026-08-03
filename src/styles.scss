@@ -89,3 +89,19 @@ a { color: var(--color-teal-700); }
     display: none !important;
   }
 }
+/* Global styles for Mobile Filter Drawer */
+.mobile-filter-drawer {
+  &.p-drawer-bottom, 
+  &.p-sidebar-bottom {
+    height: auto !important;
+    max-height: 80vh !important;
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+  }
+
+  .p-drawer-content,
+  .p-sidebar-content {
+    padding: 1rem;
+    overflow-y: auto;
+  }
+}

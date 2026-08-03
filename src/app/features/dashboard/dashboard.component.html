@@ -21,13 +21,14 @@
 </header>
 
 <!-- Mobile Filter Bottom Sheet / Side Drawer (PrimeNG) -->
-<p-drawer [(visible)]="showFilters" position="bottom" styleClass="mobile-filter-drawer" [style]="{ height: 'auto' }"
+<p-drawer [(visible)]="showFilters" position="bottom" styleClass="mobile-filter-drawer" 
+[style]="{ height: 'auto' }"
   [modal]="true" [closeOnEscape]="true">
 
   <ng-template #header>
     <div class="drawer-header">
       <div class="drawer-header__title">
-        <h3>Filter Dashboard</h3>
+        <h3>Filters</h3>
         <span class="count-pill">{{ activeFilterCount() }} active</span>
       </div>
       @if (activeFilterCount() > 0) {

@@ -1,5 +1,5 @@
 // patient-list.component.ts
-import { Component, inject, computed, signal, OnInit, effect } from '@angular/core';
+import { Component, inject, computed, signal, OnInit, effect, OnDestroy, TemplateRef, ViewChild, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -22,6 +22,7 @@ import {
   hasDelayedDiagnosis,
 } from '../../core/util/dashboard-analytics';
 import { CheckboxModule } from 'primeng/checkbox';
+import { MobileHeaderService } from '../../core/services/mobile-header.service';
 
 interface SelectOption { label: string; value: string; }
 
@@ -36,8 +37,10 @@ interface SelectOption { label: string; value: string; }
   templateUrl: './patient-list.component.html',
   styleUrl: './patient-list.component.scss',
 })
-export class PatientListComponent implements OnInit {
+export class PatientListComponent implements OnInit, AfterViewInit, OnDestroy {
+  @ViewChild('filterFormContent') filterTemplate!: TemplateRef<any>;
 
+  public mobileHeader = inject(MobileHeaderService);
   private readonly storage = inject(DeviceStorageService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
@@ -52,6 +55,7 @@ export class PatientListComponent implements OnInit {
     mohArea: 'ALL',
     phiArea: 'ALL',
     gnDivision: 'ALL',
+    year: new Date().getFullYear().toString(),
   });
 
   protected readonly showFilters = signal(false);
@@ -113,13 +117,69 @@ export class PatientListComponent implements OnInit {
     children: this.rows().filter(p => Number(p.patientAge) < 15).length,
   }));
 
+  constructor() {
+    effect(() => {
+      const count = this.rows().length;
+      const filterCount = this.activeFilterCount();
+      let subtitle = `${count} patients`;
+      if (filterCount > 0) {
+        subtitle += ` · ${filterCount} active filter${filterCount > 1 ? 's' : ''}`;
+      }
+      this.mobileHeader.setSubtitle(subtitle);
+    });
+  }
+  
   async ngOnInit(): Promise<void> {
+
     if (this.patientService.districtPatients().length === 0) {
       await this.patientService.pullFromServer();
     }
     await this.loadDistinctValues();
     this.applyQueryParams(this.route.snapshot.queryParamMap);
     this.route.queryParamMap.subscribe(params => this.applyQueryParams(params));
+  }
+
+  ngAfterViewInit(): void {
+    this.setupMobileHeader();
+  }
+
+  ngOnDestroy(): void {
+    // Clean up top bar config when navigating away
+    this.mobileHeader.clear();
+  }
+
+  private setupMobileHeader(): void {
+    console.log('filter code', this.filterTemplate)
+    this.mobileHeader.set({
+      title: 'Patient Register',
+      subtitle: `${this.rows().length} patients`,
+      searchPlaceholder: 'Search name, ALC, or NIC…',
+      onSearch: (query: string) => this.updateFilter('search', query),
+
+      filterTemplate: this.filterTemplate,
+      actions: [
+        {
+          icon: 'pi pi-filter',
+          label: 'Filter',
+          badge: this.activeFilterCount() > 0 ? this.activeFilterCount() : undefined,
+          command: () => this.mobileHeader.toggleFilterDrawer()
+        },
+      ],
+      overflow: [
+        {
+          icon: 'pi pi-refresh',
+          label: 'Sync',
+          disabled: !this.patientService.isOnline() || this.patientService.isSyncing(),
+          command: () => this.syncNow()
+        },
+        {
+          label: 'Clear Filters',
+          icon: 'pi pi-times',
+          visible: this.activeFilterCount() > 0,
+          command: () => this.clearFilters()
+        }
+      ]
+    });
   }
 
   private applyQueryParams(params: { get: (key: string) => string | null }): void {

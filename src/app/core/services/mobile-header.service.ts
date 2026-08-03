@@ -1,6 +1,4 @@
-// mobile-header.service.ts
-
-import { Injectable, signal, computed, inject } from '@angular/core';
+import { Injectable, signal, computed, inject, TemplateRef } from '@angular/core';
 import { Router } from '@angular/router';
 
 export interface MobileAction {
@@ -39,6 +37,8 @@ export interface MobileHeaderConfig {
   menuCommand?: () => void;
   loading?: boolean;
   showInfo?: boolean;
+  /** Template reference for global filter drawer */
+  filterTemplate?: TemplateRef<any>;
 }
 
 const DEFAULT_CONFIG: MobileHeaderConfig = {
@@ -58,16 +58,22 @@ export class MobileHeaderService {
   // Readonly signal for components
   readonly config = this._config.asReadonly();
 
+  // Active search query signal
+  readonly searchQuery = signal<string>('');
+
+  // Global bottom filter drawer visibility signal
+  readonly showFilterDrawer = signal<boolean>(false);
+
   // Derived Computed Values
   readonly hasBack = computed(() => !!(this._config().backRoute || this._config().backCallback));
   readonly hasActions = computed(() => (this._config().actions?.length ?? 0) > 0);
   readonly hasOverflow = computed(() => (this._config().overflow?.length ?? 0) > 0);
-  
-  readonly visibleActions = computed(() => 
+
+  readonly visibleActions = computed(() =>
     (this._config().actions || []).filter(a => a.visible !== false)
   );
 
-  readonly visibleOverflow = computed(() => 
+  readonly visibleOverflow = computed(() =>
     (this._config().overflow || []).filter(o => o.visible !== false)
   );
 
@@ -91,6 +97,8 @@ export class MobileHeaderService {
    */
   clear(): void {
     this._config.set(DEFAULT_CONFIG);
+    this.searchQuery.set('');
+    this.showFilterDrawer.set(false);
   }
 
   /**
@@ -167,14 +175,34 @@ export class MobileHeaderService {
     this.update({ overflow: [] });
   }
 
-  // --- Search & Navigation ---
+  // --- Search & Drawer Helpers ---
 
-  enableSearch(placeholder = 'Search...', onSearch?: (query: string) => void): void {
+  /*enableSearch(placeholder = 'Search...', onSearch?: (query: string) => void): void {
     this.update({ showSearch: true, searchPlaceholder: placeholder, onSearch });
+  }*/
+  enableSearch(placeholder?: string, onSearch?: (query: string) => void): void {
+    const current = this._config();
+    this.update({
+      showSearch: true,
+      searchPlaceholder: placeholder ?? current.searchPlaceholder,
+      onSearch: onSearch ?? current.onSearch
+    });
+  }
+  disableSearch(): void {
+    this.updateSearch('');
+    this.update({ showSearch: false});
   }
 
-  disableSearch(): void {
-    this.update({ showSearch: false, searchPlaceholder: undefined, onSearch: undefined });
+  updateSearch(query: string): void {
+    this.searchQuery.set(query);
+    const handler = this._config().onSearch;
+    if (handler) {
+      handler(query);
+    }
+  }
+
+  toggleFilterDrawer(): void {
+    this.showFilterDrawer.update(open => !open);
   }
 
   enableMenu(command: () => void): void {
