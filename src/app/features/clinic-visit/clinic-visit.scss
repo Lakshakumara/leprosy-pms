@@ -1,125 +1,385 @@
+:host {
+  --cv-bg: #f8fafc;
+  --cv-surface: #ffffff;
+  --cv-border: #e2e8f0;
+  --cv-text: #1e293b;
+  --cv-text-muted: #64748b;
+
+  --cv-active: #0f766e;
+  --cv-completed: #16a34a;
+  --cv-completed-bg: #f0fdf4;
+  --cv-at-risk: #d97706;
+  --cv-at-risk-bg: #fffbeb;
+  --cv-defaulter: #dc2626;
+  --cv-defaulter-bg: #fef2f2;
+  --cv-upcoming: #94a3b8;
+
+  display: block;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: var(--cv-text);
+}
+
 .clinic-visit {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0.75rem;
+  background: var(--cv-bg);
+  padding: 1.25rem;
+  border-radius: 0.75rem;
 }
 
-@media (min-width: 768px) {
-    .clinic-visit {
-        padding: 1.5rem;
-    }
+/* ===== Header ===== */
+.cv-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
 }
 
-.header-section {
-    margin-bottom: 1rem;
+.cv-title h2 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
 }
 
-.filter-section {
-    margin-bottom: 1rem;
+.cv-subtitle {
+  margin: 0.15rem 0 0;
+  color: var(--cv-text-muted);
+  font-size: 0.9rem;
+}
+
+.cv-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+/* ── Connection + sync chips ── */
+.connection-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 1rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.connection-chip.online {
+  background: var(--cv-completed-bg);
+  color: var(--cv-completed);
+}
+
+.connection-chip.offline {
+  background: var(--cv-defaulter-bg);
+  color: var(--cv-defaulter);
+}
+
+.sync-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 1rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: var(--cv-at-risk-bg);
+  color: var(--cv-at-risk);
+}
+
+.sync-chip :global(.sync-spinner) {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.sync-now-btn {
+  border: none;
+  background: none;
+  color: var(--cv-active);
+  font-weight: 700;
+  font-size: 0.78rem;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.cv-pull-error {
+  display: block;
+  margin-bottom: 0.75rem;
+}
+
+/* ── Defaulter / at-risk count chips ── */
+.summary-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.4rem 0.85rem;
+  border-radius: 0.6rem;
+  min-width: 4.5rem;
+}
+
+.summary-chip--danger {
+  background: var(--cv-defaulter-bg);
+  color: var(--cv-defaulter);
+}
+
+.summary-chip--warn {
+  background: var(--cv-at-risk-bg);
+  color: var(--cv-at-risk);
+}
+
+.summary-chip.is-zero {
+  opacity: 0.45;
+}
+
+.summary-count {
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.summary-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* ===== Filters ===== */
+.cv-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 1.25rem;
+}
+
+.filter-search {
+  flex: 1 1 14rem;
+}
+
+.filter-search-input {
+  width: 100%;
+}
+
+.filter-select {
+  flex: 1 1 10rem;
+  min-width: 9rem;
+}
+
+/* ===== Card grid ===== */
+.cv-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr));
+  gap: 1rem;
 }
 
 .patient-card {
-    transition: all 0.2s ease;
-    cursor: pointer;
-    border-radius: 0.5rem;
-    overflow: hidden;
+  border-radius: 0.75rem;
+  border-left: 4px solid var(--cv-upcoming);
+  overflow: hidden;
 }
 
-.patient-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+.patient-card.status-active { border-left-color: var(--cv-active); }
+.patient-card.status-completed { border-left-color: var(--cv-completed); }
+.patient-card.status-at_risk { border-left-color: var(--cv-at-risk); }
+.patient-card.status-defaulter { border-left-color: var(--cv-defaulter); }
+
+.patient-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
 }
 
-.visit-cell {
-    cursor: pointer;
-    transition: all 0.15s ease;
-    min-height: 50px;
-    background-color: #f3f4f6;
-    border-color: #d1d5db;
+.patient-id {
+  display: flex;
+  flex-direction: column;
 }
 
-.visit-cell:hover {
-    transform: scale(1.05);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+.alc-number {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.75rem;
+  color: var(--cv-text-muted);
+  letter-spacing: 0.02em;
 }
 
-.summary-cards .card {
-    transition: all 0.2s ease;
+.patient-name {
+  font-weight: 600;
+  font-size: 1rem;
 }
 
-.summary-cards .card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+.patient-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  margin: 0.6rem 0 0.9rem;
+  font-size: 0.8rem;
+  color: var(--cv-text-muted);
 }
 
-.border-green-500 {
-    border-left: 4px solid #22C55E;
+.meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
 }
 
-.border-yellow-500 {
-    border-left: 4px solid #EAB308;
+.category-tag {
+  font-weight: 600;
+  color: var(--cv-active);
 }
 
-.border-red-500 {
-    border-left: 4px solid #EF4444;
+/* ===== Dose strip ===== */
+.dose-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
 }
 
-.border-blue-500 {
-    border-left: 4px solid #3B82F6;
+.dose-chip {
+  position: relative;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 50%;
+  border: 2px solid var(--cv-border);
+  background: var(--cv-surface);
+  color: var(--cv-text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  padding: 0;
 }
 
-:host ::ng-deep .p-datepicker {
-    width: 100%;
+.dose-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
 }
 
-:host ::ng-deep .p-select {
-    width: 100%;
+.dose-chip.dose-visited {
+  background: var(--cv-completed-bg);
+  border-color: var(--cv-completed);
+  color: var(--cv-completed);
 }
 
-:host ::ng-deep .p-card {
-    border-radius: 0.5rem;
+.dose-chip.dose-visited-late {
+  background: var(--cv-at-risk-bg);
+  border-color: var(--cv-at-risk);
+  color: var(--cv-at-risk);
 }
 
-:host ::ng-deep .p-card .p-card-body {
-    padding: 1rem;
+.dose-chip.dose-missed {
+  background: var(--cv-defaulter-bg);
+  border-color: var(--cv-defaulter);
+  color: var(--cv-defaulter);
+  animation: pulse-missed 2.2s ease-in-out infinite;
 }
 
-:host ::ng-deep .p-chip {
-    background-color: #dbeafe !important;
-    color: #1e40af !important;
+.dose-chip.dose-upcoming {
+  background: var(--cv-surface);
+  border-color: var(--cv-border);
+  color: var(--cv-upcoming);
+  border-style: dashed;
 }
 
-:host ::ng-deep .p-button.p-button-success {
-    background-color: #22C55E;
-    border-color: #22C55E;
+/* Visit logged locally but not yet confirmed synced to DHIS2 */
+.dose-sync-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: var(--cv-at-risk);
+  border: 1.5px solid var(--cv-surface);
 }
 
-:host ::ng-deep .p-button.p-button-success:hover {
-    background-color: #16A34A;
-    border-color: #16A34A;
+.dose-chip.dose-sync-error .dose-sync-dot {
+  background: var(--cv-defaulter);
 }
 
-:host ::ng-deep .p-progressbar {
-    height: 6px;
-    border-radius: 3px;
+@keyframes pulse-missed {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.25); }
+  50% { box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.12); }
 }
 
-:host ::ng-deep .p-progressbar .p-progressbar-value {
-    border-radius: 3px;
+/* ===== Footer note ===== */
+.patient-footer {
+  border-top: 1px solid var(--cv-border);
+  padding-top: 0.6rem;
+  font-size: 0.82rem;
 }
 
+.footer-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--cv-text-muted);
+}
+
+.footer-note--danger { color: var(--cv-defaulter); font-weight: 600; }
+.footer-note--success { color: var(--cv-completed); font-weight: 600; }
+
+/* ===== Empty state ===== */
+.cv-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 3rem 1rem;
+  color: var(--cv-text-muted);
+}
+
+.cv-empty i {
+  font-size: 2rem;
+}
+
+/* ===== Dose entry popover ===== */
+.dose-popover-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 16rem;
+}
+
+.dose-popover-title {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.dose-popover-label {
+  font-size: 0.78rem;
+  color: var(--cv-text-muted);
+}
+
+.dose-popover-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+/* ===== Mobile ===== */
 @media (max-width: 640px) {
-    .visit-cell {
-        min-height: 40px;
-        font-size: 10px;
-        padding: 4px 8px;
-    }
+  .clinic-visit {
+    padding: 0.85rem;
+  }
 
-    .visit-cell .text-xs {
-        font-size: 9px;
-    }
+  .cv-list {
+    grid-template-columns: 1fr;
+  }
 
-    :host ::ng-deep .p-card .p-card-body {
-        padding: 0.75rem;
-    }
+  .cv-summary {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .dose-chip {
+    width: 1.9rem;
+    height: 1.9rem;
+    font-size: 0.72rem;
+  }
 }

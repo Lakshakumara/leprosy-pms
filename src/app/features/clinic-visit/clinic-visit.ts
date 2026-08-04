@@ -1,314 +1,243 @@
-// clinic-visit.component.ts
-import { Component, signal, computed, inject, OnInit } from '@angular/core';
+import { Component, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
-import { PatientService } from '../../core/services/patient.service';
-import { Patient } from '../../core/services/patient.model';
-import { BadgeModule } from 'primeng/badge';
 import { ButtonModule } from 'primeng/button';
-import { CheckboxModule } from 'primeng/checkbox';
-import { DatePickerModule } from 'primeng/datepicker';
-import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
-import { SelectModule } from 'primeng/select';
-import { TagModule } from 'primeng/tag';
-import { TooltipModule } from 'primeng/tooltip';
 import { CardModule } from 'primeng/card';
-import { ProgressBarModule } from 'primeng/progressbar';
-import { Chip } from 'primeng/chip';
-import { TreatmentStatus, TreatmentVisit } from './treatment-visit.model';
+import { TagModule } from 'primeng/tag';
+import { BadgeModule } from 'primeng/badge';
+import { InputTextModule } from 'primeng/inputtext';
+import { DatePickerModule } from 'primeng/datepicker';
+import { SelectModule } from 'primeng/select';
+import { PopoverModule, Popover } from 'primeng/popover';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
+import { TooltipModule } from 'primeng/tooltip';
+import { MessageModule } from 'primeng/message';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
 
+import { PatientFilter, Patient } from '../../core/services/patient.model';
+import { PatientService } from '../../core/services/patient.service';
+import { ClinicVisitStatus, CLINIC_VISIT_STATUS_LABEL, DoseSlot, ClinicVisitTrackerService } from '../../core/services/clinic-tracker';
+import { VisitSyncService } from '../../core/services/visit-synch';
+
+
+
+interface StatusOption {
+  label: string;
+  value: 'ALL' | ClinicVisitStatus;
+}
+
+interface ClassificationOption {
+  label: string;
+  value: string; // 'ALL' | 'PB' | 'MB'
+}
+
+/**
+ * Clinic visit tracker — browse/search/filter registered patients and log
+ * MDT doses against them.
+ *
+ * SCOPE NOTE: this component assumes patients already exist in the local
+ * cache (synced down from DHIS2 via `PatientService.pullFromServer()`).
+ * It does not create new tracked entities / enrollments — registering a
+ * brand-new patient in DHIS2 needs TEI-attribute + enrollment payloads
+ * (see `Dhis2Service`) that are a separate, larger piece of work than the
+ * visit-tracking view itself. Say the word if you want that added as a
+ * "Register new patient" flow on top of this.
+ *
+ * Filtering is two layers, kept deliberately separate:
+ *  - `PatientFilter` (search + classification) goes through the existing
+ *    `PatientService.filtered()` — the same mechanism the rest of the app's
+ *    dashboards use.
+ *  - ACTIVE / COMPLETED / AT_RISK / DEFAULTER is a UI-only re-filter on top,
+ *    via `ClinicVisitTrackerService.filterByStatus()`. It never touches
+ *    `PatientFilter`.
+ */
 @Component({
   selector: 'app-clinic-visit',
   standalone: true,
   imports: [
     CommonModule,
     FormsModule,
-    CardModule,
     ButtonModule,
-    InputTextModule,
+    CardModule,
     TagModule,
-    ProgressBarModule,
     BadgeModule,
-    TooltipModule,
-    DialogModule,
-    CheckboxModule,
-    Chip,
+    InputTextModule,
     DatePickerModule,
-    SelectModule
+    SelectModule,
+    PopoverModule,
+    IconFieldModule,
+    InputIconModule,
+    TooltipModule,
+    MessageModule,
+    ProgressSpinnerModule,
   ],
   templateUrl: './clinic-visit.html',
   styleUrl: './clinic-visit.scss',
 })
-export class ClinicVisitComponent implements OnInit {
-  private patientService = inject(PatientService);
-  Math = Math;
+export class ClinicVisitComponent {
+  readonly statusLabel = CLINIC_VISIT_STATUS_LABEL;
+  readonly todayDate = new Date();
 
-  // State
-  treatmentData = signal<TreatmentStatus[]>([]);
-  searchQuery = signal('');
-  activeFilter = signal<'all' | 'active' | 'atrisk' | 'defaulter'>('all');
-  expandedPatientId = signal<string | null>(null);
-  
-  // Dialog state
-  showVisitDialog = signal(false);
-  selectedPatient: TreatmentStatus | null = null;
-  visitDate: Date = new Date();
-  visitMonth: number = 1;
-  isCompleted: boolean = false;
+  readonly classificationOptions: ClassificationOption[] = [
+    { label: 'All classifications', value: 'ALL' },
+    { label: 'PB', value: 'PB' },
+    { label: 'MB', value: 'MB' },
+  ];
 
-  // Computed
-  totalPatients = computed(() => this.treatmentData().length);
-  
-  activePatients = computed(() => 
-    this.treatmentData().filter(p => p.status === 'ACTIVE')
-  );
-  
-  atRiskPatients = computed(() => 
-    this.treatmentData().filter(p => p.status === 'AT_RISK')
-  );
-  
-  defaulterPatients = computed(() => 
-    this.treatmentData().filter(p => p.status === 'DEFAULTER')
-  );
+  readonly statusOptions: StatusOption[] = [
+    { label: 'All statuses', value: 'ALL' },
+    { label: 'Active', value: 'ACTIVE' },
+    { label: 'Completed', value: 'COMPLETED' },
+    { label: 'At risk', value: 'AT_RISK' },
+    { label: 'Defaulter', value: 'DEFAULTER' },
+  ];
 
+  // ── Filter state ──────────────────────────────────────────────────────────
+  searchTerm = signal('');
+  classificationFilter = signal<string>('ALL');
+  statusFilter = signal<'ALL' | ClinicVisitStatus>('ALL');
+  
+
+  /** The subset of PatientFilter this view actually uses — no date-range restriction, so
+   *  patients enrolled in a prior year but still mid-course aren't hidden. */
+  private patientFilter = computed<PatientFilter>(() => ({
+    district: 'All',
+    search: this.searchTerm().trim() || undefined,
+    classification: this.classificationFilter() === 'ALL' ? undefined : this.classificationFilter(),
+    orgUnitId: 'ALL',
+    mohArea: 'ALL',
+    phiArea: 'ALL',
+    gnDivision: 'ALL',
+  }));
+
+  /** Layer 1 — existing PatientService filtering (search + classification). */
+  private baseFiltered = computed(() => this.patientService.filtered(this.patientFilter()));
+
+  /** Layer 2 — UI-only status split, applied on top, never touching PatientFilter. */
   filteredPatients = computed(() => {
-    let patients = this.treatmentData();
-    
-    if (this.activeFilter() === 'active') {
-      patients = patients.filter(p => p.status === 'ACTIVE');
-    } else if (this.activeFilter() === 'atrisk') {
-      patients = patients.filter(p => p.status === 'AT_RISK');
-    } else if (this.activeFilter() === 'defaulter') {
-      patients = patients.filter(p => p.status === 'DEFAULTER');
-    }
-    
-    if (this.searchQuery()) {
-      const query = this.searchQuery().toLowerCase();
-      patients = patients.filter(p => 
-        p.alcNumber.toLowerCase().includes(query) ||
-        p.patientName.toLowerCase().includes(query)
-      );
-    }
-    
-    return patients;
+    console.log('base filter applied ', this.baseFiltered())
+    const list = this.trackerService.filterByStatus(this.baseFiltered(), this.statusFilter());
+    console.log('after filterByStatus', list.length, this.statusFilter());
+    return [...list].sort((a, b) => {
+      const order: Record<ClinicVisitStatus, number> = { DEFAULTER: 0, AT_RISK: 1, ACTIVE: 2, COMPLETED: 3 };
+      return order[this.status(a)] - order[this.status(b)];
+    });
   });
 
-  ngOnInit(): void {
-    this.loadData();
+  defaulterCount = computed(() => this.baseFiltered().filter((p) => this.trackerService.isDefaulter(p)).length);
+  atRiskCount = computed(() => this.baseFiltered().filter((p) => this.trackerService.isAtRisk(p)).length);
+
+  // ── Dose entry popover state ────────────────────────────────────────────
+  activePatientId: string | null = null;
+  activeDoseSlot: DoseSlot | null = null;
+  doseDateValue: Date | null = null;
+  doseError = signal<string | null>(null);
+  isSavingDose = signal(false);
+
+  constructor(
+    readonly patientService: PatientService,
+    private readonly trackerService: ClinicVisitTrackerService,
+    readonly visitSync: VisitSyncService
+  ) {}
+
+  // ── Template helpers ─────────────────────────────────────────────────────
+  status(patient: Patient): ClinicVisitStatus {
+    return this.trackerService.getVisitStatus(patient);
   }
 
-  private async loadData(): Promise<void> {
+  statusSeverity(status: ClinicVisitStatus) {
+    return this.trackerService.statusSeverity(status);
+  }
+
+  doseSchedule(patient: Patient): DoseSlot[] {
+    return this.trackerService.getDoseSchedule(patient);
+  }
+
+  completedDoseCount(patient: Patient): number {
+    return this.trackerService.completedDoseCount(patient);
+  }
+
+  nextActionableDose(patient: Patient): DoseSlot | null {
+    return this.trackerService.nextActionableDose(patient);
+  }
+
+  overdueDays(slot: DoseSlot): number {
+    return this.trackerService.overdueDays(slot);
+  }
+
+  doseChipStatus(slot: DoseSlot): 'visited' | 'visited-late' | 'missed' | 'upcoming' {
+    if (slot.visit?.visitDate) {
+      return slot.visit.visitDate > slot.expectedDate ? 'visited-late' : 'visited';
+    }
+    return slot.expectedDate && slot.expectedDate < this.trackerService.todayIso() ? 'missed' : 'upcoming';
+  }
+
+  /** 'pending' | 'error' | null — drives the small sync-status indicator on a dose chip. */
+  doseSyncFlag(slot: DoseSlot): 'pending' | 'error' | null {
+    if (!slot.visit) return null;
+    return slot.visit.syncStatus === 'synced' ? null : slot.visit.syncStatus;
+  }
+
+  // ── Dose entry ────────────────────────────────────────────────────────────
+  openDoseEntry(popover: Popover, event: Event, patient: Patient, slot: DoseSlot): void {
+    this.activePatientId = patient.id;
+    this.activeDoseSlot = slot;
+    this.doseDateValue = this.trackerService.parseIsoDate(slot.visit?.visitDate ?? null);
+    this.doseError.set(null);
+    popover.toggle(event);
+  }
+
+  async saveDose(popover: Popover): Promise<void> {
+    const patient = this.currentPatients().find((p) => p.id === this.activePatientId);
+    if (!patient || !this.activeDoseSlot) return;
+
+    if (!this.doseDateValue) {
+      this.doseError.set('Pick a visit date');
+      return;
+    }
+    const iso = this.trackerService.toIsoDate(this.doseDateValue);
+    const today = this.trackerService.todayIso();
+    if (iso > today) {
+      this.doseError.set('Visit date cannot be in the future');
+      return;
+    }
+
+    this.isSavingDose.set(true);
     try {
-      const patients = await this.patientService.districtPatients();
-      this.treatmentData.set(this.mapToTreatmentStatus(patients));
-    } catch (error) {
-      console.error('Failed to load treatment data:', error);
+      await this.visitSync.logVisit(patient, {
+        visitNumber: this.activeDoseSlot.doseNumber,
+        visitDate: iso,
+        doseDate: iso,
+      });
+      this.doseError.set(null);
+      popover.hide();
+    } catch (err) {
+      console.error('[ClinicVisitComponent] saveDose failed:', err);
+      this.doseError.set('Could not save locally — please try again.');
+    } finally {
+      this.isSavingDose.set(false);
     }
   }
 
-  private mapToTreatmentStatus(patients: Patient[]): TreatmentStatus[] {
-    return patients.map(p => {
-      const totalMonths = p.treatmentType === 'PB' ? 6 : 12;
-      const currentMonth = this.calculateCurrentMonth(p.enrolledAt);
-      const visits = this.getVisitsForPatient(p);
-      const missedVisits = this.calculateMissedVisits(currentMonth, visits.length);
-      
-      let status: 'ACTIVE' | 'COMPLETED' | 'AT_RISK' | 'DEFAULTER' = 'ACTIVE';
-      
-      if (currentMonth >= totalMonths) {
-        status = 'COMPLETED';
-      } else if (missedVisits >= 2) {
-        status = 'DEFAULTER';
-      } else if (missedVisits >= 1) {
-        status = 'AT_RISK';
-      }
-      
-      return {
-        alcNumber: p.alcNum || 'N/A',
-        patientName: p.patientName || 'Unknown',
-        patientId: p.id,
-        treatmentType: p.treatmentType === 'PB' ? 'PB' : 'MB',
-        mdtStartDate: p.enrolledAt || new Date().toISOString(),
-        totalMonths: totalMonths as 6 | 12 | 24 | 36,
-        currentMonth: currentMonth,
-        visits: visits,
-        lastVisitDate: visits.length > 0 ? visits[visits.length - 1].visitDate : undefined,
-        missedVisits: missedVisits,
-        isDefaulted: status === 'DEFAULTER',
-        isAtRisk: status === 'AT_RISK',
-        status: status
-      };
-    });
-  }
+  async clearDose(popover: Popover): Promise<void> {
+    const patient = this.currentPatients().find((p) => p.id === this.activePatientId);
+    if (!patient || !this.activeDoseSlot) return;
 
-  private calculateCurrentMonth(startDate: string): number {
-    const start = new Date(startDate);
-    const now = new Date();
-    const months = (now.getFullYear() - start.getFullYear()) * 12 + 
-                   (now.getMonth() - start.getMonth());
-    return Math.min(months + 1, 36);
-  }
-
-  private getVisitsForPatient(patient: Patient): TreatmentVisit[] {
-    return [];
-  }
-
-  private calculateMissedVisits(currentMonth: number, actualVisits: number): number {
-    return Math.max(0, currentMonth - actualVisits);
-  }
-
-  getCardStyleClass(status: string): string {
-    switch(status) {
-      case 'ACTIVE': return 'border-l-4 border-green-500';
-      case 'AT_RISK': return 'border-l-4 border-yellow-500';
-      case 'DEFAULTER': return 'border-l-4 border-red-500';
-      case 'COMPLETED': return 'border-l-4 border-blue-500';
-      default: return '';
+    this.isSavingDose.set(true);
+    try {
+      await this.visitSync.clearVisit(patient, this.activeDoseSlot.doseNumber);
+      this.doseDateValue = null;
+      popover.hide();
+    } finally {
+      this.isSavingDose.set(false);
     }
   }
 
-  // CORRECTED: Using proper severity types for PrimeNG 21
-  getStatusSeverity(status: string): 'success' | 'secondary' | 'info' | 'warn' | 'danger' | 'contrast' | null | undefined {
-    switch(status) {
-      case 'ACTIVE': return 'success';
-      case 'AT_RISK': return 'warn';
-      case 'DEFAULTER': return 'danger';
-      case 'COMPLETED': return 'info';
-      default: return 'secondary';
-    }
-  }
-
-  getVisitCellClass(patient: TreatmentStatus, month: number): string {
-    if (this.isMonthCompleted(patient, month)) {
-      return 'bg-green-100 border-green-400';
-    }
-    if (this.isMonthMissed(patient, month)) {
-      return 'bg-red-100 border-red-400';
-    }
-    if (month === patient.currentMonth) {
-      return 'ring-2 ring-blue-400';
-    }
-    return 'bg-gray-100 border-gray-300';
-  }
-
-  setFilter(filter: 'all' | 'active' | 'atrisk' | 'defaulter'): void {
-    this.activeFilter.set(filter);
-  }
-
-  applyFilters(): void {}
-
-  getMonthsArray(totalMonths: number): number[] {
-    return Array.from({ length: totalMonths }, (_, i) => i + 1);
-  }
-
-  isMonthCompleted(patient: TreatmentStatus, month: number): boolean {
-    return patient.visits.some(v => v.monthNumber === month && v.isCompleted);
-  }
-
-  isMonthMissed(patient: TreatmentStatus, month: number): boolean {
-    return !this.isMonthCompleted(patient, month) && 
-           patient.visits.some(v => v.monthNumber === month);
-  }
-
-  getMonthVisitDate(patient: TreatmentStatus, month: number): string | null {
-    const visit = patient.visits.find(v => v.monthNumber === month);
-    return visit ? visit.visitDate : null;
-  }
-
-  viewDetails(patient: TreatmentStatus): void {
-    this.expandedPatientId.set(
-      this.expandedPatientId() === patient.patientId ? null : patient.patientId
-    );
-  }
-
-  openVisitDialog(patient: TreatmentStatus): void {
-    this.selectedPatient = patient;
-    this.visitDate = new Date();
-    this.visitMonth = patient.currentMonth;
-    this.isCompleted = true;
-    this.showVisitDialog.set(true);
-  }
-
-  openMonthVisitDialog(patient: TreatmentStatus, month: number): void {
-    if (month > patient.currentMonth) {
-      alert('This month is in the future. Please wait for the visit.');
-      return;
-    }
-    if (this.isMonthCompleted(patient, month)) {
-      alert('This month has already been marked as completed.');
-      return;
-    }
-    this.selectedPatient = patient;
-    this.visitDate = new Date();
-    this.visitMonth = month;
-    this.isCompleted = true;
-    this.showVisitDialog.set(true);
-  }
-
-  getAvailableMonths(patient: TreatmentStatus): { label: string, value: number }[] {
-    const months = [];
-    for (let i = 1; i <= patient.currentMonth; i++) {
-      const isCompleted = patient.visits.some(v => v.monthNumber === i && v.isCompleted);
-      if (!isCompleted) {
-        months.push({ label: `Month ${i}`, value: i });
-      }
-    }
-    return months;
-  }
-
-  saveVisit(): void {
-    if (!this.selectedPatient || !this.visitDate) {
-      return;
-    }
-
-    const newVisit: TreatmentVisit = {
-      id: `visit-${Date.now()}`,
-      patientId: this.selectedPatient.patientId,
-      visitDate: this.visitDate.toISOString().split('T')[0],
-      monthNumber: this.visitMonth,
-      isCompleted: this.isCompleted,
-      notes: this.isCompleted ? 'Completed' : 'Missed'
-    };
-
-    this.treatmentData.update(data => {
-      const patientIndex = data.findIndex(p => p.patientId === this.selectedPatient!.patientId);
-      if (patientIndex === -1) return data;
-      
-      const updatedPatient = {
-        ...data[patientIndex],
-        visits: [...data[patientIndex].visits, newVisit],
-        lastVisitDate: newVisit.visitDate,
-        missedVisits: this.calculateMissedVisits(
-          data[patientIndex].currentMonth,
-          data[patientIndex].visits.length + 1
-        )
-      };
-
-      if (updatedPatient.missedVisits >= 2) {
-        updatedPatient.status = 'DEFAULTER';
-        updatedPatient.isDefaulted = true;
-        updatedPatient.isAtRisk = false;
-      } else if (updatedPatient.missedVisits >= 1) {
-        updatedPatient.status = 'AT_RISK';
-        updatedPatient.isAtRisk = true;
-        updatedPatient.isDefaulted = false;
-      }
-
-      const newData = [...data];
-      newData[patientIndex] = updatedPatient;
-      return newData;
-    });
-
-    this.closeVisitDialog();
-  }
-
-  closeVisitDialog(): void {
-    this.showVisitDialog.set(false);
-    this.selectedPatient = null;
-    this.visitDate = new Date();
-    this.visitMonth = 1;
-    this.isCompleted = false;
+  /** Always look the patient up from the full cache, not the filtered/sorted view —
+   *  logging a dose can move a patient out of the currently-filtered status bucket. */
+  private currentPatients(): Patient[] {
+    return this.patientService.allPatients();
   }
 }

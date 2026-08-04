@@ -39,7 +39,7 @@ export class PatientService {
   readonly outerDistrictPatients = computed(() => {
     return this.allPatients().filter(p => p.patientDistrict != this.userDistricts());
   });
-  
+
   userDistricts() {
     return this.dhis2.userDistricts();
   }
@@ -60,16 +60,17 @@ export class PatientService {
   }
   // ── Filter ─────────────────────────────────────────────────────────────────
   filtered(filter: PatientFilter): Patient[] {
+    console.log('filter ', filter)
     const ci = (s: string) => s.toLowerCase();
     return this._patients().filter(p => {
       if (filter.outsideDistrict) {
         if (p.patientDistrict === this.userDistricts()) return false;
-      } else {
-        if (filter.district && filter.district !== 'ALL') {
-          if (p.patientDistrict !== filter.district) return false;
-        }
+        /*if (filter.outsideDistrict){
+         if (filter.district && filter.district !== 'ALL') {
+           if (p.patientDistrict !== filter.district) return false;
+         }
+       }*/
       }
-
       // Free-text search: name, ALC#, NIC
       if (filter.search) {
         const q = ci(filter.search);
@@ -83,7 +84,7 @@ export class PatientService {
       if (filter.alcNum && !ci(p.alcNum).includes(ci(filter.alcNum))) return false;
       // Classification (MB / PB)
       if (filter.classification && filter.classification !== 'ALL') {
-        if (ci(p.treatmentClassification) !== ci(filter.classification)) return false;
+        if (!ci(p.treatmentClassification).includes(ci(filter.classification))) return false;
       }
       // Hospital (org unit)
       if (filter.orgUnitId === 'OTHER') {

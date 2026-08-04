@@ -1,256 +1,145 @@
- <div class="clinic-visit p-3 p-md-4">
-      <!-- Header -->
-      <div class="header-section mb-4">
-        <h1 class="text-2xl font-bold text-blue-800 mb-2">
-          💊 Clinic Visit Tracker
-        </h1>
-        <p class="text-gray-500 text-sm">Track patient visits and identify defaulters</p>
-      </div>
+<div class="clinic-visit">
 
-      <!-- Search & Filters -->
-      <div class="filter-section mb-4">
-        <div class="flex flex-col md:flex-row gap-3">
-          <div class="flex-1">
-            <span class="p-input-icon-left w-full">
-              <i class="pi pi-search"></i>
-              <input 
-                pInputText 
-                [(ngModel)]="searchQuery" 
-                placeholder="Search by ALC Number or Name..."
-                class="w-full"
-                (input)="applyFilters()"
-              />
-            </span>
-          </div>
-          <div class="flex gap-2 flex-wrap">
-            <button 
-              pButton 
-              [label]="'All (' + totalPatients() + ')'"
-              [class]="{'p-button-primary': activeFilter() === 'all', 'p-button-outlined': activeFilter() !== 'all'}"
-              (click)="setFilter('all')" 
-              size="small"
-            ></button>
-            <button 
-              pButton 
-              [label]="'Active (' + activePatients().length + ')'"
-              [class]="{'p-button-success': activeFilter() === 'active', 'p-button-outlined': activeFilter() !== 'active'}"
-              (click)="setFilter('active')" 
-              size="small"
-            ></button>
-            <button 
-              pButton 
-              [label]="'At Risk (' + atRiskPatients().length + ')'"
-              [class]="{'p-button-warning': activeFilter() === 'atrisk', 'p-button-outlined': activeFilter() !== 'atrisk'}"
-              (click)="setFilter('atrisk')" 
-              size="small"
-            ></button>
-            <button 
-              pButton 
-              [label]="'Defaulters (' + defaulterPatients().length + ')'"
-              [class]="{'p-button-danger': activeFilter() === 'defaulter', 'p-button-outlined': activeFilter() !== 'defaulter'}"
-              (click)="setFilter('defaulter')" 
-              size="small"
-            ></button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Summary Cards -->
-      <div class="summary-cards grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-        <div class="card p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <div class="text-sm text-blue-600">Total Patients</div>
-          <div class="text-2xl font-bold text-blue-800">{{ totalPatients() }}</div>
-        </div>
-        <div class="card p-3 bg-green-50 border border-green-200 rounded-lg">
-          <div class="text-sm text-green-600">Active</div>
-          <div class="text-2xl font-bold text-green-800">{{ activePatients().length }}</div>
-        </div>
-        <div class="card p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <div class="text-sm text-yellow-600">At Risk</div>
-          <div class="text-2xl font-bold text-yellow-800">{{ atRiskPatients().length }}</div>
-        </div>
-        <div class="card p-3 bg-red-50 border border-red-200 rounded-lg">
-          <div class="text-sm text-red-600">Defaulters</div>
-          <div class="text-2xl font-bold text-red-800">{{ defaulterPatients().length }}</div>
-        </div>
-      </div>
-
-      <!-- Patient Cards -->
-      <div class="patient-list space-y-3">
-        <p-card 
-          *ngFor="let patient of filteredPatients()" 
-          class="patient-card"
-          [styleClass]="getCardStyleClass(patient.status)"
-        >
-          <div class="flex flex-col md:flex-row md:items-center gap-3">
-            <!-- Patient Info -->
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2 flex-wrap">
-                <h3 class="text-lg font-semibold text-gray-800 truncate">
-                  {{ patient.patientName }}
-                </h3>
-                <p-chip 
-                  [label]="patient.alcNumber" 
-                  styleClass="!bg-blue-100 !text-blue-800"
-                ></p-chip>
-                <p-tag 
-                  [value]="patient.treatmentType" 
-                  [severity]="patient.treatmentType === 'PB' ? 'info' : 'warn'" 
-                  size="small"
-                ></p-tag>
-              </div>
-              
-              <div class="text-sm text-gray-500 mt-1">
-                <span>📅 Started: {{ patient.mdtStartDate | date:'dd/MM/yyyy' }}</span>
-                <span class="mx-2">•</span>
-                <span>💊 {{ patient.currentMonth }}/{{ patient.totalMonths }} months</span>
-                <span class="mx-2">•</span>
-                <span *ngIf="patient.lastVisitDate">
-                  Last visit: {{ patient.lastVisitDate | date:'dd/MM/yyyy' }}
-                </span>
-              </div>
-            </div>
-
-            <!-- Progress & Status -->
-            <div class="flex flex-col items-start md:items-end gap-1 min-w-[100px]">
-              <p-progressBar 
-                [value]="(patient.currentMonth / patient.totalMonths) * 100" 
-                [showValue]="false"
-                [style]="{'width': '120px', 'height': '6px'}"
-              ></p-progressBar>
-              <span class="text-xs text-gray-500">{{ Math.round((patient.currentMonth / patient.totalMonths) * 100) }}%</span>
-              
-              <p-tag 
-                [value]="patient.status" 
-                [severity]="getStatusSeverity(patient.status)" 
-                size="small"
-              ></p-tag>
-              
-              <span *ngIf="patient.missedVisits > 0" class="text-xs text-red-500 font-semibold">
-                ⚠️ {{ patient.missedVisits }} missed visits
-              </span>
-            </div>
-
-            <!-- Actions -->
-            <div class="flex flex-col md:flex-row gap-2">
-              <button 
-                pButton 
-                icon="pi pi-plus" 
-                label="Visit" 
-                (click)="openVisitDialog(patient)" 
-                size="small"
-                styleClass="p-button-sm p-button-success" 
-                [disabled]="patient.status === 'COMPLETED'"
-              ></button>
-              <button 
-                pButton 
-                icon="pi pi-eye" 
-                label="Details" 
-                (click)="viewDetails(patient)" 
-                size="small"
-                styleClass="p-button-sm p-button-outlined"
-              ></button>
-            </div>
-          </div>
-
-          <!-- Expanded Visit History -->
-          <div *ngIf="expandedPatientId() === patient.patientId" class="mt-4 pt-4 border-t border-gray-200">
-            <div class="grid grid-cols-3 md:grid-cols-6 gap-2">
-              <div 
-                *ngFor="let month of getMonthsArray(patient.totalMonths)" 
-                class="visit-cell p-2 text-center rounded-lg border" 
-                [class]="getVisitCellClass(patient, month)"
-                (click)="openMonthVisitDialog(patient, month)"
-              >
-                <div class="text-xs font-semibold">M{{ month }}</div>
-                <div class="text-xs mt-1">
-                  <span *ngIf="getMonthVisitDate(patient, month)" class="text-green-600">
-                    {{ getMonthVisitDate(patient, month) | date:'dd/MM' }}
-                  </span>
-                  <span *ngIf="!getMonthVisitDate(patient, month)" class="text-gray-400">-</span>
-                </div>
-                <div *ngIf="isMonthCompleted(patient, month)" class="text-green-500">✓</div>
-                <div *ngIf="isMonthMissed(patient, month)" class="text-red-500">✗</div>
-              </div>
-            </div>
-            <div class="mt-2 text-xs text-gray-500 flex gap-4 flex-wrap">
-              <span>🟢 Completed</span>
-              <span>🔴 Missed</span>
-              <span>⚪ Pending</span>
-              <span>🔵 Current month</span>
-            </div>
-          </div>
-        </p-card>
-
-        <!-- Empty State -->
-        <div *ngIf="filteredPatients().length === 0" class="text-center py-8 text-gray-400">
-          <i class="pi pi-inbox text-4xl block mb-2"></i>
-          <p>No patients found matching your criteria</p>
-        </div>
-      </div>
-
-      <!-- Visit Dialog -->
-      <p-dialog 
-        [(visible)]="showVisitDialog" 
-        header="Record Visit" 
-        [modal]="true" 
-        [style]="{'width': '95vw', 'max-width': '500px'}" 
-        [draggable]="false"
-      >
-        <div *ngIf="selectedPatient" class="p-2">
-          <div class="mb-3">
-            <p class="font-semibold">{{ selectedPatient.patientName }}</p>
-            <p class="text-sm text-gray-500">{{ selectedPatient.alcNumber }}</p>
-          </div>
-          
-          <div class="mb-3">
-            <label class="block text-sm font-medium mb-1">Visit Date</label>
-            <p-datepicker 
-              [(ngModel)]="visitDate" 
-              [showIcon]="true" 
-              [showButtonBar]="true" 
-              dateFormat="dd/mm/yy"
-              styleClass="w-full" 
-              placeholder="Select date"
-            ></p-datepicker>
-          </div>
-          
-          <div class="mb-3">
-            <label class="block text-sm font-medium mb-1">Month Number</label>
-            <p-select 
-              [(ngModel)]="visitMonth" 
-              [options]="getAvailableMonths(selectedPatient)" 
-              optionLabel="label"
-              optionValue="value" 
-              placeholder="Select month" 
-              styleClass="w-full"
-            ></p-select>
-          </div>
-
-          <div class="mb-3 flex items-center gap-2">
-            <p-checkbox 
-              [(ngModel)]="isCompleted" 
-              binary="true" 
-              inputId="completed"
-            ></p-checkbox>
-            <label for="completed" class="text-sm">Mark as completed</label>
-          </div>
-
-          <div class="flex justify-end gap-2 mt-4">
-            <button 
-              pButton 
-              label="Cancel" 
-              (click)="closeVisitDialog()" 
-              styleClass="p-button-text"
-            ></button>
-            <button 
-              pButton 
-              label="Save Visit" 
-              icon="pi pi-check" 
-              (click)="saveVisit()"
-              styleClass="p-button-success"
-            ></button>
-          </div>
-        </div>
-      </p-dialog>
+  <!-- ===== Header ===== -->
+  <div class="cv-header">
+    <div class="cv-title">
+      <h2>Clinic Visit Tracker</h2>
+      <p class="cv-subtitle">Register MDT visits and spot defaulter risk at a glance</p>
     </div>
+
+    <div class="cv-summary">
+      <span class="connection-chip" [class.online]="patientService.isOnline()"
+        [class.offline]="!patientService.isOnline()">
+        <i class="pi" [ngClass]="patientService.isOnline() ? 'pi-wifi' : 'pi-ban'"></i>
+        {{ patientService.isOnline() ? 'Online' : 'Offline' }}
+      </span>
+
+      <span class="sync-chip" *ngIf="visitSync.pendingCount() > 0 || visitSync.isFlushing()"
+        [pTooltip]="visitSync.lastFlushError() || 'Visits waiting to sync to DHIS2'">
+        <p-progressSpinner *ngIf="visitSync.isFlushing()" styleClass="sync-spinner" strokeWidth="6" />
+        <i *ngIf="!visitSync.isFlushing()" class="pi pi-cloud-upload"></i>
+        {{ visitSync.pendingCount() }} pending
+        <button type="button" class="sync-now-btn" *ngIf="!visitSync.isFlushing() && patientService.isOnline()"
+          (click)="visitSync.flushPending()">
+          Sync now
+        </button>
+      </span>
+
+      <div class="summary-chip summary-chip--danger" [class.is-zero]="defaulterCount() === 0">
+        <span class="summary-count">{{ defaulterCount() }}</span>
+        <span class="summary-label">Defaulters</span>
+      </div>
+      <div class="summary-chip summary-chip--warn" [class.is-zero]="atRiskCount() === 0">
+        <span class="summary-count">{{ atRiskCount() }}</span>
+        <span class="summary-label">At risk</span>
+      </div>
+    </div>
+  </div>
+
+  <p-message *ngIf="patientService.lastPullError()" severity="warn" [text]="patientService.lastPullError()!"
+    styleClass="cv-pull-error" />
+
+  <!-- ===== Search / filter bar ===== -->
+  <div class="cv-filters">
+    <p-iconfield class="filter-search">
+      <p-inputicon class="pi pi-search" />
+      <input pInputText type="text" placeholder="Search by name, ALC number or NIC" [ngModel]="searchTerm()"
+        (ngModelChange)="searchTerm.set($event)" class="filter-search-input" />
+    </p-iconfield>
+
+    <p-select [options]="classificationOptions" [ngModel]="classificationFilter()"
+      (ngModelChange)="classificationFilter.set($event)" optionLabel="label" optionValue="value"
+      class="filter-select" />
+
+    <p-select [options]="statusOptions" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)"
+      optionLabel="label" optionValue="value" class="filter-select" />
+  </div>
+
+  <!-- ===== Patient cards ===== -->
+  <div class="cv-list" *ngIf="filteredPatients().length; else emptyState">
+    <p-card *ngFor="let patient of filteredPatients()" class="patient-card"
+      [class]="'status-' + status(patient).toLowerCase()">
+      <div class="patient-header">
+        <div class="patient-id">
+          <span class="alc-number">{{ patient.alcNum }}</span>
+          <span class="patient-name">{{ patient.patientName }}</span>
+        </div>
+        <p-tag [severity]="statusSeverity(status(patient))" [value]="statusLabel[status(patient)]" />
+      </div>
+
+      <div class="patient-meta">
+        <span class="meta-item"><i class="pi pi-calendar"></i> First MDT: {{ patient.treatmentStartDate ||
+          patient.enrolledAt | date:'yyyy-MM-dd'}}</span>
+        <span class="meta-item category-tag">{{ patient.treatmentClassification || patient.treatmentRegimen || '—'
+          }}</span>
+        <span class="meta-item">{{ completedDoseCount(patient) }}/{{ doseSchedule(patient).length }} doses logged</span>
+      </div>
+
+      <div class="dose-strip">
+        <button *ngFor="let slot of doseSchedule(patient)" type="button" class="dose-chip"
+          [class]="'dose-' + doseChipStatus(slot)" [class.dose-pending]="doseSyncFlag(slot) === 'pending'"
+          [class.dose-sync-error]="doseSyncFlag(slot) === 'error'" [pTooltip]="
+            slot.visit?.visitDate
+              ? ('Dose ' + slot.doseNumber + ' · visited ' + slot.visit!.visitDate +
+                 (doseSyncFlag(slot) ? ' · ' + doseSyncFlag(slot) : ''))
+              : ('Dose ' + slot.doseNumber + ' · due ' + slot.expectedDate)
+          " tooltipPosition="top" (click)="openDoseEntry(dosePopover, $event, patient, slot)">
+          <i *ngIf="doseChipStatus(slot) === 'visited' || doseChipStatus(slot) === 'visited-late'"
+            class="pi pi-check"></i>
+          <span *ngIf="doseChipStatus(slot) === 'missed' || doseChipStatus(slot) === 'upcoming'">{{ slot.doseNumber
+            }}</span>
+          <span class="dose-sync-dot" *ngIf="doseSyncFlag(slot)"></span>
+        </button>
+      </div>
+
+      <div class="patient-footer" *ngIf="nextActionableDose(patient) as next; else complete">
+        <ng-container [ngSwitch]="doseChipStatus(next)">
+          <span *ngSwitchCase="'missed'" class="footer-note footer-note--danger">
+            <i class="pi pi-exclamation-triangle"></i>
+            Dose {{ next.doseNumber }} overdue by {{ overdueDays(next) }} day{{ overdueDays(next) === 1 ? '' : 's' }}
+          </span>
+          <span *ngSwitchCase="'upcoming'" class="footer-note">
+            <i class="pi pi-clock"></i>
+            @if (next.expectedDate) {
+            Dose {{ next.doseNumber || '—' }} due {{ next.expectedDate  }}
+            } @else {
+            Dose {{ next.doseNumber || '—' }} - not assigned
+            }
+          </span>
+        </ng-container>
+      </div>
+      <ng-template #complete>
+        <div class="patient-footer">
+          <span class="footer-note footer-note--success"><i class="pi pi-check-circle"></i> Treatment course
+            complete</span>
+        </div>
+      </ng-template>
+    </p-card>
+  </div>
+
+  <ng-template #emptyState>
+    <div class="cv-empty">
+      <i class="pi pi-inbox"></i>
+      <p>No patients match this search or filter.</p>
+    </div>
+  </ng-template>
+
+  <!-- ===== Shared popover for dose date entry ===== -->
+  <p-popover #dosePopover styleClass="dose-popover">
+    <div class="dose-popover-content" *ngIf="activeDoseSlot as slot">
+      <p class="dose-popover-title">Dose {{ slot.doseNumber }} · due {{ slot.expectedDate }}</p>
+
+      <label class="dose-popover-label" for="dose-date-input">Visit date</label>
+      <p-datepicker inputId="dose-date-input" dateFormat="yy-mm-dd" [showIcon]="true" [iconDisplay]="'input'"
+        [maxDate]="todayDate" [(ngModel)]="doseDateValue" class="dose-popover-input" />
+      <p-message *ngIf="doseError()" severity="error" [text]="doseError()!" styleClass="dose-popover-error" />
+
+      <div class="dose-popover-actions">
+        <p-button label="Clear" severity="secondary" [text]="true" [disabled]="isSavingDose()"
+          (onClick)="clearDose(dosePopover)" />
+        <p-button label="Save visit" icon="pi pi-check" [loading]="isSavingDose()" (onClick)="saveDose(dosePopover)" />
+      </div>
+    </div>
+  </p-popover>
+
+</div>

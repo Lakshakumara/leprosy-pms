@@ -130,7 +130,6 @@ export class OrgScopeService {
 
   private async resolveDistrictLevel(): Promise<number> {
     if (this.districtLevelCache != null) return this.districtLevelCache;
-
     const res = await firstValueFrom(
       this.http.get<{ organisationUnitLevels: { level: number; name: string }[] }>(
         `${this.base}/organisationUnitLevels`,
