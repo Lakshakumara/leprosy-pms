@@ -1,4 +1,3 @@
-
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, expand, reduce, EMPTY, map, tap, catchError, throwError, forkJoin, of } from 'rxjs';
@@ -333,7 +332,91 @@ export class Dhis2Service {
 
     const now = new Date().toISOString();
 
-    return {
+    const patient: Patient = {
+      // ── Identifiers ──────────────────────────────────────────────
+      id: tei.trackedEntity || '',
+      teiId: tei.trackedEntity || '',
+      enrollmentId: enrollment?.enrollment || '',
+
+      // ── TEI Attributes (Demographics) ────────────────────────────
+      alcNum: attrMap.get(A.ALC_NUM.uid) ?? '',
+      clinicNum: attrMap.get(A.CLINIC_NUM.uid) ?? '',
+      nicNum: attrMap.get(A.NIC_NUM.uid) ?? '',
+      guardianName: attrMap.get(A.GUARDIAN_NAME.uid) ?? '',
+      mobileNum: attrMap.get(A.MOBILE_NUM.uid) ?? '',
+      telNum: attrMap.get(A.TEL_NUM.uid) ?? '',
+      patientName: attrMap.get(A.PATIENT_NAME.uid) ?? '',
+      patientSex: attrMap.get(A.PATIENT_SEX.uid) ?? '',
+      ethnicGroup: attrMap.get(A.ETHNIC_GROUP.uid) ?? '',
+      patientAge: attrMap.get(A.PATIENT_AGE.uid) ?? '',
+
+      // ── Enrollment ──────────────────────────────────────────────
+      orgUnitId: enrollment?.orgUnit ?? tei.orgUnit ?? '',
+      orgUnitName: enrollment?.orgUnitName ?? '',
+      enrolledAt: enrollment?.enrolledAt ?? '',
+      enrollmentStatus: enrollment?.status ?? 'ACTIVE',
+
+      // ── FIRST_VISIT Clinical Data ──────────────────────────────
+      treatmentClassification: dvMap.get(D.TREATMENT_CLASSIFICATION.uid) ?? '',
+      disabilityAtDiagnosis: dvMap.get(D.DISABILITY_AT_DIAGNOSIS.uid) ?? '',
+      ehfScore: Number(dvMap.get(D.EHF_SCORE.uid) ?? 0),
+      patientMohArea: dvMap.get(D.PATIENT_MOH_AREA.uid) ?? '',
+      patientPhiArea: dvMap.get(D.PATIENT_PHI_AREA.uid) ?? '',
+      patientGnDivision: dvMap.get(D.PATIENT_GN_DIVISION.uid) ?? '',
+      patientDistrict: dvMap.get(D.PATIENT_DISTRICT.uid) ?? '',
+      patientHomeAddress: dvMap.get(D.PATIENT_HOME_ADDRESS.uid) ?? '',
+      treatmentType: dvMap.get(D.TREATMENT_TYPE.uid) ?? '',
+      caseType: dvMap.get(D.CASE_TYPE.uid) ?? '',
+      contactHistory: dvMap.get(D.CONTACT_HISTORY.uid) === 'true',
+      contactHistorySource: dvMap.get(D.SOURCE_OF_CONTACT_HISTORY.uid) ?? '',
+      relapse: dvMap.get(D.RELAPSE.uid) ?? '',
+      defaulterRestartingTreatment: dvMap.get(D.DEFAULTER_RESTARTING_TREATMENT.uid) ?? '',
+      changeOfTreatmentType: dvMap.get(D.CHANGE_OF_TREATMENT_TYPE.uid) ?? '',
+      previousTreatmentType: dvMap.get(D.PREVIOUS_TREATMENT_TYPE.uid) ?? '',
+      yearOfTreatmentCompletion: dvMap.get(D.YEAR_OF_TREATMENT_COMPLETION.uid) ?? '',
+      timeSinceOnsetMonths: dvMap.get(D.TIME_SINCE_ONSET_MONTHS.uid) ?? '',
+      nameOfConsultant: dvMap.get(D.NAME_OF_CONSULTANT.uid) ?? '',
+      nameOfMO: dvMap.get(D.NAME_OF_MO.uid) ?? '',
+      patientReferredBy: dvMap.get(D.PATIENT_REFERRED_BY.uid) ?? '',
+
+      // ── Deformities ─────────────────────────────────────────────
+      clawHand: dvMap.get(D.CLAW_HAND.uid) ?? '',
+      footDrop: dvMap.get(D.FOOT_DROP.uid) ?? '',
+      footUlcer: dvMap.get(D.FOOT_ULCER.uid) ?? '',
+      eyeInvolvement: dvMap.get(D.EYE_INVOLVEMENT.uid) ?? '',
+      faceInvolvement: dvMap.get(D.FACE_INVOLVEMENT.uid) ?? '',
+
+      // ── GPS ─────────────────────────────────────────────────────
+      latitude: latitude,
+      longitude: longitude,
+
+      // ── Visit Tracking (New Fields) ────────────────────────────
+      visits: [],
+
+      treatmentStartDate: enrollment?.enrolledAt ?? '',
+      treatmentEndDate: (() => {
+        const regimen = this.inferTreatmentRegimen(dvMap.get(D.TREATMENT_CLASSIFICATION.uid) ?? '');
+        const start = enrollment?.enrolledAt ?? '';
+        if (regimen === 'MDT-PB') return this.addMonthsIso(start, 6);
+        if (regimen === 'MDT-MB') return this.addMonthsIso(start, 12);
+        return '';
+      })(),
+      nextVisitDate: '',
+      treatmentStatus: 'ongoing',
+      defaultedDate: '',
+      defaultReason: '',
+      treatmentRegimen: this.inferTreatmentRegimen(dvMap.get(D.TREATMENT_CLASSIFICATION.uid) ?? ''),
+      regimenNotes: '',
+      lastVisitDate: '',
+
+      // ── Metadata ────────────────────────────────────────────────
+      createdAt: enrollment?.enrolledAt ?? now,
+      updatedAt: now,
+      syncStatus: 'synced'
+    };
+
+    return patient;
+    /*{
       id: tei.trackedEntity,
       teiId: tei.trackedEntity,
       enrollmentId: enrollment.enrollment,
@@ -387,7 +470,7 @@ export class Dhis2Service {
       createdAt: enrollment?.enrolledAt ?? now,
       updatedAt: now,
       syncStatus: 'synced'
-    };
+    };*/
   }
 
   /**
@@ -419,13 +502,6 @@ export class Dhis2Service {
       })
       .pipe(map((res) => res.organisationUnits ?? []));
   }
-
-
-
-
-
-
-
 
   async changePatientOrgUnit(patient: Patient, newOrgUnitId: string, newOrgUnitName: string) {
 
@@ -472,4 +548,746 @@ export class Dhis2Service {
     return res.instances[0].enrollment; // v2.40+ returns instances
     // for old api: res.enrollments[0].enrollment
   }
+
+
+  //clinic visit update
+
+
+  ///111111111
+  /**
+   * Save a visit event to DHIS2 using Tracker API (Recommended)
+   */
+  async saveVisitEventWithTracker(
+    patient: Patient,
+    visitData: {
+      visitNumber: number;
+      visitDate: string;
+      doseDate?: string;
+      reaction?: boolean;
+      reactionType?: string;
+      reactionTreatment?: string;
+      notes?: string;
+    }
+  ): Promise<{ eventId: string; success: boolean }> {
+    try {
+      const stageId = this.getStageIdForVisit(visitData.visitNumber);
+      const dataValues = this.buildVisitDataValues(visitData);
+
+      // Build the event object for Tracker API
+      const event = {
+        event: '', // Let DHIS2 generate the ID
+        program: environment.dhis2.program,
+        programStage: stageId,
+        orgUnit: patient.orgUnitId,
+        enrollment: patient.enrollmentId,
+        trackedEntity: patient.teiId || patient.id,
+        eventDate: visitData.visitDate,
+        occurredAt: visitData.visitDate + 'T00:00:00.000Z', // ← CRITICAL: Add occurredAt
+        status: 'ACTIVE',
+        dataValues: dataValues
+      };
+
+      // Tracker API payload
+      const payload = {
+        events: [event]
+      };
+
+      console.log('Saving visit via Tracker API:', JSON.stringify(payload, null, 2));
+
+      const response = await firstValueFrom(
+        this.http.post<{
+          status: string;
+          importSummaries?: { reference: string; status: string; description?: string }[];
+          validationReport?: {
+            errorReports?: { message: string; errorCode: string; trackerType: string; uid: string }[];
+          };
+          stats?: { created: number; updated: number; deleted: number; ignored: number; total: number };
+        }>(
+          `${this.base}/tracker?async=false&importStrategy=CREATE_AND_UPDATE`,
+          payload
+        )
+      );
+
+      // Check for validation errors
+      if (response.validationReport?.errorReports?.length) {
+        const errors = response.validationReport.errorReports.map(e => e.message).join(', ');
+        throw new Error(`Validation error: ${errors}`);
+      }
+
+      if (response.status === 'ERROR') {
+        const error = response.importSummaries?.[0]?.description || 'Failed to save visit';
+        throw new Error(error);
+      }
+
+      const eventId = response.importSummaries?.[0]?.reference;
+
+      if (!eventId) {
+        throw new Error('No event ID returned from DHIS2');
+      }
+
+      return { eventId, success: true };
+
+    } catch (error) {
+      console.error('Failed to save visit to DHIS2:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Build data values for a visit event
+   */
+  private buildVisitDataValues(visitData: {
+    visitNumber: number;
+    visitDate: string;
+    doseDate?: string;
+    reaction?: boolean;
+    reactionType?: string;
+    reactionTreatment?: string;
+    notes?: string;
+  }): { dataElement: string; value: string }[] {
+    const dataValues: { dataElement: string; value: string }[] = [];
+
+    // Reaction fields (common across all visits)
+    if (visitData.reaction !== undefined && visitData.reaction !== null) {
+      dataValues.push({
+        dataElement: 'wO4A0MXJC14', // Lep - Reaction
+        value: visitData.reaction ? 'true' : 'false'
+      });
+    }
+
+    if (visitData.reactionType) {
+      dataValues.push({
+        dataElement: 'QzRjf3Htgbn', // Lep - Type of Reaction
+        value: visitData.reactionType
+      });
+    }
+
+    if (visitData.reactionTreatment) {
+      dataValues.push({
+        dataElement: 'XsDkJS8T7D2', // Lep - Rx For reaction
+        value: visitData.reactionTreatment
+      });
+    }
+
+    // Dose date for visits 5-12
+    const doseDateMap: Record<number, string> = {
+      2: 'MJHs4by4KDD',   // Lep - Date of 2nd dose
+      3: 'iUmTtQ7Ns2e',   // Lep - Date of 3rd dose
+      4: 'Q9yfNalp7Zx',   // Lep - Date of 4th dose
+      5: 'OrjHDf1HxkM',   // Lep - Date of 5th dose
+      6: 'Aqbn33c8zhC',   // Lep - Date of 6th dose
+      7: 'gZYy0bxCe4z',   // Lep - Date of 7th dose
+      8: 'cT00vhW7acW',   // Lep - Date of 8th dose
+      9: 'V0wKlPaB5Tl',   // Lep - Date of 9th dose
+      10: 'MJY4wcQLvsG',  // Lep - Date of 10th dose
+      11: 'FELbL4uIrz4',  // Lep - Date of 11th dose
+      12: 'xw1t4z8CXvF',  // Lep - Date of 12th dose
+    };
+
+    const doseDateDE = doseDateMap[visitData.visitNumber];
+    if (doseDateDE && visitData.doseDate) {
+      dataValues.push({
+        dataElement: doseDateDE,
+        value: visitData.doseDate
+      });
+    }
+
+    return dataValues;
+  }
+
+
+  /**
+   * Get stage ID for a specific visit number
+   */
+  private getStageIdForVisit(visitNumber: number): string {
+    // Map visit numbers to program stage IDs
+    const stageMap: Record<number, string> = {
+      1: environment.PROGRAM_STAGES.FIRST_VISIT,
+      2: 'MJHs4by4KDD',   // 2nd visit (may be empty - use fallback)
+      3: 'U6IkW19zK7J',   // 3rd Visit
+      4: 'LxB9ArHmMGC',   // 4th Visit
+      5: 'z6AnZV6phI8',   // 5th Visit
+      6: 'x95G5bOeDN1',   // 6th Visit
+      7: 'DhtWICcZhwK',   // 7th Visit
+      8: 'xSGWfQwwD93',   // 8th Visit
+      9: 'iE4QnfmTuKe',   // 9th Visit
+      10: 'QdVsBuNTCrm',  // 10th Visit
+      11: 'SYJtmQu4E30',  // 11th Visit
+      12: 'h1TrdlCaFSc',  // 12th visit
+    };
+
+    const stageId = stageMap[visitNumber];
+
+    if (!stageId) {
+      throw new Error(`No stage found for visit number ${visitNumber}`);
+    }
+
+    // If it's visit 2 (empty stage), use extended visit as fallback
+    if (visitNumber === 2) {
+      console.warn('Visit 2 stage is empty in DHIS2, using Extended visit stage as fallback');
+      return 'jpvOb2i5Jai'; // Extended visit stage
+    }
+
+    return stageId;
+  }
+
+
+  /**
+   * Update patient with new visit data in DHIS2 (TEI attributes)
+   */
+  async updatePatientVisitsInDHIS2(patient: Patient): Promise<void> {
+    try {
+      // Update the patient's visit-related attributes
+      // Since visit data is stored as events, we only need to update the TEI
+      // if there are visit-related attributes at the TEI level
+
+      // If you have a "current visit number" attribute, update it
+      const currentVisitNumber = patient.visits?.length || 0;
+      const nextVisitDate = patient.nextVisitDate || '';
+
+      const attributes: any = [];
+
+      // Add current visit number if you have such an attribute
+      // attributes.push({
+      //   attribute: 'CURRENT_VISIT_UID',
+      //   value: String(currentVisitNumber)
+      // });
+
+      // Add next visit date if you have such an attribute
+      // attributes.push({
+      //   attribute: 'NEXT_VISIT_DATE_UID',
+      //   value: nextVisitDate
+      // });
+
+      if (attributes.length > 0) {
+        const payload = {
+          trackedEntities: [{
+            trackedEntity: patient.teiId || patient.id,
+            orgUnit: patient.orgUnitId,
+            attributes: attributes
+          }]
+        };
+
+        await firstValueFrom(
+          this.http.post(`${this.base}/tracker?async=false&importStrategy=UPDATE`, payload)
+        );
+      }
+
+    } catch (error) {
+      console.error('Failed to update patient visit data in DHIS2:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all visits for a patient from DHIS2
+   */
+  async fetchPatientVisits(patientId: string): Promise<TrackerEvent[]> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<TrackerInstance>(`${this.base}/tracker/trackedEntities/${patientId}`, {
+          params: {
+            program: environment.dhis2.program,
+            fields: 'enrollments[events[event,programStage,programStageName,eventDate,dataValues[dataElement,value]]]'
+          }
+        })
+      );
+
+      const enrollment = response?.enrollments?.[0];
+      return enrollment?.events || [];
+
+    } catch (error) {
+      console.error('Failed to fetch patient visits:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Check if a visit stage is configured in DHIS2
+   */
+  async checkVisitStage(stageId: string): Promise<{ exists: boolean; hasDataElements: boolean }> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<any>(`${this.base}/programStages/${stageId}`)
+      );
+
+      const hasDataElements = response?.programStageDataElements?.length > 0;
+
+      return {
+        exists: true,
+        hasDataElements: hasDataElements
+      };
+
+    } catch (error) {
+      return {
+        exists: false,
+        hasDataElements: false
+      };
+    }
+
+  }
+  /**
+   * Save a visit event with conflict handling
+   * Uses Events API for updates (simpler, fewer validation issues)
+   */
+  async saveVisitEventSafe(
+    patient: Patient,
+    visitData: {
+      visitNumber: number;
+      visitDate: string;
+      doseDate?: string;
+      reaction?: boolean;
+      reactionType?: string;
+      reactionTreatment?: string;
+      notes?: string;
+    }
+  ): Promise<{ eventId: string; success: boolean }> {
+    try {
+      // Check if visit already exists
+      const existing = await this.checkVisitExists(
+        patient.enrollmentId || patient.id,
+        visitData.visitNumber
+      );
+
+      if (existing.exists && existing.eventId) {
+        console.log(`Visit ${visitData.visitNumber} exists, updating via Events API...`);
+        return await this.updateVisitEventViaEventsAPI(patient, existing.eventId, visitData);
+      }
+
+      console.log(`Visit ${visitData.visitNumber} does not exist, creating via Tracker API...`);
+      return await this.createVisitEventViaTrackerAPI(patient, visitData);
+
+    } catch (error) {
+      console.error('Failed to save visit:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create a new visit event using Tracker API (CREATE_AND_UPDATE)
+   */
+  private async createVisitEventViaTrackerAPI(
+    patient: Patient,
+    visitData: {
+      visitNumber: number;
+      visitDate: string;
+      doseDate?: string;
+      reaction?: boolean;
+      reactionType?: string;
+      reactionTreatment?: string;
+      notes?: string;
+    }
+  ): Promise<{ eventId: string; success: boolean }> {
+    try {
+      const stageId = this.getStageIdForVisit(visitData.visitNumber);
+      const dataValues = this.buildVisitDataValues(visitData);
+
+      const event = {
+        event: '',
+        program: environment.dhis2.program,
+        programStage: stageId,
+        orgUnit: patient.orgUnitId,
+        enrollment: patient.enrollmentId,
+        trackedEntity: patient.teiId || patient.id,
+        eventDate: visitData.visitDate,
+        occurredAt: visitData.visitDate + 'T00:00:00.000Z',
+        status: 'ACTIVE',
+        dataValues: dataValues
+      };
+
+      const payload = { events: [event] };
+
+      console.log('Creating visit via Tracker API:', JSON.stringify(payload, null, 2));
+
+      const response = await firstValueFrom(
+        this.http.post<{
+          status: string;
+          importSummaries?: { reference: string; status: string; description?: string }[];
+          validationReport?: {
+            errorReports?: { message: string; errorCode: string; trackerType: string; uid: string }[];
+          };
+        }>(
+          `${this.base}/tracker?async=false&importStrategy=CREATE_AND_UPDATE`,
+          payload
+        )
+      );
+
+      if (response.validationReport?.errorReports?.length) {
+        const errors = response.validationReport.errorReports.map(e => e.message).join(', ');
+        throw new Error(`Validation error: ${errors}`);
+      }
+
+      if (response.status === 'ERROR') {
+        const error = response.importSummaries?.[0]?.description || 'Failed to create visit';
+        throw new Error(error);
+      }
+
+      const eventId = response.importSummaries?.[0]?.reference;
+      if (!eventId) {
+        throw new Error('No event ID returned from DHIS2');
+      }
+
+      console.log(`Visit created successfully with ID: ${eventId}`);
+      return { eventId, success: true };
+
+    } catch (error) {
+      console.error('Failed to create visit:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update an existing visit using Events API (RECOMMENDED)
+   * This avoids Tracker API's strict validation issues
+   */
+  private async updateVisitEventViaEventsAPI(
+    patient: Patient,
+    eventId: string,
+    visitData: {
+      visitNumber: number;
+      visitDate: string;
+      doseDate?: string;
+      reaction?: boolean;
+      reactionType?: string;
+      reactionTreatment?: string;
+      notes?: string;
+    }
+  ): Promise<{ eventId: string; success: boolean }> {
+    try {
+      const stageId = this.getStageIdForVisit(visitData.visitNumber);
+      const dataValues = this.buildVisitDataValues(visitData);
+
+      // Build payload for Events API
+      const eventPayload = {
+        event: eventId,
+        program: environment.dhis2.program,
+        programStage: stageId,
+        orgUnit: patient.orgUnitId,
+        eventDate: visitData.visitDate,
+        status: 'ACTIVE',
+        dataValues: dataValues
+      };
+
+      console.log('Updating visit via Events API:', JSON.stringify(eventPayload, null, 2));
+
+      // Use PUT for Events API update
+      const response = await firstValueFrom(
+        this.http.put<{
+          status: string;
+          response?: {
+            importSummaries?: Array<{
+              reference: string;
+              status: string;
+              description?: string;
+            }>;
+          };
+        }>(
+          `${this.base}/events/${eventId}`,
+          eventPayload
+        )
+      );
+
+      console.log(`Visit updated successfully via Events API: ${eventId}`);
+      return { eventId, success: true };
+
+    } catch (error: any) {
+      console.error('Failed to update visit via Events API:', error);
+
+      // If Events API fails with 404, create instead
+      if (error.status === 404) {
+        console.log('Event not found, creating new...');
+        return await this.createVisitEventViaTrackerAPI(patient, visitData);
+      }
+
+      // For other errors, try Tracker API as last resort
+      try {
+        console.log('Falling back to Tracker API for update...');
+        return await this.updateVisitEventViaTrackerAPI(patient, eventId, visitData);
+      } catch (fallbackError) {
+        console.error('Tracker API fallback also failed:', fallbackError);
+        throw error;
+      }
+    }
+  }
+
+  /**
+   * Update via Tracker API (fallback - should rarely be used)
+   */
+  private async updateVisitEventViaTrackerAPI(
+    patient: Patient,
+    eventId: string,
+    visitData: {
+      visitNumber: number;
+      visitDate: string;
+      doseDate?: string;
+      reaction?: boolean;
+      reactionType?: string;
+      reactionTreatment?: string;
+      notes?: string;
+    }
+  ): Promise<{ eventId: string; success: boolean }> {
+    try {
+      const stageId = this.getStageIdForVisit(visitData.visitNumber);
+      const dataValues = this.buildVisitDataValues(visitData);
+
+      const event = {
+        event: eventId,
+        program: environment.dhis2.program,
+        programStage: stageId,
+        orgUnit: patient.orgUnitId,
+        eventDate: visitData.visitDate,
+        occurredAt: visitData.visitDate + 'T00:00:00.000Z',
+        status: 'ACTIVE',
+        dataValues: dataValues
+      };
+
+      const payload = { events: [event] };
+
+      console.log('Updating visit via Tracker API (fallback):', JSON.stringify(payload, null, 2));
+
+      const response = await firstValueFrom(
+        this.http.post<{
+          status: string;
+          importSummaries?: { reference: string; status: string; description?: string }[];
+          validationReport?: {
+            errorReports?: { message: string; errorCode: string; trackerType: string; uid: string }[];
+          };
+        }>(
+          `${this.base}/tracker?async=false&importStrategy=UPDATE`,
+          payload
+        )
+      );
+
+      if (response.validationReport?.errorReports?.length) {
+        const errors = response.validationReport.errorReports.map(e => e.message).join(', ');
+        throw new Error(`Validation error: ${errors}`);
+      }
+
+      if (response.status === 'ERROR') {
+        const error = response.importSummaries?.[0]?.description || 'Failed to update visit';
+        throw new Error(error);
+      }
+
+      return { eventId, success: true };
+
+    } catch (error) {
+      console.error('Failed to update visit via Tracker API:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check if a visit already exists for a patient
+   */
+  private async checkVisitExists(
+    enrollmentId: string,
+    visitNumber: number
+  ): Promise<{ exists: boolean; eventId?: string }> {
+    try {
+      const stageId = this.getStageIdForVisit(visitNumber);
+
+      const params = new HttpParams()
+        .set('program', environment.dhis2.program)
+        .set('programStage', stageId)
+        .set('enrollment', enrollmentId)
+        .set('fields', 'event')
+        .set('pageSize', '1');
+
+      const response = await firstValueFrom(
+        this.http.get<{ events: { event: string }[] }>(
+          `${this.base}/events`,
+          { params }
+        )
+      );
+
+      if (response.events && response.events.length > 0) {
+        return { exists: true, eventId: response.events[0].event };
+      }
+
+      return { exists: false };
+
+    } catch (error) {
+      console.error('Failed to check if visit exists:', error);
+      return { exists: false };
+    }
+  }
+
+  ///kkkkkkkk
+  /**
+   * Create a new visit event (use CREATE_AND_UPDATE strategy)
+   */
+  private async createVisitEvent(
+    patient: Patient,
+    visitData: {
+      visitNumber: number;
+      visitDate: string;
+      doseDate?: string;
+      reaction?: boolean;
+      reactionType?: string;
+      reactionTreatment?: string;
+      notes?: string;
+    }
+  ): Promise<{ eventId: string; success: boolean }> {
+    try {
+      const stageId = this.getStageIdForVisit(visitData.visitNumber);
+      const dataValues = this.buildVisitDataValues(visitData);
+
+      // Build the event object for Tracker API
+      const event = {
+        event: '', // Let DHIS2 generate the ID
+        program: environment.dhis2.program,
+        programStage: stageId,
+        orgUnit: patient.orgUnitId,
+        enrollment: patient.enrollmentId,
+        trackedEntity: patient.teiId || patient.id,
+        eventDate: visitData.visitDate,
+        occurredAt: visitData.visitDate + 'T00:00:00.000Z',
+        status: 'ACTIVE',
+        dataValues: dataValues
+      };
+
+      const payload = { events: [event] };
+
+      console.log('Creating new visit via Tracker API:', JSON.stringify(payload, null, 2));
+
+      const response = await firstValueFrom(
+        this.http.post<{
+          status: string;
+          importSummaries?: { reference: string; status: string; description?: string }[];
+          validationReport?: {
+            errorReports?: { message: string; errorCode: string; trackerType: string; uid: string }[];
+          };
+          stats?: { created: number; updated: number; deleted: number; ignored: number; total: number };
+        }>(
+          `${this.base}/tracker?async=false&importStrategy=CREATE_AND_UPDATE`,
+          payload
+        )
+      );
+
+      // Check for validation errors
+      if (response.validationReport?.errorReports?.length) {
+        const errors = response.validationReport.errorReports.map(e => e.message).join(', ');
+        throw new Error(`Validation error: ${errors}`);
+      }
+
+      if (response.status === 'ERROR') {
+        const error = response.importSummaries?.[0]?.description || 'Failed to create visit';
+        throw new Error(error);
+      }
+
+      const eventId = response.importSummaries?.[0]?.reference;
+
+      if (!eventId) {
+        throw new Error('No event ID returned from DHIS2');
+      }
+
+      console.log(`Visit created successfully with ID: ${eventId}`);
+      return { eventId, success: true };
+
+    } catch (error) {
+      console.error('Failed to create visit:', error);
+      throw error;
+    }
+  }
+
+
+  // dhis2.service.ts - Fixed updateVisitEvent with required fields
+
+  /**
+   * Update an existing visit event (use UPDATE strategy)
+   * NOTE: Even though enrollment is immutable, DHIS2 requires orgUnit in the payload
+   */
+  private async updateVisitEvent(
+    patient: Patient,
+    eventId: string,
+    visitData: {
+      visitNumber: number;
+      visitDate: string;
+      doseDate?: string;
+      reaction?: boolean;
+      reactionType?: string;
+      reactionTreatment?: string;
+      notes?: string;
+    }
+  ): Promise<{ eventId: string; success: boolean }> {
+    try {
+      const stageId = this.getStageIdForVisit(visitData.visitNumber);
+      const dataValues = this.buildVisitDataValues(visitData);
+
+      // For UPDATE via Tracker API, include required fields
+      // orgUnit IS required, but enrollment should NOT be included
+      const event = {
+        event: eventId,
+        program: environment.dhis2.program,
+        programStage: stageId,
+        orgUnit: patient.orgUnitId, // Required field
+        eventDate: visitData.visitDate,
+        occurredAt: visitData.visitDate + 'T00:00:00.000Z',
+        status: 'ACTIVE',
+        dataValues: dataValues
+        // enrollment: NOT included - immutable
+        // trackedEntity: NOT included - immutable
+      };
+
+      const payload = { events: [event] };
+
+      console.log('Updating visit in DHIS2:', JSON.stringify(payload, null, 2));
+
+      const response = await firstValueFrom(
+        this.http.post<{
+          status: string;
+          importSummaries?: { reference: string; status: string; description?: string }[];
+          validationReport?: {
+            errorReports?: { message: string; errorCode: string; trackerType: string; uid: string }[];
+          };
+        }>(
+          `${this.base}/tracker?async=false&importStrategy=UPDATE`,
+          payload
+        )
+      );
+
+      if (response.validationReport?.errorReports?.length) {
+        const errors = response.validationReport.errorReports.map(e => e.message).join(', ');
+        throw new Error(`Validation error: ${errors}`);
+      }
+
+      if (response.status === 'ERROR') {
+        const error = response.importSummaries?.[0]?.description || 'Failed to update visit';
+        throw new Error(error);
+      }
+
+      console.log(`Visit updated successfully: ${eventId}`);
+      return { eventId, success: true };
+
+    } catch (error) {
+      console.error('Failed to update visit:', error);
+      throw error;
+    }
+  }
+
+  /** yyyy-MM-dd + months -> yyyy-MM-dd. Returns '' if dateIso is empty/unparseable. */
+  private addMonthsIso(dateIso: string, months: number): string {
+    if (!dateIso) return '';
+    const [y, m, d] = dateIso.split('-').map(Number);
+    if (!y || !m || !d) return '';
+    const dt = new Date(y, m - 1 + months, d);
+    const yy = dt.getFullYear();
+    const mm = String(dt.getMonth() + 1).padStart(2, '0');
+    const dd = String(dt.getDate()).padStart(2, '0');
+    return `${yy}-${mm}-${dd}`;
+  }
+
+  /**
+   * treatmentClassification's real DHIS2 values are the full option-set
+   * strings ("PB (1-5 lesions)" / "MB (>5 lesions)"), not bare "PB"/"MB" —
+   * substring match against them, same rule as the classification filter.
+   */
+  private inferTreatmentRegimen(classification: string): Patient['treatmentRegimen'] {
+    const c = classification.toLowerCase();
+    if (c.includes('pb')) return 'MDT-PB';
+    if (c.includes('mb')) return 'MDT-MB';
+    return undefined;
+  }
+
+
 }

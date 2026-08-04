@@ -212,7 +212,22 @@ export class PatientFormComponent implements OnInit {
 
       createdAt: this.existing?.createdAt ?? now,
       updatedAt: now,
-      syncStatus: this.existing?.syncStatus ?? 'local-only'
+      syncStatus: this.existing?.syncStatus ?? 'local-only',
+
+
+
+      // ── Visit Tracking ────────────────────────────────────────────
+    visits: [],
+    treatmentStartDate: undefined,
+    treatmentEndDate: '',
+    treatmentStatus: 'ongoing',
+    treatmentRegimen: 'MDT-MB',
+    regimenNotes: '',
+    nextVisitDate: undefined,
+    lastVisitDate: undefined,
+    defaultedDate: '',
+    defaultReason: '',
+
     };
 
     //await this.patientService.save(patient);

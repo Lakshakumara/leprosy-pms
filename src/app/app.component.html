@@ -18,17 +18,21 @@
       </button>
     </div>
 
-    <nav class="shell__links">
-      <a routerLink="/dashboard" routerLinkActive="is-active">
-        <i class="pi pi-chart-bar"></i> Dashboard
-      </a>
-      <a routerLink="/patients" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">
-        <i class="pi pi-users"></i> Patients
-      </a>
-      <a routerLink="/map" routerLinkActive="is-active">
-        <i class="pi pi-map"></i> Map
-      </a>
-    </nav>
+      <!-- Core Sidebar Navigation Links -->
+      <nav class="shell__links">
+        <a routerLink="/dashboard" routerLinkActive="is-active">
+          <i class="pi pi-chart-bar"></i> Dashboard
+        </a>
+        <a routerLink="/patients" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">
+          <i class="pi pi-users"></i> Patients
+        </a>
+        <a routerLink="/map" routerLinkActive="is-active">
+          <i class="pi pi-map"></i> Map
+        </a>
+        <a routerLink="/clinicVisit" routerLinkActive="is-active">
+          <i class="pi pi-calendar"></i> Clinic Visits
+        </a>
+      </nav>
 
     <div class="shell__status">
       <div class="shell__status-header">

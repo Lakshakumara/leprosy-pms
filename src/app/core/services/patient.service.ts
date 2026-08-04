@@ -59,6 +59,7 @@ export class PatientService {
   }
   // ── Filter ─────────────────────────────────────────────────────────────────
   filtered(filter: PatientFilter): Patient[] {
+    console.log('filter ', filter)
     const ci = (s: string) => s.toLowerCase();
     return this._patients().filter(p => {
       if (filter.outsideDistrict) {
@@ -68,7 +69,6 @@ export class PatientService {
           if (p.patientDistrict !== filter.district) return false;
         }
       }
-
       // Free-text search: name, ALC#, NIC
       if (filter.search) {
         const q = ci(filter.search);
@@ -82,7 +82,7 @@ export class PatientService {
       if (filter.alcNum && !ci(p.alcNum).includes(ci(filter.alcNum))) return false;
       // Classification (MB / PB)
       if (filter.classification && filter.classification !== 'ALL') {
-        if (ci(p.treatmentClassification) !== ci(filter.classification)) return false;
+        if (!ci(p.treatmentClassification).includes(ci(filter.classification))) return false;
       }
       // Hospital (org unit)
       if (filter.orgUnitId === 'OTHER') {

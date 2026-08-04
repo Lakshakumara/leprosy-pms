@@ -84,8 +84,39 @@ export interface Patient {
   createdAt: string;
   updatedAt: string;
   syncStatus: SyncStatus;
+
+
+  //follow ups
+  // Visit tracking - Simplified
+  treatmentStartDate?: string;      // Date of 1st dose (enrollment date)
+  treatmentEndDate?: string;        // Date of 12th dose (start + 12 months)
+  nextVisitDate?: string;           // Clinic staff appointment date
+  
+  // Treatment status
+  treatmentStatus?: 'ongoing' | 'completed' | 'defaulted' | 'transferred';
+  defaultedDate?: string;
+  defaultReason?: string;
+  
+  // Special treatment regimens
+  treatmentRegimen?: 'MDT-MB' | 'MDT-PB' | 'ROM' | 'Without Dapsone' | 'Rifampicin Only' | 'Other';
+  regimenNotes?: string;            // For "Other" or additional details
+  
+  // Visit history (simplified)
+  visits: SimplifiedVisit[];
+  lastVisitDate?: string;
 }
 
+export interface SimplifiedVisit {
+  id: string;
+  visitNumber: number;              // 1-12
+  visitDate: string;
+  doseDate?: string;                // Date of dose (if different from visit date)
+  reaction?: boolean;
+  reactionType?: string;
+  reactionTreatment?: string;
+  notes?: string;
+  syncStatus: 'synced' | 'pending' | 'error';
+}
 /**
  * Filter state for the patient list.
  * All fields are optional; absent/undefined = no filter applied for that field.

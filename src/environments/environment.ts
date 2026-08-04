@@ -15,7 +15,7 @@ export const environment = {
     // Prefer a Personal Access Token (PAT) over basic auth in production.
     // Generate one from DHIS2: Profile > Personal Access Tokens.
     // Sent as header: Authorization: ApiToken <token>
-    apiToken: 'd2pat_xDvgejPgu5QW9GojtAxn7dfycUSpMfSj0148869625',
+    apiToken: 'd2pat_a2pHYC5FARkqv26xTdSkflyP7ZqAOr2p2553400669',
     username: '',
     password: '',
     program: 'sqsddKuTGlJ',        // Leprosy program

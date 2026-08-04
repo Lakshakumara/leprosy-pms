@@ -1,0 +1,145 @@
+<div class="clinic-visit">
+
+  <!-- ===== Header ===== -->
+  <div class="cv-header">
+    <div class="cv-title">
+      <h2>Clinic Visit Tracker</h2>
+      <p class="cv-subtitle">Register MDT visits and spot defaulter risk at a glance</p>
+    </div>
+
+    <div class="cv-summary">
+      <span class="connection-chip" [class.online]="patientService.isOnline()"
+        [class.offline]="!patientService.isOnline()">
+        <i class="pi" [ngClass]="patientService.isOnline() ? 'pi-wifi' : 'pi-ban'"></i>
+        {{ patientService.isOnline() ? 'Online' : 'Offline' }}
+      </span>
+
+      <span class="sync-chip" *ngIf="visitSync.pendingCount() > 0 || visitSync.isFlushing()"
+        [pTooltip]="visitSync.lastFlushError() || 'Visits waiting to sync to DHIS2'">
+        <p-progressSpinner *ngIf="visitSync.isFlushing()" styleClass="sync-spinner" strokeWidth="6" />
+        <i *ngIf="!visitSync.isFlushing()" class="pi pi-cloud-upload"></i>
+        {{ visitSync.pendingCount() }} pending
+        <button type="button" class="sync-now-btn" *ngIf="!visitSync.isFlushing() && patientService.isOnline()"
+          (click)="visitSync.flushPending()">
+          Sync now
+        </button>
+      </span>
+
+      <div class="summary-chip summary-chip--danger" [class.is-zero]="defaulterCount() === 0">
+        <span class="summary-count">{{ defaulterCount() }}</span>
+        <span class="summary-label">Defaulters</span>
+      </div>
+      <div class="summary-chip summary-chip--warn" [class.is-zero]="atRiskCount() === 0">
+        <span class="summary-count">{{ atRiskCount() }}</span>
+        <span class="summary-label">At risk</span>
+      </div>
+    </div>
+  </div>
+
+  <p-message *ngIf="patientService.lastPullError()" severity="warn" [text]="patientService.lastPullError()!"
+    styleClass="cv-pull-error" />
+
+  <!-- ===== Search / filter bar ===== -->
+  <div class="cv-filters">
+    <p-iconfield class="filter-search">
+      <p-inputicon class="pi pi-search" />
+      <input pInputText type="text" placeholder="Search by name, ALC number or NIC" [ngModel]="searchTerm()"
+        (ngModelChange)="searchTerm.set($event)" class="filter-search-input" />
+    </p-iconfield>
+
+    <p-select [options]="classificationOptions" [ngModel]="classificationFilter()"
+      (ngModelChange)="classificationFilter.set($event)" optionLabel="label" optionValue="value"
+      class="filter-select" />
+
+    <p-select [options]="statusOptions" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)"
+      optionLabel="label" optionValue="value" class="filter-select" />
+  </div>
+
+  <!-- ===== Patient cards ===== -->
+  <div class="cv-list" *ngIf="filteredPatients().length; else emptyState">
+    <p-card *ngFor="let patient of filteredPatients()" class="patient-card"
+      [class]="'status-' + status(patient).toLowerCase()">
+      <div class="patient-header">
+        <div class="patient-id">
+          <span class="alc-number">{{ patient.alcNum }}</span>
+          <span class="patient-name">{{ patient.patientName }}</span>
+        </div>
+        <p-tag [severity]="statusSeverity(status(patient))" [value]="statusLabel[status(patient)]" />
+      </div>
+
+      <div class="patient-meta">
+        <span class="meta-item"><i class="pi pi-calendar"></i> First MDT: {{ patient.treatmentStartDate ||
+          patient.enrolledAt | date:'yyyy-MM-dd'}}</span>
+        <span class="meta-item category-tag">{{ patient.treatmentClassification || patient.treatmentRegimen || '—'
+          }}</span>
+        <span class="meta-item">{{ completedDoseCount(patient) }}/{{ doseSchedule(patient).length }} doses logged</span>
+      </div>
+
+      <div class="dose-strip">
+        <button *ngFor="let slot of doseSchedule(patient)" type="button" class="dose-chip"
+          [class]="'dose-' + doseChipStatus(slot)" [class.dose-pending]="doseSyncFlag(slot) === 'pending'"
+          [class.dose-sync-error]="doseSyncFlag(slot) === 'error'" [pTooltip]="
+            slot.visit?.visitDate
+              ? ('Dose ' + slot.doseNumber + ' · visited ' + slot.visit!.visitDate +
+                 (doseSyncFlag(slot) ? ' · ' + doseSyncFlag(slot) : ''))
+              : ('Dose ' + slot.doseNumber + ' · due ' + slot.expectedDate)
+          " tooltipPosition="top" (click)="openDoseEntry(dosePopover, $event, patient, slot)">
+          <i *ngIf="doseChipStatus(slot) === 'visited' || doseChipStatus(slot) === 'visited-late'"
+            class="pi pi-check"></i>
+          <span *ngIf="doseChipStatus(slot) === 'missed' || doseChipStatus(slot) === 'upcoming'">{{ slot.doseNumber
+            }}</span>
+          <span class="dose-sync-dot" *ngIf="doseSyncFlag(slot)"></span>
+        </button>
+      </div>
+
+      <div class="patient-footer" *ngIf="nextActionableDose(patient) as next; else complete">
+        <ng-container [ngSwitch]="doseChipStatus(next)">
+          <span *ngSwitchCase="'missed'" class="footer-note footer-note--danger">
+            <i class="pi pi-exclamation-triangle"></i>
+            Dose {{ next.doseNumber }} overdue by {{ overdueDays(next) }} day{{ overdueDays(next) === 1 ? '' : 's' }}
+          </span>
+          <span *ngSwitchCase="'upcoming'" class="footer-note">
+            <i class="pi pi-clock"></i>
+            @if (next.expectedDate) {
+            Dose {{ next.doseNumber || '—' }} due {{ next.expectedDate  }}
+            } @else {
+            Dose {{ next.doseNumber || '—' }} - not assigned
+            }
+          </span>
+        </ng-container>
+      </div>
+      <ng-template #complete>
+        <div class="patient-footer">
+          <span class="footer-note footer-note--success"><i class="pi pi-check-circle"></i> Treatment course
+            complete</span>
+        </div>
+      </ng-template>
+    </p-card>
+  </div>
+
+  <ng-template #emptyState>
+    <div class="cv-empty">
+      <i class="pi pi-inbox"></i>
+      <p>No patients match this search or filter.</p>
+    </div>
+  </ng-template>
+
+  <!-- ===== Shared popover for dose date entry ===== -->
+  <p-popover #dosePopover styleClass="dose-popover">
+    <div class="dose-popover-content" *ngIf="activeDoseSlot as slot">
+      <p class="dose-popover-title">Dose {{ slot.doseNumber }} · due {{ slot.expectedDate }}</p>
+
+      <label class="dose-popover-label" for="dose-date-input">Visit date</label>
+      <p-datepicker inputId="dose-date-input" dateFormat="yy-mm-dd" [showIcon]="true" [iconDisplay]="'input'"
+        [maxDate]="todayDate" [(ngModel)]="doseDateValue" class="dose-popover-input" />
+      <p-message *ngIf="doseError()" severity="error" [text]="doseError()!" styleClass="dose-popover-error" />
+
+      <div class="dose-popover-actions">
+        <p-button label="Clear" severity="secondary" [text]="true" [disabled]="isSavingDose()"
+          (onClick)="clearDose(dosePopover)" />
+        <p-button label="Save visit" icon="pi pi-check" [loading]="isSavingDose()" (onClick)="saveDose(dosePopover)" />
+      </div>
+    </div>
+  </p-popover>
+
+</div>

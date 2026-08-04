@@ -9,6 +9,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { TagModule } from 'primeng/tag';
 import { SkeletonModule } from 'primeng/skeleton';
+
 import { TooltipModule } from 'primeng/tooltip';
 import { BadgeModule } from 'primeng/badge';
 import { PatientService } from '../../core/services/patient.service';
@@ -320,7 +321,7 @@ export class PatientListComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   protected goToPatient(id: string): void {
-    this.router.navigate(['/patients', id]);
+    this.router.navigate(['/visits', id, 1]);
   }
 
   protected toggleViewMode(): void {
