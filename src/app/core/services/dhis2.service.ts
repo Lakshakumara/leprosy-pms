@@ -849,15 +849,15 @@ export class Dhis2Service {
       );
 
       if (existing.exists && existing.eventId) {
-        console.log(`Visit ${visitData.visitNumber} exists, updating via Events API...`);
+        //console.log(`Visit ${visitData.visitNumber} exists, updating via Events API...`);
         return await this.updateVisitEventViaEventsAPI(patient, existing.eventId, visitData);
       }
 
-      console.log(`Visit ${visitData.visitNumber} does not exist, creating via Tracker API...`);
+      //console.log(`Visit ${visitData.visitNumber} does not exist, creating via Tracker API...`);
       return await this.createVisitEventViaTrackerAPI(patient, visitData);
 
     } catch (error) {
-      console.error('Failed to save visit:', error);
+      //console.error('Failed to save visit:', error);
       throw error;
     }
   }
@@ -895,9 +895,6 @@ export class Dhis2Service {
       };
 
       const payload = { events: [event] };
-
-      console.log('Creating visit via Tracker API:', JSON.stringify(payload, null, 2));
-
       const response = await firstValueFrom(
         this.http.post<{
           status: string;

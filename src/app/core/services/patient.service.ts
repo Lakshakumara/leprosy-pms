@@ -60,16 +60,16 @@ export class PatientService {
   }
   // ── Filter ─────────────────────────────────────────────────────────────────
   filtered(filter: PatientFilter): Patient[] {
-    console.log('filter ', filter)
+    //console.log('filter ', filter)
     const ci = (s: string) => s.toLowerCase();
     return this._patients().filter(p => {
       if (filter.outsideDistrict) {
         if (p.patientDistrict === this.userDistricts()) return false;
-        /*if (filter.outsideDistrict){
+        if (filter.outsideDistrict){
          if (filter.district && filter.district !== 'ALL') {
            if (p.patientDistrict !== filter.district) return false;
          }
-       }*/
+       }
       }
       // Free-text search: name, ALC#, NIC
       if (filter.search) {

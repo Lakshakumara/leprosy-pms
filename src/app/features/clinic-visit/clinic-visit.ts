@@ -117,9 +117,7 @@ export class ClinicVisitComponent {
 
   /** Layer 2 — UI-only status split, applied on top, never touching PatientFilter. */
   filteredPatients = computed(() => {
-    console.log('base filter applied ', this.baseFiltered())
     const list = this.trackerService.filterByStatus(this.baseFiltered(), this.statusFilter());
-    console.log('after filterByStatus', list.length, this.statusFilter());
     return [...list].sort((a, b) => {
       const order: Record<ClinicVisitStatus, number> = { DEFAULTER: 0, AT_RISK: 1, ACTIVE: 2, COMPLETED: 3 };
       return order[this.status(a)] - order[this.status(b)];
@@ -214,7 +212,6 @@ export class ClinicVisitComponent {
       this.doseError.set(null);
       popover.hide();
     } catch (err) {
-      console.error('[ClinicVisitComponent] saveDose failed:', err);
       this.doseError.set('Could not save locally — please try again.');
     } finally {
       this.isSavingDose.set(false);
