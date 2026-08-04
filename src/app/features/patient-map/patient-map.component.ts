@@ -141,7 +141,7 @@ yearColors: Record<string, string> = {}; // NOT readonly, we build it
     const countTotal = this.patientService.districtPatients().length;
     const exporting = this.exporting();
 
-    untracked(() => {
+    /*untracked(() => {
       this.mobileHeader.set({
         title: 'Patient Map',
         count: `${countMapped} / ${countTotal}`,
@@ -152,7 +152,7 @@ yearColors: Record<string, string> = {}; // NOT readonly, we build it
           { label: 'Refresh map', icon: 'pi pi-refresh', command: () => this.refreshMap() },
         ]
       });
-    });
+    });*/
   });
 }
   
@@ -769,37 +769,50 @@ openEditLocation(patient: any): void {
 
   protected readonly exporting = signal(false);
 
-  protected async exportMapImage(): Promise<void> {
-    this.exporting.set(true);
-    try {
-      const html2canvas = (await import('html2canvas')).default;
+protected async exportMapImage(): Promise<void> {
+  this.exporting.set(true);
+  try {
+    const html2canvas = (await import('html2canvas')).default;
 
-      // IMPORTANT CAVEAT: OpenStreetMap's public tile servers
-      // ({s}.tile.openstreetmap.org) don't reliably send CORS headers, which
-      // can cause the canvas to be "tainted" and toDataURL() to throw even
-      // with useCORS:true - this is a known limitation of screenshotting
-      // Leaflet maps with cross-origin raster tiles, not a bug in this code.
-      // If exports come out blank/fail, switching the tile provider to one
-      // with explicit CORS support (e.g. CARTO's free basemaps) is the real
-      // fix, not a code change here.
-      const canvas = await html2canvas(this.mapContainer.nativeElement, {
-        useCORS: true,
-        allowTaint: false,
-        logging: false
-      });
+    const mapElement = this.mapContainer.nativeElement;
 
-      const link = document.createElement('a');
-      link.download = `patient-map-${new Date().toISOString().slice(0, 10)}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-    } catch (err) {
-      console.error('[PatientMapComponent] Map export failed:', err);
-      alert('Could not export the map image. This can happen due to cross-origin map tile restrictions - see console for details.');
-    } finally {
-      this.exporting.set(false);
-    }
+    const canvas = await html2canvas(mapElement, {
+      useCORS: true,
+      allowTaint: false,
+      logging: false,
+      // Fix for shifting SVG / Vector division boundaries
+      onclone: (clonedDoc) => {
+        const clonedMap = clonedDoc.querySelector('.leaflet-map-pane') as HTMLElement;
+        if (clonedMap) {
+          // Flatten CSS transform offsets on the map pane
+          const transform = window.getComputedStyle(clonedMap).transform;
+          if (transform && transform !== 'none') {
+            const matrix = new DOMMatrix(transform);
+            clonedMap.style.transform = 'none';
+            clonedMap.style.left = `${matrix.m41}px`;
+            clonedMap.style.top = `${matrix.m42}px`;
+          }
+        }
+
+        // Ensure SVG overlay elements maintain zero relative shift
+        const svgPanes = clonedDoc.querySelectorAll('.leaflet-overlay-pane svg');
+        svgPanes.forEach((svg: any) => {
+          svg.style.transform = 'none';
+        });
+      }
+    });
+
+    const link = document.createElement('a');
+    link.download = `patient-map-${new Date().toISOString().slice(0, 10)}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  } catch (err) {
+    console.error('[PatientMapComponent] Map export failed:', err);
+    alert('Could not export the map image. See console for details.');
+  } finally {
+    this.exporting.set(false);
   }
-
+}
   // Add this method to your component
   protected refreshMap(): void {
     // Refresh patient data
