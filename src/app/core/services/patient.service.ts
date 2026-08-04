@@ -58,18 +58,42 @@ export class PatientService {
     );
   }
   // ── Filter ─────────────────────────────────────────────────────────────────
+  /* if (p.patientDistrict === this.userDistrict()) return false;
+        if (filter.district === this.userDistrict()) {
+          console.log('ratnapura')
+          if (p.patientDistrict === filter.district) return false;
+        }
+console.log('this not print',p.patientDistrict !== filter.district )
+        if (filter.district && filter.district !== 'ALL') {
+          if (p.patientDistrict !== filter.district) return false;
+        }*/
+  /*if (filter.outsideDistrict) {
+    if (p.patientDistrict === this.userDistrict()) return false;
+    if (filter.outsideDistrict){
+     if (filter.district && filter.district !== 'ALL') {
+       if (p.patientDistrict !== filter.district) return false;
+     }
+   }
+  }*/
   filtered(filter: PatientFilter): Patient[] {
-    console.log('filter ', filter)
+
     const ci = (s: string) => s.toLowerCase();
     return this._patients().filter(p => {
       if (filter.outsideDistrict) {
-        if (p.patientDistrict === this.userDistrict()) return false;
-        if (filter.outsideDistrict){
-         if (filter.district && filter.district !== 'ALL') {
-           if (p.patientDistrict !== filter.district) return false;
-         }
-       }
-      }
+  // Case 2: Outside mode - ignore district dropdown
+  // Show only patients whose district is NOT Ratnapura
+  if (ci(p.patientDistrict) === ci(this.userDistrict())) return false;
+
+} else {
+  // Case 1: Inside mode - respect district dropdown
+  if (filter.district && filter.district !== 'ALL') {
+    // Specific district selected -> filter by that district
+    if (ci(p.patientDistrict) !== ci(filter.district)) return false;
+  }
+  // else filterDistrict === 'ALL' or undefined -> NO district filtering = show all districts
+}
+// --- DISTRICT LOGIC END ---
+
       // Free-text search: name, ALC#, NIC
       if (filter.search) {
         const q = ci(filter.search);
@@ -116,9 +140,9 @@ export class PatientService {
       if (filter.enrolledTo && p.enrolledAt > filter.enrolledTo) return false;
 
       if (filter.year && filter.year !== 'ALL') {
-         if (filter.year && p.enrolledAt.slice(0, 4) !== filter.year) return false;
+        if (filter.year && p.enrolledAt.slice(0, 4) !== filter.year) return false;
       }
-      
+
       if (filter.alert === 'grade2' && !hasGrade2Disability(p)) return false;
       if (filter.alert === 'relapse' && !isRelapse(p)) return false;
       if (filter.alert === 'defaulter' && !isDefaulter(p)) return false;
