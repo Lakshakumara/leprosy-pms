@@ -63,11 +63,12 @@ export class PatientService {
     return this._patients().filter(p => {
       if (filter.outsideDistrict) {
         if (p.patientDistrict === this.userDistrict()) return false;
-      } else {
+      } 
+      /*else {
         if (filter.district && filter.district !== 'ALL') {
           if (p.patientDistrict !== filter.district) return false;
         }
-      }
+      }*/
       // Free-text search: name, ALC#, NIC
       if (filter.search) {
         const q = ci(filter.search);
@@ -113,8 +114,10 @@ export class PatientService {
       if (filter.enrolledFrom && p.enrolledAt < filter.enrolledFrom) return false;
       if (filter.enrolledTo && p.enrolledAt > filter.enrolledTo) return false;
 
-      if (filter.year && p.enrolledAt.slice(0, 4) !== filter.year) return false;
-
+      if (filter.year && filter.year !== 'ALL') {
+         if (filter.year && p.enrolledAt.slice(0, 4) !== filter.year) return false;
+      }
+      
       if (filter.alert === 'grade2' && !hasGrade2Disability(p)) return false;
       if (filter.alert === 'relapse' && !isRelapse(p)) return false;
       if (filter.alert === 'defaulter' && !isDefaulter(p)) return false;
