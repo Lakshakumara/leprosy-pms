@@ -274,40 +274,6 @@
   }
 }
 
-// ============================================
-// FLOATING & SPEEDDIAL ACTIONS
-// ============================================
-.floating-actions {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  z-index: 1000;
-
-  .p-button {
-    width: 50px !important;
-    height: 50px !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  }
-
-  @media (min-width: 769px) {
-    display: none !important;
-  }
-}
-
-.mobile-speeddial {
-  position: fixed;
-  bottom: 30px;
-  right: 20px;
-  z-index: 1000;
-
-  @media (min-width: 769px) {
-    display: none !important;
-  }
-}
-
 @media (pointer: coarse) {
   .header-btn, .close-selected {
     min-height: 34px !important;

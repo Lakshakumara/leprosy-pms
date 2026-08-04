@@ -35,6 +35,10 @@ export class AppComponent {
   private readonly router = inject(Router);
 
   readonly showAbout = signal(false);
+  showMobileMenu = signal(false)
+  closeMobileMenu() {
+    this.showMobileMenu.set(false);
+  }
   readonly appBuildDate = '2026-07-31';
 
   // Format PrimeNG Menu items for mobile header overflow

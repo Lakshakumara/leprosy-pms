@@ -81,26 +81,6 @@
   </div>
 }
 
-<!-- Add this after the map container -->
-<div class="floating-actions" *ngIf="isMobileView()">
-  <button 
-    pButton 
-    type="button" 
-    icon="pi pi-download" 
-    (click)="exportMapImage()" 
-    class="p-button-rounded p-button-success"
-    title="Export map">
-  </button>
-  <button 
-    pButton 
-    type="button" 
-    icon="pi pi-refresh" 
-    (click)="refreshMap()" 
-    class="p-button-rounded p-button-secondary"
-    title="Refresh map">
-  </button>
-</div>
-
 
 <!-- Dialog remains the same 
 <p-dialog 

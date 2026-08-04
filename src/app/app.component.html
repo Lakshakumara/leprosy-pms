@@ -18,21 +18,21 @@
       </button>
     </div>
 
-      <!-- Core Sidebar Navigation Links -->
-      <nav class="shell__links">
-        <a routerLink="/dashboard" routerLinkActive="is-active">
-          <i class="pi pi-chart-bar"></i> Dashboard
-        </a>
-        <a routerLink="/patients" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">
-          <i class="pi pi-users"></i> Patients
-        </a>
-        <a routerLink="/map" routerLinkActive="is-active">
-          <i class="pi pi-map"></i> Map
-        </a>
-        <a routerLink="/clinicVisit" routerLinkActive="is-active">
-          <i class="pi pi-calendar"></i> Clinic Visits
-        </a>
-      </nav>
+    <!-- Core Sidebar Navigation Links -->
+    <nav class="shell__links">
+      <a routerLink="/dashboard" routerLinkActive="is-active">
+        <i class="pi pi-chart-bar"></i> Dashboard
+      </a>
+      <a routerLink="/patients" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">
+        <i class="pi pi-users"></i> Patients
+      </a>
+      <a routerLink="/map" routerLinkActive="is-active">
+        <i class="pi pi-map"></i> Map
+      </a>
+      <a routerLink="/clinicVisit" routerLinkActive="is-active">
+        <i class="pi pi-calendar"></i> Clinic Visits
+      </a>
+    </nav>
 
     <div class="shell__status">
       <div class="shell__status-header">
@@ -171,10 +171,72 @@
       <i class="pi pi-map"></i>
       <span>Map</span>
     </a>
+    <button type="button" class="more-btn"
+    [class.is-active]="rlaClinic.isActive"
+    (click)="showMobileMenu.set(true)">
+    <i class="pi pi-ellipsis-h"></i>
+    <span>More</span>
+  </button>
+
+  <!-- hidden checker for active state -->
+  <span class="hidden-checker">
+    <span routerLinkActive="is-active" #rlaClinic="routerLinkActive" routerLink="/clinicVisit"></span>
+  </span>
   </nav>
 
+  <p-drawer [visible]="showMobileMenu()" (visibleChange)="showMobileMenu.set($event)" position="bottom"
+    styleClass="mobile-more-drawer" [modal]="true" [closeOnEscape]="true" 
+    [style]="{ height: 'auto', borderTopLeftRadius: '16px', borderTopRightRadius: '16px' }">
+
+    <ng-template pTemplate="content">
+      <div class="more-drawer__handle"></div>
+      <div class="more-drawer__header">
+        <h4>More Options</h4>
+      </div>
+
+      <div class="more-drawer__list">
+        <a routerLink="/clinicVisit" routerLinkActive="is-active" (click)="closeMobileMenu()">
+          <i class="pi pi-calendar"></i>
+          <div>
+            <b>Clinic Visits</b>
+            <small>Manage follow-ups & appointments</small>
+          </div>
+        </a>
+
+        <!-- ADD FUTURE LINKS HERE -->
+        <!-- Example:
+      <a routerLink="/reports" routerLinkActive="is-active" (click)="closeMobileMenu()">
+        <i class="pi pi-file"></i>
+        <div><b>Reports</b><small>Monthly summaries</small></div>
+      </a>
+      -->
+
+        <div class="more-drawer__divider"></div>
+
+        <button type="button" (click)="syncNow(); closeMobileMenu()" [disabled]="!patients.isOnline()">
+          <i class="pi pi-refresh"></i>
+          <div><b>Sync Data</b><small>{{ patients.isOnline()? 'Online' : 'Offline' }}</small></div>
+        </button>
+
+        <button type="button" (click)="closeMobileMenu(); showAbout.set(true)">
+          <i class="pi pi-info-circle"></i>
+          <div><b>About App</b><small>Leprosy PMS v1.0</small></div>
+        </button>
+
+        @if (auth.currentUser()) {
+        <button type="button" class="is-danger" (click)="closeMobileMenu(); logout()">
+          <i class="pi pi-sign-out"></i>
+          <div><b>Sign Out</b><small>{{ auth.currentUser()!.displayName }}</small></div>
+        </button>
+        }
+      </div>
+    </ng-template>
+  </p-drawer>
+
+
   <!-- Global Mobile Filter Drawer -->
-  <p-drawer [visible]="mobileHeader.showFilterDrawer()" (visibleChange)="mobileHeader.showFilterDrawer.set($event)"
+  <p-drawer [visible]="mobileHeader.showFilterDrawer()" 
+  (visibleChange)="mobileHeader.showFilterDrawer.set($event)"
     position="bottom" styleClass="mobile-filter-drawer" [modal]="true" [blockScroll]="true">
 
     <ng-template pTemplate="header">
