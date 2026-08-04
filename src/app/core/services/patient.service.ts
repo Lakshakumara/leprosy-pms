@@ -59,7 +59,6 @@ export class PatientService {
   }
   // ── Filter ─────────────────────────────────────────────────────────────────
   filtered(filter: PatientFilter): Patient[] {
-    console.log('filter ', filter)
     const ci = (s: string) => s.toLowerCase();
     return this._patients().filter(p => {
       if (filter.outsideDistrict) {
@@ -75,7 +74,8 @@ export class PatientService {
         if (
           !ci(p.patientName).includes(q) &&
           !ci(p.alcNum).includes(q) &&
-          !ci(p.nicNum).includes(q)
+          !ci(p.nicNum).includes(q) &&
+          !ci(p.clinicNum).includes(q)
         ) return false;
       }
       // Exact ALC number
