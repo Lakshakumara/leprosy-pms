@@ -76,7 +76,7 @@ console.log('this not print',p.patientDistrict !== filter.district )
    }
   }*/
   filtered(filter: PatientFilter): Patient[] {
-
+console.log('filter', filter)
     const ci = (s: string) => s.toLowerCase();
     return this._patients().filter(p => {
       if (filter.outsideDistrict) {

@@ -211,7 +211,7 @@ export class ClinicVisitTrackerService {
    * already-filtered list (e.g. the output of `PatientService.filtered()`).
    * Purely a client-side re-filter — doesn't touch `PatientFilter` at all.
    */
-  filterByStatus(
+filterByStatus(
     patients: Patient[],
     status: 'ALL' | ClinicVisitStatus,
     today: string = this.todayIso()

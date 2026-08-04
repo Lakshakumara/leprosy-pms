@@ -103,7 +103,7 @@ export class ClinicVisitComponent {
   /** The subset of PatientFilter this view actually uses — no date-range restriction, so
    *  patients enrolled in a prior year but still mid-course aren't hidden. */
   private patientFilter = computed<PatientFilter>(() => ({
-    district: 'All',
+    district: 'ALL',
     search: this.searchTerm().trim() || undefined,
     classification: this.classificationFilter() === 'ALL' ? undefined : this.classificationFilter(),
     orgUnitId: 'ALL',

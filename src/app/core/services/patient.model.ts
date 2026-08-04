@@ -138,7 +138,6 @@ export interface PatientFilter {
   /** Dashboard drill-down: grade2 | relapse | defaulter | noContact | delayed | child | mb */
   alert?: string;
 }
-
 export const createDefaultPatientFilter = (): PatientFilter => ({
   enrolledFrom: `${new Date().getFullYear()}-01-01`,
   enrolledTo: `${new Date().getFullYear()}-12-31`
