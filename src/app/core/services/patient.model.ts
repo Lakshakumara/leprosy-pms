@@ -142,3 +142,28 @@ export const createDefaultPatientFilter = (): PatientFilter => ({
   enrolledFrom: `${new Date().getFullYear()}-01-01`,
   enrolledTo: `${new Date().getFullYear()}-12-31`
 });
+
+// Active Patient Criteria
+/*const activePatientCriteria = {
+  // Has had a visit in the last 3 months
+  recentVisit: 'Last 3 months',
+  // Or has a scheduled future appointment
+  hasFutureAppointment: true,
+  // Or is currently on treatment
+  activeTreatment: true,
+  // Or has been extended from previous year
+  extendedTreatment: true
+};
+
+// Quick triage function
+function identifyActivePatients(patients:Patient[]) {
+  return patients.filter(patient => {
+    // Check paper register for:
+    // 1. Last visit date
+    // 2. Next appointment date
+    // 3. Treatment status
+    return patient.hasRecentVisit || 
+           patient.hasFutureAppointment || 
+           patient.activeTreatment;
+  });
+}*/

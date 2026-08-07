@@ -14,7 +14,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { BadgeModule } from 'primeng/badge';
 import { PatientService } from '../../core/services/patient.service';
 import { createDefaultPatientFilter, Patient, PatientFilter } from '../../core/services/patient.model';
-import { STORAGE_KEYS } from '../../core/util/util';
+import { SelectOption, STORAGE_KEYS } from '../../core/util/util';
 import { DeviceStorageService } from '../../core/services/device-storage.service';
 import {
   hasGrade2Disability,
@@ -25,7 +25,7 @@ import {
 import { CheckboxModule } from 'primeng/checkbox';
 import { MobileHeaderService } from '../../core/services/mobile-header.service';
 
-interface SelectOption { label: string; value: string; }
+
 
 @Component({
   selector: 'app-patient-list',

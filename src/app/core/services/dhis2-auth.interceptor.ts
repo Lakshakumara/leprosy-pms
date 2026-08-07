@@ -22,7 +22,5 @@ export const dhis2AuthInterceptor: HttpInterceptorFn = (req, next) => {
     const encoded = btoa(`${creds?.username}:${creds?.password}`);
     return next(req.clone({ setHeaders: { Authorization: `Basic ${encoded}` } }));
   }
-
-  console.warn('[dhis2AuthInterceptor] No creds found in storage for', req.url);
   return next(req);
 };

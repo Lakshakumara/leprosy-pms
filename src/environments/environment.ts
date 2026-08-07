@@ -26,20 +26,20 @@ export const environment = {
     },
   },
 
-    /**
-   * Tracked Entity Attributes (confirmed from `displayName` in source JSON)
-   */
+  /**
+ * Tracked Entity Attributes (confirmed from `displayName` in source JSON)
+ */
   TRACKED_ENTITY_ATTRIBUTES: {
-    ALC_NUM:        { uid: 'AujHTe3nXx4', displayName: 'Lep - Alc - Num',         valueType: 'TEXT' },
-    CLINIC_NUM:     { uid: 'Sn6LwDqapMU', displayName: 'Lep - Clinic Num',        valueType: 'TEXT' },
-    NIC_NUM:        { uid: 'B6au8evTRWl', displayName: 'Lep - NIC Num',           valueType: 'TEXT' },
-    GUARDIAN_NAME:  { uid: 'UBWQy1GFOee', displayName: 'Lep - Guardian Name',     valueType: 'TEXT' },
-    MOBILE_NUM:     { uid: 'Y4H01gi8N2M', displayName: 'Lep - Mobile Num',        valueType: 'PHONE_NUMBER' },
-    TEL_NUM:        { uid: 'g71IALGz9U8', displayName: 'Lep - Tel Num',           valueType: 'PHONE_NUMBER' },
-    PATIENT_NAME:   { uid: 'hGbU1zkkxH8', displayName: 'Lep - Patient name',      valueType: 'TEXT' },
-    PATIENT_SEX:    { uid: 'C9FV3HiPEkA', displayName: 'Lep - Patient Sex',       valueType: 'TEXT' },
-    ETHNIC_GROUP:   { uid: 'cw1sJo3q9UF', displayName: 'Lep - Ethnic group',      valueType: 'TEXT' },
-    PATIENT_AGE:    { uid: 'C0ZoykFjsTP', displayName: 'Lep - Patient age',       valueType: 'TEXT' },
+    ALC_NUM: { uid: 'AujHTe3nXx4', displayName: 'Lep - Alc - Num', valueType: 'TEXT' },
+    CLINIC_NUM: { uid: 'Sn6LwDqapMU', displayName: 'Lep - Clinic Num', valueType: 'TEXT' },
+    NIC_NUM: { uid: 'B6au8evTRWl', displayName: 'Lep - NIC Num', valueType: 'TEXT' },
+    GUARDIAN_NAME: { uid: 'UBWQy1GFOee', displayName: 'Lep - Guardian Name', valueType: 'TEXT' },
+    MOBILE_NUM: { uid: 'Y4H01gi8N2M', displayName: 'Lep - Mobile Num', valueType: 'PHONE_NUMBER' },
+    TEL_NUM: { uid: 'g71IALGz9U8', displayName: 'Lep - Tel Num', valueType: 'PHONE_NUMBER' },
+    PATIENT_NAME: { uid: 'hGbU1zkkxH8', displayName: 'Lep - Patient name', valueType: 'TEXT' },
+    PATIENT_SEX: { uid: 'C9FV3HiPEkA', displayName: 'Lep - Patient Sex', valueType: 'TEXT' },
+    ETHNIC_GROUP: { uid: 'cw1sJo3q9UF', displayName: 'Lep - Ethnic group', valueType: 'TEXT' },
+    PATIENT_AGE: { uid: 'C0ZoykFjsTP', displayName: 'Lep - Patient age', valueType: 'TEXT' },
   } as const,
 
   /**
@@ -48,20 +48,18 @@ export const environment = {
    * they will be included in a future release.
    */
   PROGRAM_STAGES: {
-    FIRST_VISIT:            'x0vRwubw5S7',   // confirmed: "Individial Patient forms - 1st visit"
-    STAGE_iE4QnfmTuKe:     'iE4QnfmTuKe',   // TODO: confirm name (likely follow-up)
-    STAGE_DhtWICcZhwK:     'DhtWICcZhwK',
-    STAGE_jpvOb2i5Jai:     'jpvOb2i5Jai',
-    STAGE_z6AnZV6phI8:     'z6AnZV6phI8',
-    STAGE_h1TrdlCaFSc:     'h1TrdlCaFSc',
-    STAGE_SYJtmQu4E30:     'SYJtmQu4E30',
-    STAGE_x95G5bOeDN1:     'x95G5bOeDN1',
-    STAGE_LqgKGaiwXua:     'LqgKGaiwXua',
-    STAGE_QdVsBuNTCrm:     'QdVsBuNTCrm',
-    STAGE_MJHs4by4KDD:     'MJHs4by4KDD',
-    STAGE_LxB9ArHmMGC:     'LxB9ArHmMGC',
-    STAGE_U6IkW19zK7J:     'U6IkW19zK7J',
-    STAGE_xSGWfQwwD93:     'xSGWfQwwD93',
+    STAGE_1: 'x0vRwubw5S7',   // confirmed: "Individial Patient forms - 1st visit"
+    STAGE_2: 'U6IkW19zK7J',   // 3rd Visit // SHIFT backword visit number because DHIS@ mission 2nd visits
+    STAGE_3: 'LxB9ArHmMGC',   // 4th Visit
+    STAGE_4: 'z6AnZV6phI8',   // 5th Visit
+    STAGE_5: 'x95G5bOeDN1',   // 6th Visit
+    STAGE_6: 'DhtWICcZhwK',   // 7th Visit
+    STAGE_7: 'xSGWfQwwD93',   // 8th Visit
+    STAGE_8: 'iE4QnfmTuKe',   // 9th Visit
+    STAGE_9: 'QdVsBuNTCrm',  // 10th Visit
+    STAGE_10: 'SYJtmQu4E30',  // 11th Visit
+    STAGE_11: 'h1TrdlCaFSc',  // 12th visit
+    STAGE_12: 'LqgKGaiwXua'   // Extended visit (fallback for visit 2)
   } as const,
 
   /**
@@ -69,109 +67,70 @@ export const environment = {
    * `programStageDataElements` metadata.
    */
   DATA_ELEMENTS: {
-    DISABILITY_AT_DIAGNOSIS:        { uid: 'ijKomxeLSWM', displayName: 'Lep - Disability at diagnosis' },
-    CONTACT_HISTORY:                { uid: 'hEJbywu7U6T', displayName: 'Lep - Contact history yes or NO' },
-    NAME_OF_CONSULTANT:             { uid: 'XLvfoGQFPs7', displayName: 'Lep - Name of Consultant' },
-    NAME_OF_MO:                     { uid: 'pJVd9qUrc82', displayName: 'Lep - Name of MO' },
-    OTHER_TREATMENT_TYPE:           { uid: 'SkH1beczIBn', displayName: 'Lep - Other Treatment Type' },
-    PATIENT_DISTRICT:               { uid: 'iB1RHZOqhhb', displayName: 'Lep - Patient District' },
-    PATIENT_GN_DIVISION:            { uid: 'tkCFwCc74QL', displayName: 'Lep - Patient GN Division' },
-    PATIENT_GPS_COORDINATES:        { uid: 'gm91XYLCpsS', displayName: 'Lep - Patient GPS Co ordinates' },
-    PATIENT_HOME_ADDRESS:           { uid: 'zGdT30K7Gf2', displayName: 'Lep - Patient Home Address' },
-    PATIENT_MOH_AREA:               { uid: 'RsUDxHKh2w4', displayName: 'Lep - Patient MOH area' },
-    PATIENT_PHI_AREA:               { uid: 'PgVeByg4SgG', displayName: 'Lep - Patient PHI Area' },
-    PATIENT_REFERRED_BY:            { uid: 'JGChabLUuiU', displayName: 'Lep - Patient Referred by' },
-    SOURCE_OF_CONTACT_HISTORY:      { uid: 'nUhyMVGZCwp', displayName: 'Lep - Source of Contact History' },
-    TIME_SINCE_ONSET_MONTHS:        { uid: 'XDAadR1AiAg', displayName: 'Lep - Time since onset of symptoms (months)' },
-    TREATMENT_CLASSIFICATION:       { uid: 'Rten0X02zxy', displayName: 'Lep - Treatment Classification' },
-    /*"dataElement": "Rten0X02zxy",
-    "value": "MB (>5 lesions)"
-}*/
-    EHF_SCORE:                      { uid: 'i3RUk9EeSaZ', displayName: 'Lep - EHF Score' },     // 0–12
-    TREATMENT_TYPE:                 { uid: 'bs5NPrHfdsB', displayName: 'Lep - Treatment Type' },
-    CHANGE_OF_TREATMENT_TYPE:       { uid: 'o18RSOmhyi4', displayName: 'Lep - Change of treatment type' },
+    DISABILITY_AT_DIAGNOSIS: { uid: 'ijKomxeLSWM', displayName: 'Lep - Disability at diagnosis' },
+    CONTACT_HISTORY: { uid: 'hEJbywu7U6T', displayName: 'Lep - Contact history yes or NO' },
+    NAME_OF_CONSULTANT: { uid: 'XLvfoGQFPs7', displayName: 'Lep - Name of Consultant' },
+    NAME_OF_MO: { uid: 'pJVd9qUrc82', displayName: 'Lep - Name of MO' },
+    OTHER_TREATMENT_TYPE: { uid: 'SkH1beczIBn', displayName: 'Lep - Other Treatment Type' },
+    PATIENT_DISTRICT: { uid: 'iB1RHZOqhhb', displayName: 'Lep - Patient District' },
+    PATIENT_GN_DIVISION: { uid: 'tkCFwCc74QL', displayName: 'Lep - Patient GN Division' },
+    PATIENT_GPS_COORDINATES: { uid: 'gm91XYLCpsS', displayName: 'Lep - Patient GPS Co ordinates' },
+    PATIENT_HOME_ADDRESS: { uid: 'zGdT30K7Gf2', displayName: 'Lep - Patient Home Address' },
+    PATIENT_MOH_AREA: { uid: 'RsUDxHKh2w4', displayName: 'Lep - Patient MOH area' },
+    PATIENT_PHI_AREA: { uid: 'PgVeByg4SgG', displayName: 'Lep - Patient PHI Area' },
+    PATIENT_REFERRED_BY: { uid: 'JGChabLUuiU', displayName: 'Lep - Patient Referred by' },
+    SOURCE_OF_CONTACT_HISTORY: { uid: 'nUhyMVGZCwp', displayName: 'Lep - Source of Contact History' },
+    TIME_SINCE_ONSET_MONTHS: { uid: 'XDAadR1AiAg', displayName: 'Lep - Time since onset of symptoms (months)' },
+    TREATMENT_CLASSIFICATION: { uid: 'Rten0X02zxy', displayName: 'Lep - Treatment Classification' },
+
+    EHF_SCORE: { uid: 'i3RUk9EeSaZ', displayName: 'Lep - EHF Score' },     // 0–12
+    TREATMENT_TYPE: { uid: 'bs5NPrHfdsB', displayName: 'Lep - Treatment Type' },
+    CHANGE_OF_TREATMENT_TYPE: { uid: 'o18RSOmhyi4', displayName: 'Lep - Change of treatment type' },
     DEFAULTER_RESTARTING_TREATMENT: { uid: 'UGYkKdtiW3L', displayName: 'Lep - Defaulter restarting treatment' },
-    PREVIOUS_TREATMENT_TYPE:        { uid: 'cBm44wyUsJ6', displayName: 'Lep - Previous treatment type' },
-    RELAPSE:                        { uid: 'UBX6sBorlFy', displayName: 'Lep - Relapse' },
-    CLAW_HAND:                      { uid: 'CNme2qNFYpn', displayName: 'Lep - Claw hand' },
-    CASE_TYPE:                      { uid: 'WyQFv86DRDm', displayName: 'Lep - Case type' },
-    EYE_INVOLVEMENT:                { uid: 'OUWZVXF3zty', displayName: 'Lep - Eye involvement' },
-    YEAR_OF_TREATMENT_COMPLETION:   { uid: 'QwZQUEWQ5TS', displayName: 'Lep - Year of treatment completion' },
-    FACE_INVOLVEMENT:               { uid: 'IYtg3pRjQk6', displayName: 'Lep - Face involvement' },
-    FOOT_DROP:                      { uid: 'JCrTNTvDAWi', displayName: 'Lep - Foot drop' },
-    FOOT_ULCER:                     { uid: 'hkCk03W7xWH', displayName: 'Lep - Foot ulcer' },
+    PREVIOUS_TREATMENT_TYPE: { uid: 'cBm44wyUsJ6', displayName: 'Lep - Previous treatment type' },
+    RELAPSE: { uid: 'UBX6sBorlFy', displayName: 'Lep - Relapse' },
+    CLAW_HAND: { uid: 'CNme2qNFYpn', displayName: 'Lep - Claw hand' },
+    CASE_TYPE: { uid: 'WyQFv86DRDm', displayName: 'Lep - Case type' },
+    EYE_INVOLVEMENT: { uid: 'OUWZVXF3zty', displayName: 'Lep - Eye involvement' },
+    YEAR_OF_TREATMENT_COMPLETION: { uid: 'QwZQUEWQ5TS', displayName: 'Lep - Year of treatment completion' },
+    FACE_INVOLVEMENT: { uid: 'IYtg3pRjQk6', displayName: 'Lep - Face involvement' },
+    FOOT_DROP: { uid: 'JCrTNTvDAWi', displayName: 'Lep - Foot drop' },
+    FOOT_ULCER: { uid: 'hkCk03W7xWH', displayName: 'Lep - Foot ulcer' },
   } as const,
+  
+  
+  
+  // new system
+/*DHIS2_BASE_URL: https://iphis.health.gov.lk/api
+DHIS2_USERNAME: 'ALC_Rathnapura_PHI',
+DHIS2_PASSWORD: 'Rathnapura#1',
+DHIS2_PROGRAM_ID: 'BPDOWhjZOpl',
+DHIS2_PROGRAM_STAGE_ID: 'crFVDyMIVoP',
+DHIS2_TRACKED_ENTITY_TYPE: 'Jie0Ykt4RnN',
+DHIS2_ORG_UNIT_ID: 'G58EkgH37Pv' // Change to your PHI orgUnit
+  */
 };
 
 export type Dhis2Environment = typeof environment;
-//export type FacilityDto = typeof environment.FACILITIES[number];
+
+
 /**
-   * The 6 level-4 facilities registered under Ratnapura RDHS.
-   * Used for hospital filter dropdowns — static to avoid an async org-unit fetch
-   * on every page load.
-   */
-  /*FACILITIES: [
-    {
-      id: 'LCZgWKWn71b',
-      displayName: 'TH-Rathnapura',
-      path: '/GYBZ1og9bk7/G8wNqDYI245/Sa955F8q271/LCZgWKWn71b',
-      level: 4,
-    },
-    {
-      id: 'nqVVoCVGEr3',
-      displayName: 'DGH Embilipitiya',
-      path: '/GYBZ1og9bk7/G8wNqDYI245/Sa955F8q271/nqVVoCVGEr3',
-      level: 4,
-    },
-    {
-      id: 'LCZgWKWn63a',
-      displayName: 'BHB Balangoda',
-      path: '/GYBZ1og9bk7/G8wNqDYI245/Sa955F8q271/LCZgWKWn63a',
-      level: 4,
-    },
-    {
-      id: 'LCZgWKWn36c',
-      displayName: 'BHB Kahawatta',
-      path: '/GYBZ1og9bk7/G8wNqDYI245/Sa955F8q271/LCZgWKWn36c',
-      level: 4,
-    },
-    {
-      id: 'LCZgWKWn26c',
-      displayName: 'BHB Kalawana',
-      path: '/GYBZ1og9bk7/G8wNqDYI245/Sa955F8q271/LCZgWKWn26c',
-      level: 4,
-    },
-    {
-      id: 'LCZgWKW134a',
-      displayName: 'BHB Eheliyagoda',
-      path: '/GYBZ1og9bk7/G8wNqDYI245/Sa955F8q271/LCZgWKW134a',
-      level: 4,
-    },
-    
-  ] as const,
-   // The authenticated user's assigned org unit (district level, level 3).
-    // Facilities under it (level 4) are listed in FACILITIES below.
-    /*district: {
-      id: 'Sa955F8q271',
-      displayName: 'Ratnapura RDHS',
-      level: 3,
-      path: '/GYBZ1og9bk7/G8wNqDYI245/Sa955F8q271',
-    },*/
-/*    
-Visit #	Stage Name	Stage ID	Status
-1	Individial Patient forms - 1st visit	x0vRwubw5S7	✅ Has data elements
-2	2nd visit	MJHs4by4KDD	❌ Empty! No data elements
-3	3rd visit	U6IkW19zK7J	✅ Has data elements
-4	4th Visit	LxB9ArHmMGC	✅ Has data elements
-5	5th Visit	z6AnZV6phI8	✅ Has data elements
-6	6th Visit	x95G5bOeDN1	✅ Has data elements
-7	7th Visit	DhtWICcZhwK	✅ Has data elements
-8	8th Visit	xSGWfQwwD93	✅ Has data elements
-9	9th Visit	iE4QnfmTuKe	✅ Has data elements
-10	10th Visit	QdVsBuNTCrm	✅ Has data elements
-11	11th Visit	SYJtmQu4E30	✅ Has data elements
-12	12th visit	h1TrdlCaFSc	✅ Has data elements
--	Extended visit	jpvOb2i5Jai	✅ Has data elements
--	Treatment outcome	LqgKGaiwXua	✅ Has data elements
--	Follow up visit	gqBvokwE2TP	✅ Has many data elements
-*/
+ * # DHIS2 IPHIS - NEW SYSTEM
+DHIS2_BASE_URL=https://iphis.health.gov.lk/api
+DHIS2_USERNAME=ALC_Rathnapura_PHI
+DHIS2_PASSWORD=Rathnapura#1
+
+# CORE IDS - Leprosy Individual Patient Form
+DHIS2_PROGRAM_ID=BPDOWhjZOpl
+DHIS2_PROGRAM_STAGE_ID=crFVDyMIVoP
+DHIS2_TRACKED_ENTITY_TYPE_ID=Jie0Ykt4RnN
+DHIS2_CATEGORY_COMBO_ID=bjDvmb4bfuf
+
+# ORG UNIT - Pick one, your account has access to 400+ OUs
+# Use this to get your OU list:
+# GET /api/organisationUnits?fields=id,displayName&filter=id:in:[G58EkgH37Pv,wR9QlTzgoDL...]
+DHIS2_DEFAULT_ORG_UNIT_ID=G58EkgH37Pv
+
+# TRACKER API VERSION - Use new tracker
+DHIS2_TRACKER_API=tracker # for old: trackedEntityInstances
+ */

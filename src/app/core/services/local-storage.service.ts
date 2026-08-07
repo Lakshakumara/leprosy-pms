@@ -1,6 +1,7 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { createStore, entries, get, set, del } from 'idb-keyval';
 import { Patient } from './patient.model';
+import { CryptoService } from './crypto.service';
 /**
  * Offline-first persistence layer using IndexedDB (idb-keyval).
  *
@@ -13,6 +14,7 @@ import { Patient } from './patient.model';
  */
 @Injectable({ providedIn: 'root' })
 export class LocalStorageService {
+  private crypto = inject(CryptoService);
   private readonly store = createStore('leprosy-pms-db', 'patients');
   private readonly metaStore = createStore('leprosy-pms-db', 'meta');
   constructor() {
@@ -43,22 +45,33 @@ export class LocalStorageService {
     });
   }
 
-  async getAllPatients(): Promise<Patient[]> {
-    const all = await entries<string, Patient>(this.store);
-    return all.map(([, value]) => value);
+   async getAllPatients(): Promise<Patient[]> {
+    if (!this.crypto.isUnlocked()) throw new Error('App locked');
+    const all = await entries<string, string>(this.store); // now string = encrypted
+    const patients: Patient[] = [];
+    for (const [, encValue] of all) {
+      try {
+        const p = await this.crypto.decrypt<Patient>(encValue);
+        patients.push(p);
+      } catch {}
+    }
+    return patients;
+  }
+
+  async savePatient(patient: Patient): Promise<void> {
+    if (!this.crypto.isUnlocked()) throw new Error('App locked');
+    const enc = await this.crypto.encrypt(patient);
+    await set(patient.id, enc, this.store);
+  }
+
+  async savePatients(patients: Patient[]): Promise<void> {
+    for (const p of patients) await this.savePatient(p);
   }
 
   async getPatient(id: string): Promise<Patient | undefined> {
     return get<Patient>(id, this.store);
   }
 
-  async savePatient(patient: Patient): Promise<void> {
-    await set(patient.id, patient, this.store);
-  }
-
-  async savePatients(patients: Patient[]): Promise<void> {
-    await Promise.all(patients.map(p => set(p.id, p, this.store)));
-  }
 
   async deletePatient(id: string): Promise<void> {
     await del(id, this.store);

@@ -48,7 +48,6 @@ async recordVisit(
     if (result.success) {
       visit.id = result.eventId;
       visit.syncStatus = 'synced';
-      console.log(`Visit ${visitData.visitNumber} saved to DHIS2`);
     }
 
     // Update local patient record

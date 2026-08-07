@@ -1,4 +1,4 @@
-import { Component, signal, computed, inject } from '@angular/core';
+import { Component, signal, computed, inject, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 
@@ -12,6 +12,7 @@ import { AuthService } from './core/services/auth.service';
 import { MobileHeaderService } from './core/services/mobile-header.service';
 import { TooltipModule } from 'primeng/tooltip';
 import { DrawerModule } from 'primeng/drawer';
+import { CryptoService } from './core/services/crypto.service';
 
 @Component({
   selector: 'app-root',
@@ -33,6 +34,12 @@ export class AppComponent {
   protected readonly patients = inject(PatientService);
   protected readonly mobileHeader = inject(MobileHeaderService);
   private readonly router = inject(Router);
+
+@HostListener('window:beforeunload')
+lock() {
+  inject(CryptoService).lock();
+}
+
 
   readonly showAbout = signal(false);
   showMobileMenu = signal(false)
@@ -57,7 +64,7 @@ export class AppComponent {
   });
 
   syncNow(): void {
-    this.patients.pullFromServer();
+    this.patients.pullFromServer(2026);
   }
 
   logout(): void {

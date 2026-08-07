@@ -45,6 +45,7 @@ export class PatientService {
   healthDistricts() {
     return this.dhis2.healthDistricts();
   }
+  readonly user = this.storage.getJSON<any>(STORAGE_KEYS.USER_DATA);
   constructor() {
     window.addEventListener('online', () => this.isOnline.set(true));
     window.addEventListener('offline', () => this.isOnline.set(false));
@@ -76,23 +77,23 @@ console.log('this not print',p.patientDistrict !== filter.district )
    }
   }*/
   filtered(filter: PatientFilter): Patient[] {
-console.log('filter', filter)
+    console.log('filter', filter)
     const ci = (s: string) => s.toLowerCase();
     return this._patients().filter(p => {
       if (filter.outsideDistrict) {
-  // Case 2: Outside mode - ignore district dropdown
-  // Show only patients whose district is NOT Ratnapura
-  if (ci(p.patientDistrict) === ci(this.userDistrict())) return false;
+        // Case 2: Outside mode - ignore district dropdown
+        // Show only patients whose district is NOT Ratnapura
+        if (ci(p.patientDistrict) === ci(this.userDistrict())) return false;
 
-} else {
-  // Case 1: Inside mode - respect district dropdown
-  if (filter.district && filter.district !== 'ALL') {
-    // Specific district selected -> filter by that district
-    if (ci(p.patientDistrict) !== ci(filter.district)) return false;
-  }
-  // else filterDistrict === 'ALL' or undefined -> NO district filtering = show all districts
-}
-// --- DISTRICT LOGIC END ---
+      } else {
+        // Case 1: Inside mode - respect district dropdown
+        if (filter.district && filter.district !== 'ALL') {
+          // Specific district selected -> filter by that district
+          if (ci(p.patientDistrict) !== ci(filter.district)) return false;
+        }
+        // else filterDistrict === 'ALL' or undefined -> NO district filtering = show all districts
+      }
+      // --- DISTRICT LOGIC END ---
 
       // Free-text search: name, ALC#, NIC
       if (filter.search) {
@@ -204,6 +205,7 @@ console.log('filter', filter)
         for (const r of remote) {
           const existing = await this.localStorage.getPatient(r.id);
           const ageCorrected = this.setAge(r)
+          console.log('server data', ageCorrected)
           if (!existing || existing.syncStatus === 'synced') {
             await this.localStorage.savePatient(ageCorrected);
           }
@@ -237,7 +239,6 @@ console.log('filter', filter)
 
     let age = enrolled.getFullYear() - dob.getFullYear();
 
-    console.log('map age', String(age))
     return {
       ...p,
       patientAge: String(age)
@@ -251,7 +252,7 @@ console.log('filter', filter)
     const years = await this.localStorage.getYears(top)
     return years?.length ? years : [];
   }
-  // patient.service.ts - Add this method
+
   async updateLocalPatient(patient: Patient): Promise<void> {
     await this.localStorage.savePatient(patient);
     await this.loadFromLocal();

@@ -1,4 +1,4 @@
-import { Component, computed, signal } from '@angular/core';
+import { AfterViewInit, Component, computed, effect, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -15,22 +15,33 @@ import { InputIconModule } from 'primeng/inputicon';
 import { TooltipModule } from 'primeng/tooltip';
 import { MessageModule } from 'primeng/message';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
-
-import { PatientFilter, Patient } from '../../core/services/patient.model';
+import { ProgressBarModule } from 'primeng/progressbar';
+import { ClinicVisitStatus, DoseSlot, CLINIC_VISIT_STATUS_LABEL, ClinicVisitTrackerService } from '../../core/services/clinic-tracker';
+import { Patient, PatientFilter } from '../../core/services/patient.model';
 import { PatientService } from '../../core/services/patient.service';
-import { ClinicVisitStatus, CLINIC_VISIT_STATUS_LABEL, DoseSlot, ClinicVisitTrackerService } from '../../core/services/clinic-tracker';
 import { VisitSyncService } from '../../core/services/visit-synch';
+import { MobileHeaderService, MobileOverflow } from '../../core/services/mobile-header.service';
+import { SelectOption, STORAGE_KEYS } from '../../core/util/util';
 
-
-
-interface StatusOption {
-  label: string;
-  value: 'ALL' | ClinicVisitStatus;
-}
-
-interface ClassificationOption {
-  label: string;
-  value: string; // 'ALL' | 'PB' | 'MB'
+/**
+ * Everything a card template needs, precomputed ONCE per patient per
+ * filter/data change — not re-derived on every Angular change-detection
+ * tick. With 255+ patients, calling getDoseSchedule()/getVisitStatus()/etc.
+ * as plain methods directly from *ngFor was the real source of the slow
+ * rendering: each one rebuilds a 12-slot array, and CD was re-invoking them
+ * repeatedly per patient per tick. This view-model is built inside a single
+ * `computed()`, so it only reruns when the underlying signals it reads
+ * actually change.
+ */
+interface PatientCardViewModel {
+  patient: Patient;
+  status: ClinicVisitStatus;
+  doseSchedule: DoseSlot[];
+  completedCount: number;
+  nextDose: DoseSlot | null;
+  defaulterDeadline: string;
+  daysToDeadline: number | null;
+  priority: number;
 }
 
 /**
@@ -39,19 +50,21 @@ interface ClassificationOption {
  *
  * SCOPE NOTE: this component assumes patients already exist in the local
  * cache (synced down from DHIS2 via `PatientService.pullFromServer()`).
- * It does not create new tracked entities / enrollments — registering a
- * brand-new patient in DHIS2 needs TEI-attribute + enrollment payloads
- * (see `Dhis2Service`) that are a separate, larger piece of work than the
- * visit-tracking view itself. Say the word if you want that added as a
- * "Register new patient" flow on top of this.
+ * It does not create new tracked entities / enrollments.
  *
  * Filtering is two layers, kept deliberately separate:
  *  - `PatientFilter` (search + classification) goes through the existing
- *    `PatientService.filtered()` — the same mechanism the rest of the app's
- *    dashboards use.
- *  - ACTIVE / COMPLETED / AT_RISK / DEFAULTER is a UI-only re-filter on top,
- *    via `ClinicVisitTrackerService.filterByStatus()`. It never touches
- *    `PatientFilter`.
+ *    `PatientService.filtered()`.
+ *  - ACTIVE / COMPLETED / AT_RISK / DEFAULTER / NEEDS_REVIEW is a UI-only
+ *    re-filter on top, via `ClinicVisitTrackerService.filterByStatus()`.
+ *    It never touches `PatientFilter`.
+ *
+ * HISTORICAL BACKLOG: patients enrolled before real visit-tracking existed
+ * (no doses ever logged, WHO-window deadline already passed before
+ * TRACKING_START_DATE in the tracker service) land in NEEDS_REVIEW rather
+ * than being auto-labeled DEFAULTER. Each one needs a single one-time
+ * human decision — see the "Confirm outcome" actions on those cards, wired
+ * through `resolveHistoricalOutcome()` on VisitSyncService.
  */
 @Component({
   selector: 'app-clinic-visit',
@@ -72,60 +85,100 @@ interface ClassificationOption {
     TooltipModule,
     MessageModule,
     ProgressSpinnerModule,
+    ProgressBarModule,
   ],
   templateUrl: './clinic-visit.html',
   styleUrl: './clinic-visit.scss',
 })
-export class ClinicVisitComponent {
+export class ClinicVisitComponent implements AfterViewInit, OnDestroy {
+  private mobileHeader = inject(MobileHeaderService);
   readonly statusLabel = CLINIC_VISIT_STATUS_LABEL;
   readonly todayDate = new Date();
 
-  readonly classificationOptions: ClassificationOption[] = [
+
+  protected readonly hospitalOptions: SelectOption[] = [
+    { label: 'All Facilities', value: 'ALL' },
+    ...(this.patientService.user?.organisationUnits || []).map((f: any) => ({
+      label: f.name,
+      value: f.id
+    })),
+    { label: 'Other Institute', value: 'OTHER' },
+  ];
+  readonly classificationOptions: SelectOption[] = [
     { label: 'All classifications', value: 'ALL' },
     { label: 'PB', value: 'PB' },
     { label: 'MB', value: 'MB' },
   ];
 
-  readonly statusOptions: StatusOption[] = [
+  readonly statusOptions: SelectOption[] = [
     { label: 'All statuses', value: 'ALL' },
     { label: 'Active', value: 'ACTIVE' },
     { label: 'Completed', value: 'COMPLETED' },
     { label: 'At risk', value: 'AT_RISK' },
     { label: 'Defaulter', value: 'DEFAULTER' },
+    { label: 'Needs review', value: 'NEEDS_REVIEW' },
   ];
 
   // ── Filter state ──────────────────────────────────────────────────────────
   searchTerm = signal('');
   classificationFilter = signal<string>('ALL');
   statusFilter = signal<'ALL' | ClinicVisitStatus>('ALL');
-  
-
-  /** The subset of PatientFilter this view actually uses — no date-range restriction, so
-   *  patients enrolled in a prior year but still mid-course aren't hidden. */
+  hospitalFilter = signal<'All' | string>('ALL');
   private patientFilter = computed<PatientFilter>(() => ({
-    district: 'ALL',
     search: this.searchTerm().trim() || undefined,
     classification: this.classificationFilter() === 'ALL' ? undefined : this.classificationFilter(),
-    orgUnitId: 'ALL',
-    mohArea: 'ALL',
-    phiArea: 'ALL',
-    gnDivision: 'ALL',
+    orgUnitId: this.hospitalFilter() == 'ALL' ? undefined : this.hospitalFilter()
   }));
 
   /** Layer 1 — existing PatientService filtering (search + classification). */
   private baseFiltered = computed(() => this.patientService.filtered(this.patientFilter()));
 
   /** Layer 2 — UI-only status split, applied on top, never touching PatientFilter. */
-  filteredPatients = computed(() => {
-    const list = this.trackerService.filterByStatus(this.baseFiltered(), this.statusFilter());
-    return [...list].sort((a, b) => {
-      const order: Record<ClinicVisitStatus, number> = { DEFAULTER: 0, AT_RISK: 1, ACTIVE: 2, COMPLETED: 3 };
-      return order[this.status(a)] - order[this.status(b)];
-    });
+  private statusFiltered = computed(() =>
+    this.trackerService.filterByStatus(this.baseFiltered(), this.statusFilter())
+  );
+
+  /** The one place per-patient derived data gets computed — everything downstream reads this, not the service directly. */
+  cardViewModels = computed<PatientCardViewModel[]>(() => {
+    const today = this.trackerService.todayIso();
+    return this.statusFiltered()
+      .map((patient) => ({
+        patient,
+        status: this.trackerService.getVisitStatus(patient, today),
+        doseSchedule: this.trackerService.getDoseSchedule(patient),
+        completedCount: this.trackerService.completedDoseCount(patient),
+        nextDose: this.trackerService.nextActionableDose(patient),
+        defaulterDeadline: this.trackerService.defaulterDeadline(patient),
+        daysToDeadline: this.trackerService.daysToDefaulterDeadline(patient, today),
+        priority: this.trackerService.priorityIndex(patient, today),
+      }))
+      .sort((a, b) => a.priority - b.priority);
   });
 
   defaulterCount = computed(() => this.baseFiltered().filter((p) => this.trackerService.isDefaulter(p)).length);
   atRiskCount = computed(() => this.baseFiltered().filter((p) => this.trackerService.isAtRisk(p)).length);
+  needsReviewCount = computed(
+    () => this.baseFiltered().filter((p) => this.trackerService.isNeedsReview(p)).length
+  );
+
+  // ── Progressive reveal (renders large lists in batches instead of all at once) ──
+  private readonly revealBatchSize = 20;
+  private readonly revealDelayMs = 60;
+  revealedCount = signal(this.revealBatchSize);
+  private revealTimer: ReturnType<typeof setTimeout> | undefined;
+
+  visibleCardViewModels = computed(() => this.cardViewModels().slice(0, this.revealedCount()));
+
+  revealProgressPercent = computed(() => {
+    const total = this.cardViewModels().length;
+    return total === 0 ? 100 : Math.round((this.revealedCount() / total) * 100);
+  });
+
+  isRevealing = computed(() => this.revealedCount() < this.cardViewModels().length);
+
+  trackByPatientId(_index: number, vm: PatientCardViewModel): string {
+    return vm.patient.id;
+  }
 
   // ── Dose entry popover state ────────────────────────────────────────────
   activePatientId: string | null = null;
@@ -134,35 +187,135 @@ export class ClinicVisitComponent {
   doseError = signal<string | null>(null);
   isSavingDose = signal(false);
 
+  // ── Historical-outcome triage popover state ────────────────────────────
+  triagePatientId: string | null = null;
+  isResolvingOutcome = signal(false);
+  triageError = signal<string | null>(null);
+
   constructor(
     readonly patientService: PatientService,
     private readonly trackerService: ClinicVisitTrackerService,
     readonly visitSync: VisitSyncService
-  ) {}
-
-  // ── Template helpers ─────────────────────────────────────────────────────
-  status(patient: Patient): ClinicVisitStatus {
-    return this.trackerService.getVisitStatus(patient);
+  ) {
+    // Whenever the filtered set changes size (new filter, or the initial
+    // big historical load completing), restart the progressive reveal from
+    // the first batch rather than dumping everything into the DOM at once.
+    effect(
+      () => {
+        const total = this.cardViewModels().length;
+        clearTimeout(this.revealTimer);
+        this.revealedCount.set(Math.min(this.revealBatchSize, total || this.revealBatchSize));
+        this.scheduleNextBatch();
+      },
+      { allowSignalWrites: true }
+    );
+  }
+  ngAfterViewInit() {
+    queueMicrotask(() => {
+      this.setupMobileHeader();
+    });
+  }
+  ngOnDestroy(): void {
+    this.mobileHeader.clear();
   }
 
+  private setupMobileHeader(): void {
+    const currentStatus = this.statusFilter();
+
+    this.mobileHeader.set({
+      title: 'Clinic visit tracker',
+      subtitle: `Cases ${this.statusFiltered().length}`,
+      searchPlaceholder: 'Search ALC, clinic no, name...',
+
+      actions: [
+        {
+          icon: 'pi pi-filter',
+          label: 'Filter',
+          badge: this.activeFilterCount() > 0 ? this.activeFilterCount() : undefined,
+          command: () => this.mobileHeader.toggleFilterDrawer()
+        },
+      ],
+
+      overflow: [
+        // Status options - replaces your p-select
+        ...this.statusOptions.map(opt => ({
+          label: opt.label,
+          icon: currentStatus === opt.value ? 'pi pi-check-circle' : 'pi pi-circle',
+          command: () => this.onStatusChange(opt.value)
+        } as MobileOverflow)),
+
+        { label: '', separator: true } as MobileOverflow,
+
+
+      ]
+    });
+  }
+
+  private onStatusChange(value: any): void {
+    this.statusFilter.set(value);
+    /*
+      // If ALL -> clear filter
+      if (value === 'ALL') {
+        this.se.set(null);
+      } else {
+        this._activeStatusFilter.set(value as ClinicVisitStatus);
+      }
+    
+      this.setupMobileHeader();
+      this.applyFilters();*/
+  }
+  protected readonly filter = signal<PatientFilter>({
+    district: this.patientService.userDistrict(),
+    search: '',
+    classification: 'ALL',
+    orgUnitId: 'ALL',
+    mohArea: 'ALL',
+    phiArea: 'ALL',
+    gnDivision: 'ALL',
+    year: new Date().getFullYear().toString(),
+  });
+  protected readonly activeFilterCount = computed(() => {
+    const f = this.filter();
+    let count = 0;
+    if (f.district) count++;
+    if (f.search) count++;
+    if (f.classification && f.classification !== 'ALL') count++;
+    if (f.orgUnitId && f.orgUnitId !== 'ALL') count++;
+    if (f.mohArea && f.mohArea !== 'ALL') count++;
+    if (f.phiArea && f.phiArea !== 'ALL') count++;
+    if (f.gnDivision && f.gnDivision !== 'ALL') count++;
+    if (f.enrolledFrom) count++;
+    if (f.enrolledTo) count++;
+    if (f.outsideDistrict) count++;
+    if (f.year) count++;
+    return count;
+  });
+
+  private scheduleNextBatch(): void {
+    this.revealTimer = setTimeout(() => {
+      const total = this.cardViewModels().length;
+      if (this.revealedCount() >= total) return;
+      this.revealedCount.update((n) => Math.min(n + this.revealBatchSize, total));
+      this.scheduleNextBatch();
+    }, this.revealDelayMs);
+  }
+
+  // ── Template helpers ─────────────────────────────────────────────────────
   statusSeverity(status: ClinicVisitStatus) {
     return this.trackerService.statusSeverity(status);
   }
 
-  doseSchedule(patient: Patient): DoseSlot[] {
-    return this.trackerService.getDoseSchedule(patient);
-  }
-
-  completedDoseCount(patient: Patient): number {
-    return this.trackerService.completedDoseCount(patient);
-  }
-
-  nextActionableDose(patient: Patient): DoseSlot | null {
-    return this.trackerService.nextActionableDose(patient);
-  }
-
   overdueDays(slot: DoseSlot): number {
     return this.trackerService.overdueDays(slot);
+  }
+
+  /** Always yyyy-MM-dd or '—' — never a raw timestamp, never NaN-NaN-NaN. */
+  displayDate(raw: string | null | undefined): string {
+    return this.trackerService.displayDate(raw);
+  }
+
+  firstMdtDateDisplay(patient: Patient): string {
+    return this.trackerService.displayDate(patient.treatmentStartDate || patient.enrolledAt);
   }
 
   doseChipStatus(slot: DoseSlot): 'visited' | 'visited-late' | 'missed' | 'upcoming' {
@@ -212,6 +365,7 @@ export class ClinicVisitComponent {
       this.doseError.set(null);
       popover.hide();
     } catch (err) {
+      console.error('[ClinicVisitComponent] saveDose failed:', err);
       this.doseError.set('Could not save locally — please try again.');
     } finally {
       this.isSavingDose.set(false);
@@ -232,8 +386,32 @@ export class ClinicVisitComponent {
     }
   }
 
+  // ── Historical-outcome triage (NEEDS_REVIEW backlog) ─────────────────────
+  openTriage(popover: Popover, event: Event, patient: Patient): void {
+    this.triagePatientId = patient.id;
+    this.triageError.set(null);
+    popover.toggle(event);
+  }
+
+  async resolveTriage(popover: Popover, outcome: 'completed' | 'defaulted' | 'extended'): Promise<void> {
+    const patient = this.currentPatients().find((p) => p.id === this.triagePatientId);
+    if (!patient) return;
+
+    this.isResolvingOutcome.set(true);
+    try {
+      await this.visitSync.resolveHistoricalOutcome(patient, outcome);
+      this.triageError.set(null);
+      popover.hide();
+    } catch (err) {
+      console.error('[ClinicVisitComponent] resolveTriage failed:', err);
+      this.triageError.set('Could not save locally — please try again.');
+    } finally {
+      this.isResolvingOutcome.set(false);
+    }
+  }
+
   /** Always look the patient up from the full cache, not the filtered/sorted view —
-   *  logging a dose can move a patient out of the currently-filtered status bucket. */
+   *  logging a dose or resolving triage can move a patient out of the currently-filtered bucket. */
   private currentPatients(): Patient[] {
     return this.patientService.allPatients();
   }

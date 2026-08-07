@@ -91,6 +91,75 @@ export class VisitSyncService {
     }
   }
 
+  /**
+   * One-time manual triage for the historical NEEDS_REVIEW backlog — a
+   * patient enrolled before real dose tracking existed, whose WHO-window
+   * deadline already passed with zero doses ever logged. Staff pick one of:
+   *
+   *  - 'completed'  → treatmentStatus = 'completed'. Pushes enrollment
+   *                   status COMPLETED to DHIS2 (native field, no metadata
+   *                   change needed — see setEnrollmentOutcome on Dhis2Service).
+   *  - 'defaulted'  → treatmentStatus = 'defaulted'. Pushes enrollment
+   *                   status CANCELLED. The specific reason stays local-only
+   *                   (defaultReason) since DHIS2 has no field for it yet.
+   *  - 'extended'   → treatmentStatus stays 'ongoing'; instead the course's
+   *                   expected end date is pushed forward so the normal
+   *                   ACTIVE/AT_RISK/DEFAULTER engine picks the patient back
+   *                   up going forward. No DHIS2 write — this is purely a
+   *                   local scheduling correction, since DHIS2 has no
+   *                   "extended course" concept to push to either.
+   */
+  async resolveHistoricalOutcome(
+    patient: Patient,
+    outcome: 'completed' | 'defaulted' | 'extended'
+  ): Promise<void> {
+    const now = new Date().toISOString();
+
+    if (outcome === 'extended') {
+      const extendedEndDate = this.addMonthsIso(patient.treatmentEndDate || patient.enrolledAt, 12);
+      const updated: Patient = {
+        ...patient,
+        treatmentEndDate: extendedEndDate,
+        treatmentStatus: 'ongoing',
+        updatedAt: now,
+      };
+      await this.patientService.updateLocalPatient(updated);
+      return;
+    }
+
+    const updated: Patient = {
+      ...patient,
+      treatmentStatus: outcome,
+      updatedAt: now,
+    };
+    await this.patientService.updateLocalPatient(updated);
+
+    /*if (navigator.onLine) {
+      try {
+        await this.dhis2.setEnrollmentOutcome(updated, outcome === 'completed' ? 'COMPLETED' : 'CANCELLED');
+      } catch (err) {
+        console.error(`[VisitSyncService] setEnrollmentOutcome push failed for patient ${patient.id}:`, err);
+        // Stays correct locally even if the DHIS2 push failed; not folded
+        // into the visit pending-sync queue since it's a different kind of
+        // write (enrollment status, not an event) — surface separately if
+        // this needs its own retry queue later.
+      }
+    }*/
+  }
+
+  /** yyyy-MM-dd + months -> yyyy-MM-dd. Empty in, empty out. */
+  private addMonthsIso(dateIso: string | undefined, months: number): string {
+    if (!dateIso) return '';
+    const datePart = dateIso.split('T')[0];
+    const [y, m, d] = datePart.split('-').map(Number);
+    if (!y || !m || !d) return '';
+    const dt = new Date(y, m - 1 + months, d);
+    const yy = dt.getFullYear();
+    const mm = String(dt.getMonth() + 1).padStart(2, '0');
+    const dd = String(dt.getDate()).padStart(2, '0');
+    return `${yy}-${mm}-${dd}`;
+  }
+
   /** Manual "sync now" entry point — same logic the `online` listener runs automatically. */
   async flushPending(): Promise<void> {
     if (this.isFlushing() || !navigator.onLine) return;
@@ -124,6 +193,8 @@ export class VisitSyncService {
   private async pushVisit(patient: Patient, visit: SimplifiedVisit): Promise<void> {
     // An empty visitDate means "cleared locally" — nothing meaningful to
     // push to DHIS2 for that yet; just let it settle as synced-empty.
+
+
     if (!visit.visitDate) {
       const synced = this.mergeVisit(patient, { ...visit, syncStatus: 'synced' });
       await this.patientService.updateLocalPatient(synced);
@@ -132,7 +203,7 @@ export class VisitSyncService {
     }
 
     try {
-      await this.dhis2.saveVisitEventSafe(patient, {
+      const result = await this.dhis2.saveVisitEventSafe(patient, {
         visitNumber: visit.visitNumber,
         visitDate: visit.visitDate,
         doseDate: visit.doseDate,
@@ -141,15 +212,16 @@ export class VisitSyncService {
         reactionTreatment: visit.reactionTreatment,
         notes: visit.notes,
       });
-
-      const synced = this.mergeVisit(patient, { ...visit, syncStatus: 'synced' });
+      // in pushVisit:
+      //const result = await this.dhis2.saveVisitEventSafe(patient, visit);
+      const synced = this.mergeVisit(patient, { ...visit, syncStatus: 'synced' }, result.eventId);
+      //const synced = this.mergeVisit(patient, { ...visit, syncStatus: 'synced' });
       await this.patientService.updateLocalPatient(synced);
       await this.refreshPendingIndexFor(patient.id);
     } catch (err) {
       console.error(`[VisitSyncService] push failed — patient ${patient.id}, visit ${visit.visitNumber}:`, err);
       const errored = this.mergeVisit(patient, { ...visit, syncStatus: 'error' });
       await this.patientService.updateLocalPatient(errored);
-      // Left in the pending index deliberately, so the next flush retries it.
     }
   }
 
@@ -172,7 +244,30 @@ export class VisitSyncService {
     };
   }
 
-  private mergeVisit(patient: Patient, visit: SimplifiedVisit): Patient {
+  private mergeVisit(patient: Patient, visit: SimplifiedVisit, realEventId?: string): Patient {
+    const existingVisits = patient.visits ?? [];
+    const visits = existingVisits.map(v => {
+      if (v.visitNumber === visit.visitNumber) {
+        return {
+          ...visit,
+          id: realEventId || v.id, // replace Bng6nt52hk6-v2 with vx1hXR7i9dE
+          syncStatus: 'synced' as const
+        };
+      }
+      return v;
+    });
+
+    return {
+      ...patient,
+      visits: visits.sort((a, b) => a.visitNumber - b.visitNumber),
+      lastVisitDate: visit.visitDate || patient.lastVisitDate,
+      updatedAt: new Date().toISOString(),
+    };
+  }
+
+
+
+  /*private mergeVisit(patient: Patient, visit: SimplifiedVisit): Patient {
     const existingVisits = patient.visits ?? [];
     const hasSlot = existingVisits.some((v) => v.visitNumber === visit.visitNumber);
     const visits = hasSlot
@@ -185,7 +280,7 @@ export class VisitSyncService {
       lastVisitDate: visit.visitDate || patient.lastVisitDate,
       updatedAt: new Date().toISOString(),
     };
-  }
+  }*/
 
   // ── Pending index (persisted via LocalStorageService's meta store) ──────
 

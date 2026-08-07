@@ -12,3 +12,9 @@ export const STORAGE_KEYS = {
   USER_DATA: 'lpms_user',
   ORG_SCOPE: 'lpms_org_scope'
 } as const;
+/**
+ * { label: string; value: string; }
+ * A simple interface for select options used in dropdowns, etc.
+ */
+export interface SelectOption { label: string; value: string; }
+ 

@@ -1,8 +1,8 @@
 <div class="clinic-visit">
 
   <!-- ===== Header ===== -->
-  <div class="cv-header">
-    <div class="cv-title">
+  <div class=" cv-header">
+    <div class="desktop-only cv-title">
       <h2>Clinic Visit Tracker</h2>
       <p class="cv-subtitle">Register MDT visits and spot defaulter risk at a glance</p>
     </div>
@@ -12,6 +12,11 @@
         [class.offline]="!patientService.isOnline()">
         <i class="pi" [ngClass]="patientService.isOnline() ? 'pi-wifi' : 'pi-ban'"></i>
         {{ patientService.isOnline() ? 'Online' : 'Offline' }}
+      </span>
+
+      <span class="sync-chip" *ngIf="patientService.isSyncing()">
+        <p-progressSpinner styleClass="sync-spinner" strokeWidth="6" />
+        Loading from DHIS2…
       </span>
 
       <span class="sync-chip" *ngIf="visitSync.pendingCount() > 0 || visitSync.isFlushing()"
@@ -33,6 +38,10 @@
         <span class="summary-count">{{ atRiskCount() }}</span>
         <span class="summary-label">At risk</span>
       </div>
+      <div class="summary-chip summary-chip--neutral" [class.is-zero]="needsReviewCount() === 0">
+        <span class="summary-count">{{ needsReviewCount() }}</span>
+        <span class="summary-label">Needs review</span>
+      </div>
     </div>
   </div>
 
@@ -41,7 +50,7 @@
 
   <!-- ===== Search / filter bar ===== -->
   <div class="cv-filters">
-    <p-iconfield class="filter-search">
+    <p-iconfield class="desktop-only filter-search">
       <p-inputicon class="pi pi-search" />
       <input pInputText type="text" placeholder="Search by name, ALC number or NIC" [ngModel]="searchTerm()"
         (ngModelChange)="searchTerm.set($event)" class="filter-search-input" />
@@ -49,41 +58,60 @@
 
     <p-select [options]="classificationOptions" [ngModel]="classificationFilter()"
       (ngModelChange)="classificationFilter.set($event)" optionLabel="label" optionValue="value"
-      class="filter-select" />
+      class="desktop-only filter-select" />
 
+    <p-select [options]="hospitalOptions" optionLabel="label" optionValue="value" [ngModel]="filter().orgUnitId"
+      (ngModelChange)="hospitalFilter.set( $event)" id="hospital-select">
+    </p-select>
     <p-select [options]="statusOptions" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)"
       optionLabel="label" optionValue="value" class="filter-select" />
   </div>
 
+  <!-- ===== Progressive-reveal progress bar ===== -->
+  <div class="reveal-progress" *ngIf="isRevealing()">
+    <p-progressBar [value]="revealProgressPercent()" [showValue]="false" styleClass="reveal-bar" />
+    <span class="reveal-label">Rendering {{ revealedCount() }} of {{ cardViewModels().length }} patients…</span>
+  </div>
+
   <!-- ===== Patient cards ===== -->
-  <div class="cv-list" *ngIf="filteredPatients().length; else emptyState">
-    <p-card *ngFor="let patient of filteredPatients()" class="patient-card"
-      [class]="'status-' + status(patient).toLowerCase()">
+  <div class="cv-list" *ngIf="visibleCardViewModels().length; else emptyState">
+    <p-card *ngFor="let vm of visibleCardViewModels(); trackBy: trackByPatientId" class="patient-card"
+      [class]="'status-' + vm.status.toLowerCase()">
+
       <div class="patient-header">
         <div class="patient-id">
-          <span class="alc-number">{{ patient.alcNum }}</span>
-          <span class="patient-name">{{ patient.patientName }}</span>
+          <span class="patient-name">{{ vm.patient.patientName }}</span>
+
+          <div class="meta-row">
+            <span class="alc-number">{{ vm.patient.alcNum || '—' }}</span>
+            <span class="dot">•</span>
+            <span class="clinic-number">Clinic: {{ vm.patient.clinicNum || '—' }}</span>
+          </div>
+
+          <span class="org-unit">
+            <i class="pi pi-map-marker" style="font-size: 0.65rem"></i>
+            {{ vm.patient.orgUnitName || '—' }}
+          </span>
         </div>
-        <p-tag [severity]="statusSeverity(status(patient))" [value]="statusLabel[status(patient)]" />
+        <p-tag [severity]="statusSeverity(vm.status)" [value]="statusLabel[vm.status]" />
       </div>
 
       <div class="patient-meta">
-        <span class="meta-item"><i class="pi pi-calendar"></i> First MDT: {{ patient.treatmentStartDate ||
-          patient.enrolledAt | date:'yyyy-MM-dd'}}</span>
-        <span class="meta-item category-tag">{{ patient.treatmentClassification || patient.treatmentRegimen || '—'
+        <span class="meta-item"><i class="pi pi-calendar"></i> First MDT: {{ firstMdtDateDisplay(vm.patient) }}</span>
+        <span class="meta-item category-tag">{{ vm.patient.treatmentClassification || vm.patient.treatmentRegimen || '—'
           }}</span>
-        <span class="meta-item">{{ completedDoseCount(patient) }}/{{ doseSchedule(patient).length }} doses logged</span>
+        <span class="meta-item">{{ vm.completedCount }}/{{ vm.doseSchedule.length }} doses logged</span>
       </div>
 
       <div class="dose-strip">
-        <button *ngFor="let slot of doseSchedule(patient)" type="button" class="dose-chip"
+        <button *ngFor="let slot of vm.doseSchedule" type="button" class="dose-chip"
           [class]="'dose-' + doseChipStatus(slot)" [class.dose-pending]="doseSyncFlag(slot) === 'pending'"
           [class.dose-sync-error]="doseSyncFlag(slot) === 'error'" [pTooltip]="
             slot.visit?.visitDate
-              ? ('Dose ' + slot.doseNumber + ' · visited ' + slot.visit!.visitDate +
+              ? ('Dose ' + slot.doseNumber + ' · visited ' + displayDate(slot.visit!.visitDate) +
                  (doseSyncFlag(slot) ? ' · ' + doseSyncFlag(slot) : ''))
-              : ('Dose ' + slot.doseNumber + ' · due ' + slot.expectedDate)
-          " tooltipPosition="top" (click)="openDoseEntry(dosePopover, $event, patient, slot)">
+              : ('Dose ' + slot.doseNumber + ' · due ' + displayDate(slot.expectedDate))
+          " tooltipPosition="top" (click)="openDoseEntry(dosePopover, $event, vm.patient, slot)">
           <i *ngIf="doseChipStatus(slot) === 'visited' || doseChipStatus(slot) === 'visited-late'"
             class="pi pi-check"></i>
           <span *ngIf="doseChipStatus(slot) === 'missed' || doseChipStatus(slot) === 'upcoming'">{{ slot.doseNumber
@@ -92,24 +120,36 @@
         </button>
       </div>
 
-      <div class="patient-footer" *ngIf="nextActionableDose(patient) as next; else complete">
-        <ng-container [ngSwitch]="doseChipStatus(next)">
-          <span *ngSwitchCase="'missed'" class="footer-note footer-note--danger">
-            <i class="pi pi-exclamation-triangle"></i>
-            Dose {{ next.doseNumber }} overdue by {{ overdueDays(next) }} day{{ overdueDays(next) === 1 ? '' : 's' }}
+      <div class="patient-footer" *ngIf="vm.status === 'NEEDS_REVIEW'">
+        <span class="footer-note footer-note--neutral">
+          <i class="pi pi-question-circle"></i>
+          Enrolled before visit tracking — no dose history recorded
+        </span>
+        <div class="triage-actions">
+          <p-button label="Review outcome" size="small" severity="secondary" [outlined]="true"
+            (onClick)="openTriage(triagePopover, $event, vm.patient)" />
+        </div>
+      </div>
+
+      <div class="patient-footer" *ngIf="vm.status !== 'NEEDS_REVIEW' && vm.nextDose as next; else complete">
+        <ng-container [ngSwitch]="vm.status">
+          <span *ngSwitchCase="'DEFAULTER'" class="footer-note footer-note--danger">
+            <i class="pi pi-times-circle"></i>
+            Defaulted — passed {{ displayDate(vm.defaulterDeadline) }} ({{ -1 * (vm.daysToDeadline ?? 0) }} days ago)
           </span>
-          <span *ngSwitchCase="'upcoming'" class="footer-note">
+          <span *ngSwitchCase="'AT_RISK'" class="footer-note footer-note--warn">
+            <i class="pi pi-exclamation-triangle"></i>
+            Dose {{ next.doseNumber }} overdue — {{ vm.daysToDeadline }} days left before formal default ({{
+            displayDate(vm.defaulterDeadline) }})
+          </span>
+          <span *ngSwitchDefault class="footer-note">
             <i class="pi pi-clock"></i>
-            @if (next.expectedDate) {
-            Dose {{ next.doseNumber || '—' }} due {{ next.expectedDate  }}
-            } @else {
-            Dose {{ next.doseNumber || '—' }} - not assigned
-            }
+            Dose {{ next.doseNumber }} due {{ displayDate(next.expectedDate) }}
           </span>
         </ng-container>
       </div>
       <ng-template #complete>
-        <div class="patient-footer">
+        <div class="patient-footer" *ngIf="vm.status !== 'NEEDS_REVIEW'">
           <span class="footer-note footer-note--success"><i class="pi pi-check-circle"></i> Treatment course
             complete</span>
         </div>
@@ -127,7 +167,7 @@
   <!-- ===== Shared popover for dose date entry ===== -->
   <p-popover #dosePopover styleClass="dose-popover">
     <div class="dose-popover-content" *ngIf="activeDoseSlot as slot">
-      <p class="dose-popover-title">Dose {{ slot.doseNumber }} · due {{ slot.expectedDate }}</p>
+      <p class="dose-popover-title">Dose {{ slot.doseNumber }} · due {{ displayDate(slot.expectedDate) }}</p>
 
       <label class="dose-popover-label" for="dose-date-input">Visit date</label>
       <p-datepicker inputId="dose-date-input" dateFormat="yy-mm-dd" [showIcon]="true" [iconDisplay]="'input'"
@@ -138,6 +178,28 @@
         <p-button label="Clear" severity="secondary" [text]="true" [disabled]="isSavingDose()"
           (onClick)="clearDose(dosePopover)" />
         <p-button label="Save visit" icon="pi pi-check" [loading]="isSavingDose()" (onClick)="saveDose(dosePopover)" />
+      </div>
+    </div>
+  </p-popover>
+
+  <!-- ===== Historical-outcome triage popover (NEEDS_REVIEW backlog) ===== -->
+  <p-popover #triagePopover styleClass="triage-popover">
+    <div class="triage-popover-content">
+      <p class="triage-popover-title">What actually happened with this patient?</p>
+      <p class="triage-popover-hint">
+        No dose visits were ever recorded for this enrollment because it predates visit tracking.
+        Pick the real outcome if known.
+      </p>
+
+      <p-message *ngIf="triageError()" severity="error" [text]="triageError()!" styleClass="triage-popover-error" />
+
+      <div class="triage-popover-actions">
+        <p-button label="Completed treatment" icon="pi pi-check-circle" severity="success" [outlined]="true"
+          [loading]="isResolvingOutcome()" (onClick)="resolveTriage(triagePopover, 'completed')" />
+        <p-button label="Defaulted" icon="pi pi-times-circle" severity="danger" [outlined]="true"
+          [loading]="isResolvingOutcome()" (onClick)="resolveTriage(triagePopover, 'defaulted')" />
+        <p-button label="Still active / extended" icon="pi pi-refresh" severity="info" [outlined]="true"
+          [loading]="isResolvingOutcome()" (onClick)="resolveTriage(triagePopover, 'extended')" />
       </div>
     </div>
   </p-popover>

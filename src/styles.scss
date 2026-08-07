@@ -105,3 +105,27 @@ a { color: var(--color-teal-700); }
     overflow-y: auto;
   }
 }
+
+// One breakpoint for whole app
+$mobile-breakpoint: 860px;
+
+.desktop-only {
+  @media (max-width: #{$mobile-breakpoint}) {
+    display: none !important;
+  }
+}
+
+.mobile-only {
+  display: none !important;
+  @media (max-width: #{$mobile-breakpoint}) {
+    display: block !important;
+  }
+  
+  // if you need flex/grid inside mobile-only
+  &--flex {
+    display: none !important;
+    @media (max-width: #{$mobile-breakpoint}) {
+      display: flex !important;
+    }
+  }
+}

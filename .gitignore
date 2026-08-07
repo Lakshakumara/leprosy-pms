@@ -13,6 +13,7 @@ yarn.lock
 pnpm-lock.yaml
 element1.json
 element2.json
+dhis2New.json
 pt.json
 *.code
 test.json

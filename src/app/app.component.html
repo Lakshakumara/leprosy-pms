@@ -171,21 +171,19 @@
       <i class="pi pi-map"></i>
       <span>Map</span>
     </a>
-    <button type="button" class="more-btn"
-    [class.is-active]="rlaClinic.isActive"
-    (click)="showMobileMenu.set(true)">
-    <i class="pi pi-ellipsis-h"></i>
-    <span>More</span>
-  </button>
+    <button type="button" class="more-btn" [class.is-active]="rlaClinic.isActive" (click)="showMobileMenu.set(true)">
+      <i class="pi pi-ellipsis-h"></i>
+      <span>More</span>
+    </button>
 
-  <!-- hidden checker for active state -->
-  <span class="hidden-checker">
-    <span routerLinkActive="is-active" #rlaClinic="routerLinkActive" routerLink="/clinicVisit"></span>
-  </span>
+    <!-- hidden checker for active state -->
+    <span class="hidden-checker">
+      <span routerLinkActive="is-active" #rlaClinic="routerLinkActive" routerLink="/clinicVisit"></span>
+    </span>
   </nav>
 
   <p-drawer [visible]="showMobileMenu()" (visibleChange)="showMobileMenu.set($event)" position="bottom"
-    styleClass="mobile-more-drawer" [modal]="true" [closeOnEscape]="true" 
+    styleClass="mobile-more-drawer" [modal]="true" [closeOnEscape]="true"
     [style]="{ height: 'auto', borderTopLeftRadius: '16px', borderTopRightRadius: '16px' }">
 
     <ng-template pTemplate="content">
@@ -235,8 +233,7 @@
 
 
   <!-- Global Mobile Filter Drawer -->
-  <p-drawer [visible]="mobileHeader.showFilterDrawer()" 
-  (visibleChange)="mobileHeader.showFilterDrawer.set($event)"
+  <p-drawer [visible]="mobileHeader.showFilterDrawer()" (visibleChange)="mobileHeader.showFilterDrawer.set($event)"
     position="bottom" styleClass="mobile-filter-drawer" [modal]="true" [blockScroll]="true">
 
     <ng-template pTemplate="header">

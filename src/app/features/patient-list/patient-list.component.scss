@@ -441,20 +441,7 @@
   }
 }
 
-// ── Responsive visibility ─────────────────────────────────────────────────────
-.desktop-only {
-  @media (max-width: 700px) {
-    display: none;
-  }
-}
 
-.mobile-only {
-  display: none;
-
-  @media (max-width: 700px) {
-    display: block;
-  }
-}
 
 // Append these to your existing patient-list.component.scss
 

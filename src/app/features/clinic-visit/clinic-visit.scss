@@ -13,6 +13,8 @@
   --cv-defaulter: #dc2626;
   --cv-defaulter-bg: #fef2f2;
   --cv-upcoming: #94a3b8;
+  --cv-neutral: #475569;
+  --cv-neutral-bg: #f1f5f9;
 
   display: block;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -128,6 +130,11 @@
   color: var(--cv-at-risk);
 }
 
+.summary-chip--neutral {
+  background: var(--cv-neutral-bg);
+  color: var(--cv-neutral);
+}
+
 .summary-chip.is-zero {
   opacity: 0.45;
 }
@@ -182,6 +189,7 @@
 .patient-card.status-completed { border-left-color: var(--cv-completed); }
 .patient-card.status-at_risk { border-left-color: var(--cv-at-risk); }
 .patient-card.status-defaulter { border-left-color: var(--cv-defaulter); }
+.patient-card.status-needs_review { border-left-color: var(--cv-neutral); border-left-style: dashed; }
 
 .patient-header {
   display: flex;
@@ -190,21 +198,44 @@
   gap: 0.5rem;
 }
 
+.meta-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
 .patient-id {
   display: flex;
   flex-direction: column;
+  gap: 2px;
 }
 
-.alc-number {
+.alc-number,.clinic-number {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--cv-text-muted);
   letter-spacing: 0.02em;
+}
+.dot {
+  font-size: 0.7rem;
+  color: var(--cv-text-muted);
+  opacity: 0.5;
+}
+
+.org-unit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.7rem;
+  color: var(--cv-text-muted);
+  opacity: 0.9;
+  margin-top: 2px;
 }
 
 .patient-name {
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 1.05rem;
+  line-height: 1.2;
 }
 
 .patient-meta {
@@ -320,7 +351,59 @@
 }
 
 .footer-note--danger { color: var(--cv-defaulter); font-weight: 600; }
+.footer-note--warn { color: var(--cv-at-risk); font-weight: 600; }
 .footer-note--success { color: var(--cv-completed); font-weight: 600; }
+.footer-note--neutral { color: var(--cv-neutral); font-weight: 500; }
+
+.triage-actions {
+  margin-top: 0.5rem;
+}
+
+.triage-popover-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 18rem;
+  max-width: 20rem;
+}
+
+.triage-popover-title {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.triage-popover-hint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--cv-text-muted);
+}
+
+.triage-popover-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+
+/* ===== Progressive reveal ===== */
+.reveal-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.9rem;
+}
+
+.reveal-progress :global(.reveal-bar) {
+  flex: 1;
+  height: 6px;
+}
+
+.reveal-label {
+  font-size: 0.75rem;
+  color: var(--cv-text-muted);
+  white-space: nowrap;
+}
 
 /* ===== Empty state ===== */
 .cv-empty {
