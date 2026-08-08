@@ -60,8 +60,8 @@
       (ngModelChange)="classificationFilter.set($event)" optionLabel="label" optionValue="value"
       class="desktop-only filter-select" />
 
-    <p-select [options]="hospitalOptions" optionLabel="label" optionValue="value" [ngModel]="filter().orgUnitId"
-      (ngModelChange)="hospitalFilter.set( $event)" id="hospital-select">
+    <p-select [options]="hospitalOptions" optionLabel="label" optionValue="value" [ngModel]="hospitalFilter()"
+      (ngModelChange)="hospitalFilter.set($event)" id="hospital-select">
     </p-select>
     <p-select [options]="statusOptions" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)"
       optionLabel="label" optionValue="value" class="filter-select" />
@@ -100,6 +100,9 @@
         <span class="meta-item"><i class="pi pi-calendar"></i> First MDT: {{ firstMdtDateDisplay(vm.patient) }}</span>
         <span class="meta-item category-tag">{{ vm.patient.treatmentClassification || vm.patient.treatmentRegimen || '—'
           }}</span>
+        <span class="meta-item extended-tag" *ngIf="isExtended(vm.patient)">
+          <i class="pi pi-refresh"></i> Extended · {{ courseLength(vm.patient) }}mo course
+        </span>
         <span class="meta-item">{{ vm.completedCount }}/{{ vm.doseSchedule.length }} doses logged</span>
       </div>
 
@@ -147,6 +150,10 @@
             Dose {{ next.doseNumber }} due {{ displayDate(next.expectedDate) }}
           </span>
         </ng-container>
+        <div class="extend-action">
+          <p-button label="Extend course +12mo" size="small" severity="secondary" [text]="true"
+            [loading]="isExtendingCourse()" (onClick)="extendCourse(vm.patient)" />
+        </div>
       </div>
       <ng-template #complete>
         <div class="patient-footer" *ngIf="vm.status !== 'NEEDS_REVIEW'">

@@ -32,21 +32,19 @@ export const environment = {
    * Follow-up visit stages (12-month schedule) are pending DHIS2 configuration —
    * they will be included in a future release.
    */
-  PROGRAM_STAGES: {
-    FIRST_VISIT:            'x0vRwubw5S7',   // confirmed: "Individial Patient forms - 1st visit"
-    STAGE_iE4QnfmTuKe:     'iE4QnfmTuKe',   // TODO: confirm name (likely follow-up)
-    STAGE_DhtWICcZhwK:     'DhtWICcZhwK',
-    STAGE_jpvOb2i5Jai:     'jpvOb2i5Jai',
-    STAGE_z6AnZV6phI8:     'z6AnZV6phI8',
-    STAGE_h1TrdlCaFSc:     'h1TrdlCaFSc',
-    STAGE_SYJtmQu4E30:     'SYJtmQu4E30',
-    STAGE_x95G5bOeDN1:     'x95G5bOeDN1',
-    STAGE_LqgKGaiwXua:     'LqgKGaiwXua',
-    STAGE_QdVsBuNTCrm:     'QdVsBuNTCrm',
-    STAGE_MJHs4by4KDD:     'MJHs4by4KDD',
-    STAGE_LxB9ArHmMGC:     'LxB9ArHmMGC',
-    STAGE_U6IkW19zK7J:     'U6IkW19zK7J',
-    STAGE_xSGWfQwwD93:     'xSGWfQwwD93',
+   PROGRAM_STAGES: {
+    STAGE_1: 'x0vRwubw5S7',   // confirmed: "Individial Patient forms - 1st visit"
+    STAGE_2: 'U6IkW19zK7J',   // 3rd Visit // SHIFT backword visit number because DHIS@ mission 2nd visits
+    STAGE_3: 'LxB9ArHmMGC',   // 4th Visit
+    STAGE_4: 'z6AnZV6phI8',   // 5th Visit
+    STAGE_5: 'x95G5bOeDN1',   // 6th Visit
+    STAGE_6: 'DhtWICcZhwK',   // 7th Visit
+    STAGE_7: 'xSGWfQwwD93',   // 8th Visit
+    STAGE_8: 'iE4QnfmTuKe',   // 9th Visit
+    STAGE_9: 'QdVsBuNTCrm',  // 10th Visit
+    STAGE_10: 'SYJtmQu4E30',  // 11th Visit
+    STAGE_11: 'h1TrdlCaFSc',  // 12th visit
+    STAGE_12: 'LqgKGaiwXua'   // Extended visit (fallback for visit 2)
   } as const,
 
   /**

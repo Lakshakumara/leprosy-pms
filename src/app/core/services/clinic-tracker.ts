@@ -138,24 +138,39 @@ export class ClinicVisitTrackerService {
 
   // ── Course length / dose schedule ────────────────────────────────────────
 
+  /** The regimen's nominal length, ignoring any date-based extension. */
+  private nominalCourseLength(patient: Patient): number {
+    const regimen = patient.treatmentRegimen;
+    return regimen && FIXED_COURSE_LENGTH[regimen] ? FIXED_COURSE_LENGTH[regimen]! : DEFAULT_COURSE_LENGTH;
+  }
+
   /**
    * How many monthly doses this patient's course is expected to run.
-   * Priority: fixed regimen length (PB=6, MB=12) > span implied by
-   * treatmentStartDate/treatmentEndDate (covers the rare 24 / 36 month
-   * extensions, which aren't a distinct `treatmentRegimen` value in the
-   * model) > DEFAULT_COURSE_LENGTH.
+   *
+   * Takes the LARGER of: the regimen's nominal length (PB=6, MB=12), and
+   * the span implied by treatmentStartDate/treatmentEndDate. An extension
+   * only ever pushes the deadline further out, never shorter — so if
+   * treatmentEndDate has been manually pushed past the regimen's nominal
+   * length (via extendCourse() on VisitSyncService), that always wins.
+   *
+   * This is how the rare 24/36-month extensions are represented: DHIS2 has
+   * no field for "this course was extended" (confirmed against the program
+   * metadata — no data element covers it, and Pramil's the only one who
+   * could add one). It isn't a distinct `treatmentRegimen` value either.
+   * So it lives purely as a later treatmentEndDate in the local cache —
+   * practical, not ideal, but there's no DHIS2 slot to put it in.
    */
   courseLength(patient: Patient): number {
-    const regimen = patient.treatmentRegimen;
-    if (regimen && FIXED_COURSE_LENGTH[regimen]) {
-      return FIXED_COURSE_LENGTH[regimen]!;
-    }
+    const nominal = this.nominalCourseLength(patient);
     const start = this.normalizeDate(patient.treatmentStartDate);
     const end = this.normalizeDate(patient.treatmentEndDate);
-    if (start && end) {
-      return this.monthsBetween(start, end);
-    }
-    return DEFAULT_COURSE_LENGTH;
+    const fromDates = start && end ? this.monthsBetween(start, end) : 0;
+    return Math.max(nominal, fromDates);
+  }
+
+  /** True once a course has been pushed past its regimen's nominal length — drives the "Extended" badge in the UI. */
+  isExtended(patient: Patient): boolean {
+    return this.courseLength(patient) > this.nominalCourseLength(patient);
   }
 
   /**

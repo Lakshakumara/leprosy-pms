@@ -258,6 +258,15 @@
   color: var(--cv-active);
 }
 
+.extended-tag {
+  font-weight: 600;
+  color: #475569;
+  background: #f1f5f9;
+  padding: 0.1rem 0.5rem;
+  border-radius: 1rem;
+}
+
+
 /* ===== Dose strip ===== */
 .dose-strip {
   display: flex;
@@ -341,7 +350,17 @@
   border-top: 1px solid var(--cv-border);
   padding-top: 0.6rem;
   font-size: 0.82rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.4rem;
 }
+
+.extend-action {
+  margin-left: auto;
+}
+
 
 .footer-note {
   display: inline-flex;

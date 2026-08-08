@@ -192,6 +192,10 @@ export class ClinicVisitComponent implements AfterViewInit, OnDestroy {
   isResolvingOutcome = signal(false);
   triageError = signal<string | null>(null);
 
+  // ── Course extension (available on any in-progress card, not just triage) ──
+  isExtendingCourse = signal(false);
+  extendError = signal<string | null>(null);
+
   constructor(
     readonly patientService: PatientService,
     private readonly trackerService: ClinicVisitTrackerService,
@@ -316,6 +320,36 @@ export class ClinicVisitComponent implements AfterViewInit, OnDestroy {
 
   firstMdtDateDisplay(patient: Patient): string {
     return this.trackerService.displayDate(patient.treatmentStartDate || patient.enrolledAt);
+  }
+
+  isExtended(patient: Patient): boolean {
+    return this.trackerService.isExtended(patient);
+  }
+
+  courseLength(patient: Patient): number {
+    return this.trackerService.courseLength(patient);
+  }
+
+  async extendCourse(patient: Patient): Promise<void> {
+    const currentLength = this.trackerService.courseLength(patient);
+    const nextLength = currentLength + 12;
+    const confirmed = window.confirm(
+      `Extend this patient's course from ${currentLength} to ${nextLength} months? ` +
+        `The formal default deadline moves out to match (${nextLength} × 1.5 months from start). ` +
+        `Note: DHIS2 has no field for this — it's tracked locally only.`
+    );
+    if (!confirmed) return;
+
+    this.isExtendingCourse.set(true);
+    try {
+      await this.visitSync.extendCourse(patient, 12);
+      this.extendError.set(null);
+    } catch (err) {
+      console.error('[ClinicVisitComponent] extendCourse failed:', err);
+      this.extendError.set('Could not save locally — please try again.');
+    } finally {
+      this.isExtendingCourse.set(false);
+    }
   }
 
   doseChipStatus(slot: DoseSlot): 'visited' | 'visited-late' | 'missed' | 'upcoming' {

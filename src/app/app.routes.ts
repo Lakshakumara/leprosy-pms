@@ -6,7 +6,7 @@ import { CryptoService } from './core/services/crypto.service';
 const pinGuard: CanActivateFn = () => {
   const crypto = inject(CryptoService);
   const router = inject(Router);
-  return crypto.isUnlocked()? true : router.createUrlTree(['/lock']);
+  return crypto.isUnlocked() ? true : router.createUrlTree(['/lock']);
 };
 
 export const routes: Routes = [

@@ -1061,6 +1061,28 @@ console.log('Creating visit for patient:', patient.id, 'visitNumber:', visitData
     return undefined;
   }
 
+  /**
+ * Sets the enrollment's own status field — a native Tracker field, no
+ * metadata change needed. COMPLETED = course finished; CANCELLED =
+ * treatment stopped before completion (defaulted/died/transferred — DHIS2
+ * doesn't distinguish which; the specific reason stays in
+ * Patient.defaultReason locally).
+ */
+async setEnrollmentOutcome(patient: Patient, status: 'COMPLETED' | 'CANCELLED'): Promise<void> {
+  const payload = {
+    enrollments: [{
+      enrollment: patient.enrollmentId,
+      trackedEntity: patient.teiId || patient.id,
+      program: environment.dhis2.program,
+      orgUnit: patient.orgUnitId,
+      status,
+    }],
+  };
+
+  await firstValueFrom(
+    this.http.post(`${this.base}/tracker?async=false&importStrategy=UPDATE`, payload)
+  );
+}
 
 }
 

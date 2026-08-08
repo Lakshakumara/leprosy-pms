@@ -92,6 +92,33 @@ export class VisitSyncService {
   }
 
   /**
+   * Extends a patient's course by N more months (default 12 — e.g. a
+   * standard MB course going 12 -> 24, or the very rare second extension
+   * 24 -> 36). Purely a local scheduling change: DHIS2 has no "extended
+   * course" concept to write to (confirmed against the program metadata —
+   * no data element covers it, and adding one needs Pramil's involvement
+   * regardless), so only treatmentEndDate is updated here.
+   * ClinicVisitTrackerService.courseLength() takes whichever is larger
+   * between the regimen's nominal length and the date span, so this
+   * reliably grows the visible dose schedule and pushes the WHO-window
+   * defaulter deadline out to match — all local, no DHIS2 write attempted.
+   *
+   * Available on any in-progress card (ACTIVE/AT_RISK/DEFAULTER), not just
+   * the NEEDS_REVIEW triage flow.
+   */
+  async extendCourse(patient: Patient, additionalMonths = 12): Promise<void> {
+    const base = patient.treatmentEndDate || patient.treatmentStartDate || patient.enrolledAt;
+    const newEndDate = this.addMonthsIso(base, additionalMonths);
+    const updated: Patient = {
+      ...patient,
+      treatmentEndDate: newEndDate,
+      treatmentStatus: 'ongoing',
+      updatedAt: new Date().toISOString(),
+    };
+    await this.patientService.updateLocalPatient(updated);
+  }
+
+  /**
    * One-time manual triage for the historical NEEDS_REVIEW backlog — a
    * patient enrolled before real dose tracking existed, whose WHO-window
    * deadline already passed with zero doses ever logged. Staff pick one of:
@@ -102,12 +129,7 @@ export class VisitSyncService {
    *  - 'defaulted'  → treatmentStatus = 'defaulted'. Pushes enrollment
    *                   status CANCELLED. The specific reason stays local-only
    *                   (defaultReason) since DHIS2 has no field for it yet.
-   *  - 'extended'   → treatmentStatus stays 'ongoing'; instead the course's
-   *                   expected end date is pushed forward so the normal
-   *                   ACTIVE/AT_RISK/DEFAULTER engine picks the patient back
-   *                   up going forward. No DHIS2 write — this is purely a
-   *                   local scheduling correction, since DHIS2 has no
-   *                   "extended course" concept to push to either.
+   *  - 'extended'   → delegates to extendCourse() — local-only, see above.
    */
   async resolveHistoricalOutcome(
     patient: Patient,
@@ -116,14 +138,7 @@ export class VisitSyncService {
     const now = new Date().toISOString();
 
     if (outcome === 'extended') {
-      const extendedEndDate = this.addMonthsIso(patient.treatmentEndDate || patient.enrolledAt, 12);
-      const updated: Patient = {
-        ...patient,
-        treatmentEndDate: extendedEndDate,
-        treatmentStatus: 'ongoing',
-        updatedAt: now,
-      };
-      await this.patientService.updateLocalPatient(updated);
+      await this.extendCourse(patient, 12);
       return;
     }
 
@@ -134,7 +149,7 @@ export class VisitSyncService {
     };
     await this.patientService.updateLocalPatient(updated);
 
-    /*if (navigator.onLine) {
+    if (navigator.onLine) {
       try {
         await this.dhis2.setEnrollmentOutcome(updated, outcome === 'completed' ? 'COMPLETED' : 'CANCELLED');
       } catch (err) {
@@ -144,7 +159,7 @@ export class VisitSyncService {
         // write (enrollment status, not an event) — surface separately if
         // this needs its own retry queue later.
       }
-    }*/
+    }
   }
 
   /** yyyy-MM-dd + months -> yyyy-MM-dd. Empty in, empty out. */
@@ -232,7 +247,7 @@ export class VisitSyncService {
   ): SimplifiedVisit {
     const existing = (patient.visits ?? []).find((v) => v.visitNumber === input.visitNumber);
     return {
-      id: existing?.id ?? `${patient.id}-visit-${input.visitNumber}`,
+      id: existing?.id ?? `${patient.id}-v${input.visitNumber}`,
       visitNumber: input.visitNumber,
       visitDate: input.visitDate,
       doseDate: input.doseDate,
@@ -246,16 +261,27 @@ export class VisitSyncService {
 
   private mergeVisit(patient: Patient, visit: SimplifiedVisit, realEventId?: string): Patient {
     const existingVisits = patient.visits ?? [];
-    const visits = existingVisits.map(v => {
-      if (v.visitNumber === visit.visitNumber) {
-        return {
-          ...visit,
-          id: realEventId || v.id, // replace Bng6nt52hk6-v2 with vx1hXR7i9dE
-          syncStatus: 'synced' as const
-        };
-      }
-      return v;
-    });
+    const hasSlot = existingVisits.some(v => v.visitNumber === visit.visitNumber);
+
+    // Only the real DHIS2-confirmed success path (realEventId present) is
+    // allowed to force syncStatus to 'synced'. Every other caller —
+    // logVisit()'s initial local save ('pending') and pushVisit()'s
+    // failure path ('error') — must keep whatever status it passed in, or
+    // the pending/error indicators and flushPending()'s retry filter both
+    // silently stop working.
+    const nextVisit: SimplifiedVisit = realEventId
+      ? { ...visit, id: realEventId, syncStatus: 'synced' as const }
+      : { ...visit };
+
+    // fromDhis2() now pre-populates all 12 real dose slots as placeholders,
+    // so hasSlot is true for the normal 1-12 case and this branch is a
+    // no-op there. It only actually fires for dose numbers beyond 12 —
+    // the extended-course case (courseLength() > 12 via extendCourse()) —
+    // where no DHIS2 stage/placeholder exists yet. Without this, those
+    // doses would silently vanish: .map() alone never adds a new element.
+    const visits = hasSlot
+      ? existingVisits.map(v => (v.visitNumber === visit.visitNumber ? nextVisit : v))
+      : [...existingVisits, nextVisit];
 
     return {
       ...patient,
