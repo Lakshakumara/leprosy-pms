@@ -9,6 +9,7 @@ import { routes } from './app.routes';
 import { dhis2AuthInterceptor } from './core/services/dhis2-auth.interceptor';
 import { AuthService } from './core/services/auth.service';
 import { OrgScopeService } from './core/services/org-scope.service';
+import { CryptoService } from './core/services/crypto.service'; // <-- ADD
 import { MessageService, ConfirmationService } from 'primeng/api';
 
 export const appConfig: ApplicationConfig = {
@@ -16,34 +17,31 @@ export const appConfig: ApplicationConfig = {
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
     provideHttpClient(withInterceptors([dhis2AuthInterceptor])),
-    
+
+    // 1st initializer - crypto (MUST be first)
+    provideAppInitializer(() => {
+      const crypto = inject(CryptoService);
+      return crypto.ensureReady(); // waits for key, works offline
+    }),
+
+    // 2nd initializer - your existing auth restore
     provideAppInitializer(() => {
       const auth = inject(AuthService);
       const orgScope = inject(OrgScopeService);
-
       auth.restoreSession();
       orgScope.restoreFromCache();
-
       if (navigator.onLine && auth.isLoggedIn()) {
-        orgScope.refreshFromServer().catch((err) => {
-          console.warn('[appConfig] Background org scope refresh failed - using cached scope.', err);
-        });
+        orgScope.refreshFromServer().catch(err => console.warn(err));
       }
     }),
 
     providePrimeNG({
-      theme: {
-        preset: Aura,
-        options: {
-          darkModeSelector: false, // clinical UI: fixed light theme for legibility
-          cssLayer: { name: 'primeng', order: 'primeng' }
-        }
-      }
-    }), 
-    ConfirmationService,// ← ADD THIS
-    MessageService,      // ← ADD THIS
+      theme: { preset: Aura, options: { darkModeSelector: false, cssLayer: { name: 'primeng', order: 'primeng' } } }
+    }),
+    ConfirmationService,
+    MessageService,
     provideServiceWorker('ngsw-worker.js', {
-      enabled: !isDevMode(),
+      enabled:!isDevMode(),
       registrationStrategy: 'registerWhenStable:30000'
     })
   ]

@@ -35,12 +35,6 @@ export class AppComponent {
   protected readonly mobileHeader = inject(MobileHeaderService);
   private readonly router = inject(Router);
 
-@HostListener('window:beforeunload')
-lock() {
-  inject(CryptoService).lock();
-}
-
-
   readonly showAbout = signal(false);
   showMobileMenu = signal(false)
   closeMobileMenu() {
@@ -64,7 +58,7 @@ lock() {
   });
 
   syncNow(): void {
-    this.patients.pullFromServer(2026);
+    this.patients.pullFromServer();
   }
 
   logout(): void {

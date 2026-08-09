@@ -1,4 +1,11 @@
 /* ==========================================================================
+   Design Tokens — defined here so Angular ViewEncapsulation doesn't scope them.
+   (Variables defined in component SCSS :root blocks get scoped by Angular's
+   emulated encapsulation and may not resolve globally.)
+   ========================================================================== */
+/* All tokens now live in styles.scss :root — see global styles */
+
+/* ==========================================================================
    1. Main Shell Layout Grid
    ========================================================================== */
 
@@ -6,38 +13,37 @@
   display: grid;
   grid-template-columns: 260px 1fr;
   min-height: 100vh;
-  background-color: #f8fafc;
+  background-color: var(--surface-page);
 
   @media (max-width: 860px) {
     grid-template-columns: 1fr;
-    padding-bottom: 60px; /* Offset for fixed bottom navigation */
+    padding-bottom: var(--bottom-nav-clear);
   }
 
   &__main {
     display: flex;
     flex-direction: column;
-    min-width: 0; /* Prevents flex children from overflowing horizontally */
+    min-width: 0;
     width: 100%;
   }
 
   &__content {
     flex: 1;
     padding: 28px 32px;
-    background: #f8fafc;
+    background: var(--surface-page);
 
     @media (max-width: 860px) {
-      padding: 16px;
+      padding: 14px;
     }
   }
 }
 
 /* ==========================================================================
-   2. Desktop Sidebar Navigation
+   2. Desktop Sidebar Navigation  (dark teal → WHITE text)
    ========================================================================== */
 
 .shell__nav {
-  background: linear-gradient(160deg, #0b4f4a 0%, #0d6159 100%);
-  color: #eaf3f1;
+  background: linear-gradient(175deg, var(--teal-900) 0%, var(--teal-800) 100%);
   display: flex;
   flex-direction: column;
   padding: 24px 18px;
@@ -48,9 +54,7 @@
   overflow-y: auto;
   z-index: 100;
 
-  @media (max-width: 860px) {
-    display: none; /* Hide desktop sidebar on mobile/tablet screens */
-  }
+  @media (max-width: 860px) { display: none; }
 }
 
 .shell__brand {
@@ -63,8 +67,8 @@
   width: 38px;
   height: 38px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.92);
-  color: #0b4f4a;
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--teal-900);
   font-weight: 800;
   font-size: 1.1rem;
   display: grid;
@@ -76,24 +80,24 @@
   font-weight: 700;
   font-size: 0.95rem;
   line-height: 1.2;
+  color: #ffffff !important;           /* pure white – defeats any global heading colour */
 }
 
 .shell__brand-sub {
   font-size: 0.7rem;
-  color: #9fc2bd;
+  color: #5eead4 !important;           /* mint-300 – bright cyan on dark bg */
 }
 
 .shell__info-btn {
   margin-left: auto;
   background: none;
   border: none;
-  color: rgba(234, 243, 241, 0.6);
+  color: rgba(255, 255, 255, 0.55);
   cursor: pointer;
   padding: 4px;
+  font-size: 1rem;
 
-  &:hover {
-    color: #ffffff;
-  }
+  &:hover { color: #ffffff; }
 }
 
 .shell__links {
@@ -102,24 +106,30 @@
   gap: 4px;
 
   a {
-    color: rgba(207, 228, 224, 0.85);
+    color: rgba(255, 255, 255, 0.92) !important; /* near-white – high contrast on dark bg */
     text-decoration: none;
     padding: 10px 14px;
-    border-radius: 6px;
+    border-radius: 8px;
     font-size: 0.9rem;
     font-weight: 500;
     display: flex;
     align-items: center;
     gap: 10px;
+    transition: background 0.15s, color 0.15s;
 
-    i {
-      font-size: 0.95rem;
+    i { font-size: 1rem; }
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #ffffff !important;
     }
 
-    &:hover,
     &.is-active {
-      background: rgba(255, 255, 255, 0.14);
-      color: #ffffff;
+      background: rgba(255, 255, 255, 0.18);
+      color: #ffffff !important;         /* pure white for active */
+      font-weight: 600;
+
+      i { color: #2dd4bf !important; }   /* mint icon for active */
     }
   }
 }
@@ -128,9 +138,9 @@
   margin-top: auto;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  padding-top: 18px;
+  gap: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  padding-top: 16px;
 }
 
 .shell__status-header {
@@ -140,7 +150,7 @@
 }
 
 .shell__sync-icon-btn {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.12);
   border: none;
   color: #ffffff;
   border-radius: 6px;
@@ -150,10 +160,7 @@
   place-items: center;
   cursor: pointer;
 
-  &:disabled {
-    opacity: 0.4;
-    cursor: default;
-  }
+  &:disabled { opacity: 0.35; cursor: default; }
 }
 
 .offline-pill {
@@ -162,7 +169,7 @@
   gap: 6px;
   font-size: 0.75rem;
   font-weight: 600;
-  padding: 3px 8px;
+  padding: 3px 9px;
   border-radius: 12px;
 
   .dot {
@@ -172,27 +179,21 @@
     background: currentColor;
   }
 
-  &--online {
-    background: rgba(34, 197, 94, 0.15);
-    color: #4ade80;
-  }
-
-  &--offline {
-    background: rgba(239, 68, 68, 0.15);
-    color: #fca5a5;
-  }
+  /* On dark teal sidebar bg – bright colours for clear contrast */
+  &--online  { background: rgba(34, 197, 94, 0.2); color: #4ade80 !important; }
+  &--offline { background: rgba(239, 68, 68, 0.2); color: #f87171 !important; }
 }
 
 .shell__sync-info {
   font-size: 0.72rem;
-  color: #9fc2bd;
+  color: var(--mint-300);
 }
 
 .shell__user {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   padding-top: 12px;
 }
 
@@ -201,12 +202,12 @@
   align-items: center;
   gap: 8px;
   font-size: 0.78rem;
-  color: #9fc2bd;
+  color: rgba(255, 255, 255, 0.72);  /* ← white 72% */
 }
 
 .shell__logout-btn {
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.25);
   color: #fca5a5;
   border-radius: 6px;
   padding: 7px 12px;
@@ -217,72 +218,177 @@
   align-items: center;
   gap: 7px;
 
-  &:hover {
-    background: rgba(239, 68, 68, 0.22);
-  }
+  &:hover { background: rgba(239, 68, 68, 0.25); }
 }
 
 /* ==========================================================================
-   3. Mobile Top Navigation Bar (Branded Colors)
+   3. Mobile Top Toolbar  (dark teal bg → pure WHITE text & icons)
+   IMPORTANT: Global styles.scss sets h2{color:var(--color-teal-900)} which is
+   the SAME dark teal as our toolbar background. We defeat it with:
+   1. High-specificity nested selectors
+   2. !important on all color declarations inside the toolbar
    ========================================================================== */
 
 .mobile-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  height: 56px;
-  padding: 0 16px;
-  background: #0b4f4a; /* Styled deep teal header color */
-  color: #ffffff;
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+  display: none;
 
-  /* Hide Top Bar on Desktop views */
-  @media (min-width: 861px) {
-    display: none;
-  }
-
-  &__left,
-  &__right {
+  @media (max-width: 860px) {
     display: flex;
     align-items: center;
-    gap: 6px;
-    flex-shrink: 0;
+    min-height: var(--toolbar-height);
+    padding: 0 8px 0 14px;
+    background: var(--teal-900) !important;  /* dark teal – force over any reset */
+    color: #ffffff !important;               /* ALL text inside toolbar = white */
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    gap: 4px;
+    box-shadow: 0 3px 16px rgba(0, 0, 0, 0.3);
   }
 
+  /* ── Search overlay mode ── */
+  &__search-bar {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 4px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 24px;
+    padding: 4px 8px;
+    animation: toolbarFadeIn 0.18s ease;
+
+    input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #ffffff !important;
+      font-size: 0.95rem;
+      padding: 8px 4px;
+
+      &::placeholder { color: rgba(255, 255, 255, 0.55) !important; }
+    }
+  }
+
+  /* ── Left slot (back btn / brand) ── */
+  &__left {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    margin-right: 4px;
+  }
+
+  /* ── Title ── */
   &__title {
     flex: 1;
     min-width: 0;
     display: flex;
     flex-direction: column;
+    justify-content: center;
+    gap: 1px;
+  }
+}
 
-    h2 {
-      margin: 0;
-      font-size: 1.05rem;
-      font-weight: 700;
-      color: #ffffff;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      line-height: 1.2;
-    }
+/* ──────────────────────────────────────────────────────────────────────────
+   HIGH-SPECIFICITY overrides for toolbar headings.
+   We must beat the global:  h1,h2,h3,h4 { color: var(--color-teal-900) }
+   Using the full compound path defeats it without needing JS.
+   ────────────────────────────────────────────────────────────────────────── */
+.mobile-toolbar.mobile-toolbar .mobile-toolbar__title h2,
+.mobile-toolbar .mobile-toolbar__title h2 {
+  margin: 0 !important;
+  font-size: 1.05rem !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;         /* WHITE title on dark teal – always visible */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3 !important;
+}
 
-    small {
-      font-size: 0.72rem;
-      color: #9fc2bd;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      line-height: 1.2;
-      margin-top: 2px;
+.mobile-toolbar.mobile-toolbar .mobile-toolbar__title small,
+.mobile-toolbar .mobile-toolbar__title small {
+  display: block;
+  font-size: 0.7rem !important;
+  color: #5eead4 !important;         /* mint-300 subtitle – bright on dark */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 0 !important;
+  line-height: 1.2 !important;
+  font-family: var(--font-body, sans-serif) !important;
+}
+
+/* ── Toolbar right slot ── */
+.mobile-toolbar__right {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  margin-left: 2px;
+}
+
+/* Brand "L" pill inside toolbar */
+.toolbar-brand {
+  &__mark {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff;                 /* ← white on semi-transparent bg */
+    font-weight: 800;
+    font-size: 0.9rem;
+    display: grid;
+    place-items: center;
+  }
+}
+
+/* Online / sync status micro-icons in toolbar */
+.toolbar-sync-dot {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+
+  &.syncing i {
+    font-size: 0.85rem;
+    color: var(--mint-300);         /* ← bright mint spinner */
+  }
+  &.offline i {
+    font-size: 0.85rem;
+    color: #fca5a5;                 /* ← pink/red for offline */
+  }
+}
+
+/* Animated sync progress bar */
+.sync-progress-bar {
+  display: none;
+
+  @media (max-width: 860px) {
+    display: block;
+    height: 2px;
+    background: rgba(45, 212, 191, 0.2);
+    overflow: hidden;
+    position: sticky;
+    top: var(--toolbar-height);
+    z-index: 199;
+
+    &__fill {
+      height: 100%;
+      background: linear-gradient(90deg, transparent 0%, var(--mint-400) 50%, transparent 100%);
+      animation: syncPulse 1.4s ease-in-out infinite;
+      width: 40%;
     }
   }
 }
 
-/* Header Icon Buttons */
+@keyframes syncPulse {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
+}
+
+/* Toolbar icon buttons – pure white icons, clearly visible */
 .btn-icon {
   position: relative;
   display: inline-flex;
@@ -293,173 +399,285 @@
   padding: 0;
   border: none;
   background: transparent;
-  color: #ffffff;
+  color: #ffffff;                  /* ← always WHITE */
   border-radius: 50%;
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: background 0.15s;
+  flex-shrink: 0;
 
-  i {
-    font-size: 1.15rem;
-  }
+  i { font-size: 1.1rem; }
 
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.15);
-  }
-
-  &:active {
-    background-color: rgba(255, 255, 255, 0.25);
-  }
+  &:hover  { background: rgba(255, 255, 255, 0.16); }
+  &:active { background: rgba(255, 255, 255, 0.28); }
 
   &:disabled {
-    opacity: 0.4;
+    opacity: 0.35;
     cursor: not-allowed;
     background: transparent;
   }
+}
 
-  .badge {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 18px;
-    height: 18px;
-    padding: 0 4px;
-    background-color: #ef4444;
-    color: #ffffff;
-    font-size: 0.65rem;
-    font-weight: 700;
-    border-radius: 9px;
-    border: 2px solid #0b4f4a;
-    line-height: 1;
-  }
+/* Notification badge on action buttons */
+.btn-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 3px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 0.6rem;
+  font-weight: 700;
+  border-radius: 9px;
+  border: 2px solid var(--teal-900);
+  line-height: 1;
+}
+
+@keyframes toolbarFadeIn {
+  from { opacity: 0; transform: scale(0.97); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
 /* ==========================================================================
-   4. Mobile Bottom Navigation
+   4. Mobile Floating Pill Bottom Navigation
+      WHITE pill background → dark teal text/icons for clear contrast
+      Active tab → teal filled inner pill → white text
    ========================================================================== */
 
 .bottom-nav {
   display: none;
-
-  @media (max-width: 860px) {
-    display: flex;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 72px;
-    background: #0b4f4a;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    z-index: 1000;
-    padding: 0 8px max(6px, env(safe-area-inset-bottom));
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
-
-    a, .more-btn {
-      flex: 1;
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
-      background: transparent;
-      border: none;
-      color: rgba(207, 228, 224, 0.6);
-      text-decoration: none;
-      font-size: 0.68rem;
-      font-weight: 600;
-      letter-spacing: 0.02em;
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-      border-radius: 12px;
-      margin: 6px 4px;
-      cursor: pointer;
-
-      i {
-        font-size: 1.25rem;
-        transition: transform 0.25s ease;
-      }
-
-      // --- Top active indicator line ---
-      &::before {
-        content: '';
-        position: absolute;
-        top: -6px;
-        left: 50%;
-        transform: translateX(-50%) scaleX(0);
-        width: 32px;
-        height: 3px;
-        background: #2dd4bf; // mint accent
-        border-radius: 0 0 3px 3px;
-        transition: transform 0.3s ease;
-        box-shadow: 0 2px 8px rgba(45, 212, 191, 0.5);
-      }
-
-      &.is-active {
-        color: #ffffff;
-        background: rgba(255, 255, 255, 0.1);
-
-        i {
-          transform: translateY(-1px) scale(1.1);
-          color: #2dd4bf;
-        }
-
-        &::before {
-          transform: translateX(-50%) scaleX(1);
-        }
-      }
-
-      &:active {
-        transform: scale(0.95);
-      }
-    }
-
-    // More button specific - add dot when clinic is active
-    .more-btn.is-active {
-      color: #ffffff;
-      background: rgba(255, 255, 255, 0.1);
-      &::before {
-        transform: translateX(-50%) scaleX(1);
-        background: #fbbf24; // amber for More to differentiate
-        box-shadow: 0 2px 8px rgba(251, 191, 36, 0.5);
-      }
-      i { color: #fbbf24; }
-    }
-  }
 }
 
 .hidden-checker { display: none; }
 
+@media (max-width: 860px) {
+
+  .bottom-nav {
+    display: block;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 8px 12px max(10px, env(safe-area-inset-bottom));
+    z-index: 300;
+    pointer-events: none;
+  }
+
+  .bottom-nav__pill {
+    display: flex;
+    align-items: stretch;
+    background: var(--surface-white);           /* WHITE pill – dark content on white */
+    border-radius: 28px;
+    padding: 5px;
+    gap: 2px;
+    pointer-events: all;
+    border: 1px solid rgba(0, 0, 0, 0.07);
+    box-shadow:
+      0 6px 32px rgba(11, 79, 74, 0.18),
+      0 2px 8px rgba(0, 0, 0, 0.10);
+  }
+
+  .bottom-nav__item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 7px 4px;
+    border-radius: 22px;
+    background: transparent;
+    border: none;
+    /* DARK TEAL for inactive – clear on white bg */
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    transition: color 0.18s ease, background 0.18s ease;
+    line-height: 1;
+
+    i {
+      font-size: 1.2rem;
+      color: var(--text-secondary);   /* ← dark grey icon – visible on white */
+      transition: color 0.18s ease, transform 0.18s ease;
+      line-height: 1;
+    }
+
+    span { line-height: 1; }
+
+    /* ── Active tab: teal filled pill → white text ── */
+    &.is-active {
+      background: var(--teal-900);     /* dark teal fill */
+      color: #ffffff;                  /* ← pure white label */
+
+      i {
+        color: var(--mint-300);        /* ← bright mint icon on dark teal – very clear */
+        transform: translateY(-1px) scale(1.08);
+      }
+    }
+
+    &:active { transform: scale(0.92); }
+
+    &:hover:not(.is-active) {
+      background: var(--teal-100);     /* light teal hover on white */
+      color: var(--teal-900);
+
+      i { color: var(--teal-900); }
+    }
+  }
+
+  /* More btn – amber icon when sub-route is active */
+  .bottom-nav__more.is-active {
+    background: #78350f;
+    i { color: #fbbf24; }
+  }
+}
+
 /* ==========================================================================
-   5. Modal & Overlay Component Customization
+   5. More Options Drawer
    ========================================================================== */
 
-::ng-deep .p-menu {
-  border-radius: 8px !important;
+::ng-deep .mobile-more-drawer {
+  .p-drawer-content { padding: 0 16px 20px !important; }
+}
+
+.more-drawer__handle {
+  width: 36px;
+  height: 4px;
+  background: #d1d5db;
+  border-radius: 99px;
+  margin: 12px auto 16px;
+}
+
+.more-drawer__header h4 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.more-drawer__section-label {
+  font-size: 0.67rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  padding: 10px 4px 4px;
+}
+
+.more-drawer__list {
+  display: flex;
+  flex-direction: column;
+
+  a, button {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 11px 6px;
+    border-radius: 12px;
+    border: none;
+    background: none;
+    text-align: left;
+    text-decoration: none;
+    color: var(--text-primary);         /* ← dark text on white drawer */
+    width: 100%;
+    cursor: pointer;
+    transition: background 0.12s;
+
+    &:hover, &:active { background: #f1f5f9; }
+    &.is-active  { color: var(--teal-900); }
+    &.is-danger  { color: #dc2626; }
+    &:disabled   { opacity: 0.4; cursor: default; }
+
+    div   { display: flex; flex-direction: column; }
+    b     { font-size: 0.88rem; font-weight: 600; color: var(--text-primary); }
+    small { font-size: 0.74rem; color: var(--text-secondary); margin-top: 1px; }
+  }
+}
+
+.more-drawer__icon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  background: #f1f5f9;
+  border-radius: 11px;
+  font-size: 1.05rem;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+
+  &--green  { background: #dcfce7; color: #16a34a; }
+  &--danger { background: #fee2e2; color: #dc2626; }
+}
+
+.more-drawer__divider {
+  height: 1px;
+  background: #f1f5f9;
+  margin: 4px 0;
+}
+
+/* ==========================================================================
+   6. Global Mobile Filter Drawer
+   ========================================================================== */
+
+::ng-deep .mobile-filter-drawer {
+  height: auto !important;
+  max-height: 80vh !important;
+  border-top-left-radius: 16px !important;
+  border-top-right-radius: 16px !important;
+
+  .p-drawer-header {
+    padding: 14px 18px !important;
+    border-bottom: 1px solid #e2e8f0;
+
+    .drawer-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      color: var(--teal-900);
+    }
+  }
+
+  .p-drawer-content { padding: 16px !important; }
+}
+
+/* ==========================================================================
+   7. PrimeNG p-menu popup
+   ========================================================================== */
+
+::ng-deep .p-menu.p-component {
+  z-index: 1100 !important;
+  max-width: calc(100vw - 24px) !important;
+  right: 12px !important;
+  left: auto !important;
+  border-radius: 10px !important;
   border: 1px solid #e2e8f0 !important;
-  box-shadow: 0 4px 16px rgba(11, 79, 74, 0.12) !important;
+  box-shadow: 0 4px 20px rgba(11, 79, 74, 0.13) !important;
 
   .p-menuitem-link {
     padding: 10px 16px !important;
     gap: 10px !important;
 
     .p-menuitem-text {
-      color: #0b4f4a !important;
+      color: var(--teal-900) !important;
       font-size: 0.85rem !important;
       font-weight: 500 !important;
     }
-
-    .p-menuitem-icon {
-      color: #106b63 !important;
-      font-size: 1rem !important;
-    }
-
-    &:hover {
-      background-color: #e8f5f4 !important;
-    }
+    .p-menuitem-icon { color: var(--teal-700) !important; font-size: 1rem !important; }
+    &:hover { background: var(--teal-100) !important; }
   }
 }
+
+/* ==========================================================================
+   8. About Dialog
+   ========================================================================== */
 
 .about-content {
   text-align: center;
@@ -469,7 +687,7 @@
     height: 48px;
     margin: 0 auto 12px;
     border-radius: 12px;
-    background: #0b4f4a;
+    background: var(--teal-900);
     color: #ffffff;
     font-weight: 800;
     font-size: 1.3rem;
@@ -477,17 +695,10 @@
     place-items: center;
   }
 
-  h3 {
-    margin: 0 0 4px;
-    font-size: 1rem;
-    color: #0b4f4a;
-  }
+  h3 { margin: 0 0 4px; font-size: 1rem; color: var(--teal-900); }
 
-  &__version {
-    font-size: 0.78rem;
-    color: #64748b;
-    margin: 0 0 12px;
-  }
+  &__version  { font-size: 0.78rem; color: #64748b; margin: 0 0 12px; }
+  &__sub      { font-size: 0.82rem; color: var(--text-secondary); }
 
   &__footer {
     margin-top: 16px;
@@ -513,201 +724,3 @@
     gap: 6px;
   }
 }
-::ng-deep .mobile-filter-drawer {
-  height: auto !important;
-  max-height: 80vh !important;
-  border-top-left-radius: 16px !important;
-  border-top-right-radius: 16px !important;
-
-  .p-drawer-header {
-    padding: 14px 18px !important;
-    border-bottom: 1px solid #e2e8f0;
-
-    .drawer-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: 700;
-      color: #0b4f4a;
-    }
-  }
-
-  .p-drawer-content {
-    padding: 16px !important;
-  }
-}
-/* ==========================================================================
-   Mobile Top Toolbar & Search Styles
-   ========================================================================== */
-.mobile-toolbar{
-  display: none;
-
-  @media (max-width: 860px) {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  height: 56px;
-  padding: 0 12px;
-  background: #0b4f4a;
-  color: #ffffff;
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
-
-  /* Full-width Search Bar Overlay */
-  &__search-bar {
-    display: flex;
-    align-items: center;
-    width: 100%;
-    gap: 8px;
-    background: rgba(255, 255, 255, 0.12);
-    border-radius: 28px; /* Soft pill-shaped mobile search */
-    padding: 2px 6px 2px 4px;
-    animation: fadeIn 0.18s ease-in-out;
-
-    input {
-      flex: 1;
-      background: transparent;
-      border: none;
-      outline: none;
-      color: #ffffff;
-      font-size: 0.95rem;
-      padding: 6px 4px;
-
-      &::placeholder {
-        color: rgba(255, 255, 255, 0.65);
-      }
-    }
-
-    .btn-icon {
-      width: 36px;
-      height: 36px;
-      flex-shrink: 0;
-    }
-  }
-
-  &__left,
-  &__right {
-    display: flex;
-    align-items: center;
-    gap: 2px;
-    flex-shrink: 0;
-  }
-}
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-/* Fix PrimeNG Popup Menu Alignment when appended to body */
-::ng-deep .p-menu.p-component {
-  z-index: 1100 !important;
-  max-width: calc(100vw - 24px) !important;
-  
-  /* Shift popup inward if opened near right screen edge */
-  right: 12px !important; 
-  left: auto !important;
-}
-
-//bottom
-/* --- Bottom Nav Base --- */
-.bottom-nav {
-  display: none;
-}
-.hidden-checker { display: none; }
-
-@media (max-width: 768px) {
- .shell__nav { display: none; }
- .shell__main { padding-bottom: 80px; }
-
- .bottom-nav {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    background: var(--surface-card, #fff);
-    border-top: 1px solid var(--surface-border, #e5e7eb);
-    padding: 6px 0 max(6px, env(safe-area-inset-bottom));
-    z-index: 999;
-  }
-
- .bottom-nav a,
- .bottom-nav.more-btn {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    background: none;
-    border: none;
-    color: var(--text-color-secondary);
-    text-decoration: none;
-    font-size: 10px;
-    font-weight: 500;
-    padding: 4px;
-  }
- .bottom-nav a i,
- .bottom-nav.more-btn i {
-    font-size: 22px;
-  }
- .bottom-nav a.is-active,
- .bottom-nav.more-btn.is-active {
-    color: var(--primary-color);
-  }
-}
-
-/* --- More Drawer --- */
-.mobile-more-drawer.more-drawer__handle {
-  width: 36px; height: 4px;
-  background: #d1d5db;
-  border-radius: 99px;
-  margin: 8px auto 12px;
-}
-.more-drawer__header h4 {
-  margin: 0 0 12px 4px;
-  font-size: 16px;
-}
-.more-drawer__list {
-  display: flex;
-  flex-direction: column;
-}
-.more-drawer__list a,
-.more-drawer__list button {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 8px;
-  border-radius: 12px;
-  border: none;
-  background: none;
-  text-align: left;
-  text-decoration: none;
-  color: inherit;
-  width: 100%;
-}
-.more-drawer__list a:active,
-.more-drawer__list button:active {
-  background: var(--surface-hover);
-}
-.more-drawer__list i {
-  width: 36px; height: 36px;
-  display: grid; place-items: center;
-  background: var(--surface-ground);
-  border-radius: 10px;
-  font-size: 18px;
-}
-.more-drawer__list div { display: flex; flex-direction: column; }
-.more-drawer__list b { font-size: 14px; }
-.more-drawer__list small { font-size: 12px; opacity: 0.7; }
-.more-drawer__divider { height: 1px; background: var(--surface-border); margin: 8px 0; }
-.more-drawer__list button.is-danger { color: var(--red-500); }

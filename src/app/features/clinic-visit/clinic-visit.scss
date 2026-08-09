@@ -105,9 +105,17 @@
   text-decoration: underline;
 }
 
+// clinic-visit.component.scss
 .cv-pull-error {
-  display: block;
-  margin-bottom: 0.75rem;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100vw;
+  .error-full { display: none; }
+  @media (min-width: 768px) {
+    .error-full { display: inline; margin-left: 8px; color: #666; }
+  }
 }
 
 /* ── Defaulter / at-risk count chips ── */

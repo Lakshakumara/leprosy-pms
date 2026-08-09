@@ -5,7 +5,9 @@
 } @else {
 <div class="shell">
 
-  <!-- Sidebar Navigation (Desktop) -->
+  <!-- ═══════════════════════════════════════════════════════════
+       Desktop Sidebar Navigation
+  ════════════════════════════════════════════════════════════════ -->
   <aside class="shell__nav">
     <div class="shell__brand">
       <span class="shell__brand-mark">L</span>
@@ -69,86 +71,109 @@
     </div>
   </aside>
 
-  <!-- Main Content Area -->
+  <!-- ═══════════════════════════════════════════════════════════
+       Main Content Area
+  ════════════════════════════════════════════════════════════════ -->
   <div class="shell__main">
 
-    <!-- Fully Integrated Mobile Top Bar -->
+    <!-- ── Mobile Top Toolbar ── -->
     <header class="mobile-toolbar">
+
       @if (mobileHeader.showSearch()) {
-      <!-- ── Search Mode Layout (Full Width Input) ── -->
+      <!-- Full-width Search Mode -->
       <div class="mobile-toolbar__search-bar">
-        <!-- Back Arrow to Exit Search -->
         <button type="button" class="btn-icon" (click)="mobileHeader.disableSearch()" title="Close Search">
           <i class="pi pi-arrow-left"></i>
         </button>
-
-        <!-- Input Field -->
-        <input #searchInput type="text" [placeholder]="mobileHeader.config().searchPlaceholder || 'Search...'"
-          [value]="mobileHeader.searchQuery()" (input)="mobileHeader.updateSearch(searchInput.value)" autofocus />
-
-        <!-- Clear Button (Shown only when text exists) -->
+        <input #searchInput type="text"
+          [placeholder]="mobileHeader.config().searchPlaceholder || 'Search...'"
+          [value]="mobileHeader.searchQuery()"
+          (input)="mobileHeader.updateSearch(searchInput.value)"
+          autofocus />
         @if (mobileHeader.searchQuery()) {
-        <button type="button" class="btn-icon" (click)="mobileHeader.updateSearch(''); searchInput.value = ''"
-          title="Clear">
+        <button type="button" class="btn-icon" (click)="mobileHeader.updateSearch(''); searchInput.value = ''" title="Clear">
           <i class="pi pi-times"></i>
         </button>
         }
       </div>
 
       } @else {
-      <!-- ── Standard Header Mode Layout ── -->
+      <!-- Standard Header Mode -->
 
-      <!-- Left Navigation (Back or Menu) -->
+      <!-- Left: Back or Brand -->
       <div class="mobile-toolbar__left">
         @if (mobileHeader.hasBack()) {
-        <button type="button" class="btn-icon" (click)="mobileHeader.goBack()">
-          <i class="pi pi-arrow-left"></i>
-        </button>
-        } @else if (mobileHeader.showMenu()) {
-        <button type="button" class="btn-icon" (click)="mobileHeader.config().menuCommand?.()">
-          <i class="pi pi-bars"></i>
-        </button>
+          <button type="button" class="btn-icon" (click)="mobileHeader.goBack()">
+            <i class="pi pi-arrow-left"></i>
+          </button>
+        } @else {
+          <!-- Brand mark when no back button -->
+          <div class="toolbar-brand">
+            <span class="toolbar-brand__mark">L</span>
+          </div>
         }
       </div>
 
-      <!-- Title & Subtitle -->
+      <!-- Center: Title & Subtitle -->
       <div class="mobile-toolbar__title">
         <h2>{{ mobileHeader.config().title }}</h2>
         @if (mobileHeader.config().subtitle) {
-        <small>{{ mobileHeader.config().subtitle }}</small>
+          <small>{{ mobileHeader.config().subtitle }}</small>
         }
       </div>
 
-      <!-- Right Actions -->
+      <!-- Right: Status + Actions + Overflow -->
       <div class="mobile-toolbar__right">
-        <!-- 🔍 Search Icon Button (Shows when search placeholder/callback is configured) -->
+
+        <!-- Sync indicator (subtle) -->
+        @if (patients.isSyncing()) {
+          <div class="toolbar-sync-dot syncing" title="Syncing…">
+            <i class="pi pi-spin pi-spinner"></i>
+          </div>
+        } @else if (!patients.isOnline()) {
+          <div class="toolbar-sync-dot offline" title="Offline">
+            <i class="pi pi-wifi"></i>
+          </div>
+        }
+
+        <!-- 🔍 Search -->
         @if (mobileHeader.config().onSearch || mobileHeader.config().searchPlaceholder) {
-        <button type="button" class="btn-icon" (click)="mobileHeader.enableSearch()" title="Search">
-          <i class="pi pi-search"></i>
-        </button>
+          <button type="button" class="btn-icon" (click)="mobileHeader.enableSearch()" title="Search">
+            <i class="pi pi-search"></i>
+          </button>
         }
 
-        <!-- Page Specific Actions (Filter, Sync, etc.) -->
+        <!-- Page-specific Actions -->
         @for (action of mobileHeader.visibleActions(); track action.label) {
-        <button type="button" class="btn-icon" [disabled]="action.disabled" (click)="action.command()"
-          [pTooltip]="action.tooltip || ''">
-          <i [class]="action.icon"></i>
-          @if (action.badge !== undefined && action.badge !== null) {
-          <span class="badge">{{ action.badge }}</span>
-          }
-        </button>
+          <button type="button" class="btn-icon"
+            [disabled]="action.disabled"
+            (click)="action.command()"
+            [pTooltip]="action.tooltip || ''">
+            <i [class]="action.icon"></i>
+            @if (action.badge !== undefined && action.badge !== null) {
+              <span class="btn-badge">{{ action.badge }}</span>
+            }
+          </button>
         }
 
-        <!-- Overflow Ellipsis Menu -->
+        <!-- Overflow Menu -->
         @if (mobileHeader.hasOverflow()) {
-        <button type="button" class="btn-icon" (click)="overflowMenu.toggle($event)">
-          <i class="pi pi-ellipsis-v"></i>
-        </button>
-        <p-menu #overflowMenu [model]="overflowItems()" [popup]="true" [appendTo]="'body'" />
+          <button type="button" class="btn-icon" (click)="overflowMenu.toggle($event)">
+            <i class="pi pi-ellipsis-v"></i>
+          </button>
+          <p-menu #overflowMenu [model]="overflowItems()" [popup]="true" [appendTo]="'body'" />
         }
+
       </div>
       }
     </header>
+
+    <!-- Sync progress bar -->
+    @if (patients.isSyncing()) {
+      <div class="sync-progress-bar">
+        <div class="sync-progress-bar__fill"></div>
+      </div>
+    }
 
     <!-- Active Content Slot -->
     <main class="shell__content">
@@ -157,76 +182,91 @@
 
   </div>
 
-  <!-- Mobile Bottom Navigation -->
+  <!-- ═══════════════════════════════════════════════════════════
+       Mobile Floating Pill Bottom Navigation
+  ════════════════════════════════════════════════════════════════ -->
   <nav class="bottom-nav">
-    <a routerLink="/dashboard" routerLinkActive="is-active">
-      <i class="pi pi-chart-bar"></i>
-      <span>Dashboard</span>
-    </a>
-    <a routerLink="/patients" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">
-      <i class="pi pi-users"></i>
-      <span>Patients</span>
-    </a>
-    <a routerLink="/map" routerLinkActive="is-active">
-      <i class="pi pi-map"></i>
-      <span>Map</span>
-    </a>
-    <button type="button" class="more-btn" [class.is-active]="rlaClinic.isActive" (click)="showMobileMenu.set(true)">
-      <i class="pi pi-ellipsis-h"></i>
-      <span>More</span>
-    </button>
+    <div class="bottom-nav__pill">
 
-    <!-- hidden checker for active state -->
-    <span class="hidden-checker">
-      <span routerLinkActive="is-active" #rlaClinic="routerLinkActive" routerLink="/clinicVisit"></span>
-    </span>
+      <a routerLink="/dashboard" routerLinkActive="is-active" class="bottom-nav__item">
+        <i class="pi pi-chart-bar"></i>
+        <span>Dashboard</span>
+      </a>
+
+      <a routerLink="/patients" routerLinkActive="is-active"
+        [routerLinkActiveOptions]="{ exact: true }" class="bottom-nav__item">
+        <i class="pi pi-users"></i>
+        <span>Patients</span>
+      </a>
+
+      <a routerLink="/clinicVisit" routerLinkActive="is-active" class="bottom-nav__item">
+        <i class="pi pi-calendar"></i>
+        <span>Clinic</span>
+      </a>
+
+      <a routerLink="/map" routerLinkActive="is-active" class="bottom-nav__item">
+        <i class="pi pi-map"></i>
+        <span>Map</span>
+      </a>
+
+      <!-- More: sync + about in overflow -->
+      <button type="button" class="bottom-nav__item bottom-nav__more"
+        (click)="showMobileMenu.set(true)">
+        <i class="pi pi-ellipsis-h"></i>
+        <span>More</span>
+      </button>
+
+    </div>
   </nav>
 
-  <p-drawer [visible]="showMobileMenu()" (visibleChange)="showMobileMenu.set($event)" position="bottom"
-    styleClass="mobile-more-drawer" [modal]="true" [closeOnEscape]="true"
-    [style]="{ height: 'auto', borderTopLeftRadius: '16px', borderTopRightRadius: '16px' }">
+  <!-- ═══════════════════════════════════════════════════════════
+       More / Options Drawer
+  ════════════════════════════════════════════════════════════════ -->
+  <p-drawer [visible]="showMobileMenu()" (visibleChange)="showMobileMenu.set($event)"
+    position="bottom" styleClass="mobile-more-drawer" [modal]="true" [closeOnEscape]="true"
+    [style]="{ height: 'auto', borderTopLeftRadius: '20px', borderTopRightRadius: '20px' }">
 
     <ng-template pTemplate="content">
       <div class="more-drawer__handle"></div>
+
       <div class="more-drawer__header">
         <h4>More Options</h4>
       </div>
 
       <div class="more-drawer__list">
-        <a routerLink="/clinicVisit" routerLinkActive="is-active" (click)="closeMobileMenu()">
-          <i class="pi pi-calendar"></i>
-          <div>
-            <b>Clinic Visits</b>
-            <small>Manage follow-ups & appointments</small>
-          </div>
-        </a>
 
-        <!-- ADD FUTURE LINKS HERE -->
-        <!-- Example:
-      <a routerLink="/reports" routerLinkActive="is-active" (click)="closeMobileMenu()">
-        <i class="pi pi-file"></i>
-        <div><b>Reports</b><small>Monthly summaries</small></div>
-      </a>
-      -->
+        <div class="more-drawer__section-label">Data</div>
+
+        <button type="button" (click)="syncNow(); closeMobileMenu()" [disabled]="!patients.isOnline()">
+          <div class="more-drawer__icon" [class.more-drawer__icon--green]="patients.isOnline()">
+            <i class="pi pi-refresh"></i>
+          </div>
+          <div>
+            <b>Sync Data</b>
+            <small>{{ patients.isOnline() ? (patients.lastSyncedAt() ? ('Last: ' + (patients.lastSyncedAt() | date:'dd MMM HH:mm')) : 'Ready to sync') : 'Offline – unavailable' }}</small>
+          </div>
+        </button>
 
         <div class="more-drawer__divider"></div>
 
-        <button type="button" (click)="syncNow(); closeMobileMenu()" [disabled]="!patients.isOnline()">
-          <i class="pi pi-refresh"></i>
-          <div><b>Sync Data</b><small>{{ patients.isOnline()? 'Online' : 'Offline' }}</small></div>
-        </button>
+        <div class="more-drawer__section-label">App</div>
 
         <button type="button" (click)="closeMobileMenu(); showAbout.set(true)">
-          <i class="pi pi-info-circle"></i>
+          <div class="more-drawer__icon">
+            <i class="pi pi-info-circle"></i>
+          </div>
           <div><b>About App</b><small>Leprosy PMS v1.0</small></div>
         </button>
 
         @if (auth.currentUser()) {
         <button type="button" class="is-danger" (click)="closeMobileMenu(); logout()">
-          <i class="pi pi-sign-out"></i>
+          <div class="more-drawer__icon more-drawer__icon--danger">
+            <i class="pi pi-sign-out"></i>
+          </div>
           <div><b>Sign Out</b><small>{{ auth.currentUser()!.displayName }}</small></div>
         </button>
         }
+
       </div>
     </ng-template>
   </p-drawer>
@@ -243,7 +283,6 @@
       </div>
     </ng-template>
 
-    <!-- 💡 Project template inside pTemplate="content" -->
     <ng-template pTemplate="content">
       @if (mobileHeader.config().filterTemplate) {
       <ng-container *ngTemplateOutlet="mobileHeader.config().filterTemplate!"></ng-container>

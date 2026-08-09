@@ -49,7 +49,7 @@ export class PinLockComponent {
   isFirstTime = signal(!localStorage.getItem('leprosy-pin-hash'));
 
   async unlock() {
-    this.error.set('');
+   /* this.error.set('');
     if (this.isFirstTime()) {
       if (this.pin !== this.confirmPin) {
         this.error.set('PINs do not match');
@@ -65,6 +65,6 @@ export class PinLockComponent {
       }
       await this.crypto.deriveKeyFromPin(this.pin);
       this.router.navigate(['/']);
-    }
+    }*/
   }
 }

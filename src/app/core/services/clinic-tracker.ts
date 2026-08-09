@@ -173,6 +173,38 @@ export class ClinicVisitTrackerService {
     return this.courseLength(patient) > this.nominalCourseLength(patient);
   }
 
+  //------------ schedule date calculation-------------
+
+  private getClinicWeekdayFromHistory(patient: Patient): number {
+    const realVisits = (patient.visits ?? [])
+      .filter(v => this.normalizeDate(v.visitDate))
+      .map(v => this.normalizeDate(v.visitDate)!)
+      .sort((a, b) => a.localeCompare(b)) // oldest first
+      .slice(-5); // last 5 only - handles consultant change
+
+    if (realVisits.length === 0) {
+      const start = this.courseStartDate(patient);
+      return start ? new Date(start).getDay() : 1;
+    }
+
+    // Count weekdays
+    const counts = new Map<number, number>();
+    for (const d of realVisits) {
+      const wd = new Date(d).getDay();
+      counts.set(wd, (counts.get(wd) ?? 0) + 1);
+    }
+
+    // Most frequent weekday = clinic day
+    let bestDay = new Date(realVisits[realVisits.length - 1]).getDay();
+    let bestCount = 0;
+    counts.forEach((c, day) => {
+      if (c > bestCount) {
+        bestCount = c;
+        bestDay = day;
+      }
+    });
+    return bestDay;
+  }
   /**
    * Builds the expected dose schedule and merges in whatever real visits
    * have actually been logged, matched by `visitNumber`.
@@ -180,14 +212,51 @@ export class ClinicVisitTrackerService {
   getDoseSchedule(patient: Patient): DoseSlot[] {
     const start = this.courseStartDate(patient);
     const length = this.courseLength(patient);
-    const visitsByNumber = new Map((patient.visits ?? []).map((v) => [v.visitNumber, v]));
-    return Array.from({ length }, (_, i) => i + 1)
-      .filter((doseNumber) => !SKIP_DOSE_NUMBERS.has(doseNumber))
-      .map((doseNumber) => ({
+    const visitsByNumber = new Map((patient.visits ?? []).map(v => [v.visitNumber, v]));
+    const clinicWeekday = this.getClinicWeekdayFromHistory(patient);
+
+    let lastDate = start;
+    const slots: DoseSlot[] = [];
+
+    for (let doseNumber = 1; doseNumber <= length; doseNumber++) {
+      if (SKIP_DOSE_NUMBERS.has(doseNumber)) continue;
+
+      let expectedDate = '';
+      if (doseNumber === 1) {
+        expectedDate = start;
+      } else {
+        const prevVisit = visitsByNumber.get(doseNumber - 1);
+        const baseDate = prevVisit?.visitDate ? this.normalizeDate(prevVisit.visitDate) : lastDate;
+        if (baseDate) {
+          const plus28 = this.addDays(baseDate, 28);
+          expectedDate = this.adjustToClinicDay(plus28, clinicWeekday);
+        }
+      }
+      if (expectedDate) lastDate = expectedDate;
+
+      slots.push({
         doseNumber,
-        expectedDate: start ? this.addMonths(start, doseNumber - 1) : '',
+        expectedDate,
         visit: visitsByNumber.get(doseNumber) ?? null,
-      }));
+      });
+    }
+    return slots;
+  }
+
+  private adjustToClinicDay(dateStr: string, targetWeekday: number): string {
+    const d = new Date(dateStr);
+    let diff = targetWeekday - d.getDay();
+    // Never exceed 28 days, if snap would go to +3 days or more, go back 1 week = 21-25 days
+    if (diff > 2) diff -= 7;
+    if (diff < -4) diff += 7; // never go below 21 days
+    d.setDate(d.getDate() + diff);
+    return this.toIsoDate(d);
+  }
+
+  private addDays(dateStr: string, days: number): string {
+    const dt = new Date(dateStr);
+    dt.setDate(dt.getDate() + days);
+    return this.toIsoDate(dt);
   }
 
   // ── Counts ────────────────────────────────────────────────────────────────
@@ -202,20 +271,10 @@ export class ClinicVisitTrackerService {
     ).length;
   }
 
-  nextActionableDose(patient: Patient): DoseSlot | null {
-    return this.getDoseSchedule(patient).find((slot) => !slot.visit?.visitDate) ?? null;
-  }
-
-  overdueDays(slot: DoseSlot, today: string = this.todayIso()): number {
-    if (!slot.expectedDate) return 0;
-    const due = new Date(slot.expectedDate);
-    const now = new Date(today);
-    return Math.max(0, Math.round((now.getTime() - due.getTime()) / 86_400_000));
-  }
-
   // ── Status ────────────────────────────────────────────────────────────────
 
   isCompleted(patient: Patient): boolean {
+    if (!this.isEligibleForTracking(patient)) return false;
     if (patient.treatmentStatus) return patient.treatmentStatus === 'completed';
     const schedule = this.getDoseSchedule(patient);
     return schedule.length > 0 && schedule.every((slot) => !!slot.visit?.visitDate);
@@ -262,21 +321,57 @@ export class ClinicVisitTrackerService {
    * defaulter; only actually running out the full 1.5x window does.
    */
   isDefaulter(patient: Patient, today: string = this.todayIso()): boolean {
+    if (!this.isEligibleForTracking(patient)) return false;
     if (patient.treatmentStatus === 'defaulted') return true;
     if (this.isCompleted(patient)) return false;
     const deadline = this.defaulterDeadline(patient);
     return !!deadline && today > deadline;
   }
 
-  /**
-   * AT_RISK is the window BEFORE the formal default deadline: the patient
-   * is behind their expected dose schedule (at least one overdue dose) but
-   * hasn't yet run out the full 1.5x window. This is the "go find this
-   * patient" flag for clinic staff, distinct from the harder DEFAULTER line.
-   */
   isAtRisk(patient: Patient, today: string = this.todayIso()): boolean {
-    if (this.isCompleted(patient) || this.isDefaulter(patient, today)) return false;
-    return this.missedDoseCount(patient, today) >= 1;
+    if (!this.isEligibleForTracking(patient)) return false;
+    if (this.isNeedsReview(patient, today)) return false;
+    if (this.isCompleted(patient)) return false;
+    if (this.isDefaulter(patient, today)) return false;
+
+    const next = this.nextActionableDose(patient);
+    if (!next || !next.expectedDate) return false;
+
+    const overdue = this.overdueDays(next, today);
+
+    // Not yet due or within grace period (0-7 days) = still ACTIVE
+    if (overdue <= 7) return false;
+
+    // Overdue but still inside WHO window = AT_RISK
+    const daysToDeadline = this.daysToDefaulterDeadline(patient, today);
+    if (daysToDeadline !== null && daysToDeadline <= 0) return false; // already defaulter
+
+    return overdue >= 8; // 8+ days overdue = AT_RISK
+  }
+
+  // Helper you already have, but fix to use normalizeDate
+  nextActionableDose(patient: Patient): DoseSlot | null {
+    return this.getDoseSchedule(patient).find(slot => {
+      const hasRealDate = this.normalizeDate(slot.visit?.visitDate ?? '') !== '';
+      return !hasRealDate;
+    }) ?? null;
+  }
+
+  overdueDays(slot: DoseSlot, today: string = this.todayIso()): number {
+    if (!slot.expectedDate) return 0;
+    const due = new Date(slot.expectedDate);
+    const now = new Date(today);
+    const diff = now.getTime() - due.getTime();
+    return Math.max(0, Math.floor(diff / 86400000));
+  }
+
+  // For UI badge - how critical
+  getAtRiskLevel(patient: Patient, today: string = this.todayIso()): 'EARLY' | 'LATE' | null {
+    if (!this.isAtRisk(patient, today)) return null;
+    const next = this.nextActionableDose(patient);
+    if (!next) return null;
+    const overdue = this.overdueDays(next, today);
+    return overdue <= 21 ? 'EARLY' : 'LATE'; // 8-21 = early, 22-60 = late
   }
 
   /**
@@ -292,6 +387,7 @@ export class ClinicVisitTrackerService {
    * been logged), they never land here again.
    */
   isNeedsReview(patient: Patient, today: string = this.todayIso()): boolean {
+    if (!this.isEligibleForTracking(patient)) return true;
     if (patient.treatmentStatus && patient.treatmentStatus !== 'ongoing') return false;
     if (this.isCompleted(patient)) return false;
     if (this.completedDoseCount(patient) > 0) return false;
@@ -307,11 +403,51 @@ export class ClinicVisitTrackerService {
    * what happened", not be asserted as a confirmed default.
    */
   getVisitStatus(patient: Patient, today: string = this.todayIso()): ClinicVisitStatus {
+    // Case X check
+    if (!this.isEligibleForTracking(patient)) {
+      return 'NEEDS_REVIEW';
+    }
+
+    // Only runs if Case X passes
     if (this.isCompleted(patient)) return 'COMPLETED';
-    if (this.isNeedsReview(patient, today)) return 'NEEDS_REVIEW';
     if (this.isDefaulter(patient, today)) return 'DEFAULTER';
     if (this.isAtRisk(patient, today)) return 'AT_RISK';
     return 'ACTIVE';
+  }
+
+  /**
+   * 1. enroll date after TRACKING_START_DATE -> eligible
+   * 2. enroll date older than TRACKING_START_DATE AND has 1st + 2nd visit -> eligible
+   *    (means user started entering back-dated visits)
+   */
+  private isEligibleForTracking(patient: Patient): boolean {
+    const enrollDate = this.normalizeDate(patient.enrolledAt) || this.courseStartDate(patient);
+    if (!enrollDate) return false;
+
+    // Condition 1: New patient after tracking started
+    if (enrollDate >= TRACKING_START_DATE) {
+      return true;
+    }
+
+    // Condition 2: Old patient but user started entering history
+    // 1st visit = enroll date (auto), 2nd visit = mapped data element
+    // So check if at least 2 visits have visitDate
+    const hasFirstVisit = (patient.visits ?? []).some(v => v.visitNumber === 1 && !!v.visitDate)
+      || !!enrollDate; // 1st is auto as enroll date, so always true if enrollDate exists
+
+    const hasRealSecondVisit = (patient.visits ?? []).some(v => {
+      if (v.visitNumber !== 2) return false;
+      const date = this.normalizeDate(v.visitDate); // '' if empty/invalid, '2024-03-12' if real
+      return date !== '';
+    });// If you mapped 2nd visit to a dataElement, also check that DE
+    // Example: const secondVisitFromDE = this.normalizeDate((patient as any).secondVisitDate);
+    // const hasSecondVisit = !!secondVisitFromDE || visits check above
+
+    if (hasFirstVisit && hasRealSecondVisit) {
+      return true;
+    }
+
+    return false;
   }
 
   /**

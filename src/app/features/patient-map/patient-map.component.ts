@@ -105,6 +105,7 @@ yearColors: Record<string, string> = {}; // NOT readonly, we build it
 
   private activeYears: Set<string> = new Set<string>()
   private isSwitching = false;
+  private districtBounds: any = null; // stored for resetView()
 
   // Debounced search to avoid performance issues
   private debouncedSearch = debounce(() => {
@@ -262,6 +263,13 @@ yearColors: Record<string, string> = {}; // NOT readonly, we build it
         if (e.layer === group) {
           this.activeYears.add(yStr);
           this.refreshCluster();
+          if (this.currentMode() === 'cluster') {
+            // In cluster mode: year layers must stay off the map –
+            // Leaflet's control just added it, so remove it again.
+            this.isSwitching = true;
+            this.map.removeLayer(group);
+            setTimeout(() => (this.isSwitching = false), 50);
+          }
           break;
         }
       }
@@ -272,6 +280,7 @@ yearColors: Record<string, string> = {}; // NOT readonly, we build it
         if (e.layer === group) {
           this.activeYears.delete(yStr);
           this.refreshCluster();
+          // In cluster mode Leaflet already removed the year layer; nothing extra needed.
           break;
         }
       }
@@ -295,13 +304,13 @@ yearColors: Record<string, string> = {}; // NOT readonly, we build it
     });
     // Setup map click for location picking
     this.mapClickHandler = (e: any) => {
-      if (this.showEditDialog() && this.isPickingLocation()) {
+      // Fix: accept clicks when either the dialog OR the drawer is open
+      if ((this.showEditDialog() || this.showEditDrawer()) && this.isPickingLocation()) {
         this.ngZone.run(() => {
           this.editLat.set(e.latlng.lat);
           this.editLng.set(e.latlng.lng);
           this.updateTempMarker(e.latlng.lat, e.latlng.lng);
-          //to do
-          this.isPickingLocation.set(false); 
+          this.isPickingLocation.set(false);
           this.cdr.detectChanges();
         });
       }
@@ -363,26 +372,27 @@ yearColors: Record<string, string> = {}; // NOT readonly, we build it
   enableClustering = signal<boolean>(true);
   
   toggleClustering(): void {
-    this.enableClustering.update(val => !val);
-
     this.isSwitching = true;
 
-        if (this.currentMode() === 'year') {
-          Object.values(this.yearLayerGroups).forEach((g: any) => this.map.removeLayer(g));
-          this.map.addLayer(this.markerClusterGroup);
-          this.currentMode.set('cluster');
-        } else {
-          this.map.removeLayer(this.markerClusterGroup);
-          for (const y of this.activeYears) {
-            if (this.yearLayerGroups[y]) this.map.addLayer(this.yearLayerGroups[y]);
-          }
-          this.currentMode.set('year');
-        }
+    if (this.currentMode() === 'year') {
+      // → Cluster mode: remove all year layers, rebuild & show cluster group
+      Object.values(this.yearLayerGroups).forEach((g: any) => this.map.removeLayer(g));
+      this.refreshCluster();
+      this.map.addLayer(this.markerClusterGroup);
+      this.currentMode.set('cluster');
+      this.enableClustering.set(true);
+    } else {
+      // → Year mode: remove cluster group, restore active year layers
+      this.map.removeLayer(this.markerClusterGroup);
+      for (const y of this.activeYears) {
+        if (this.yearLayerGroups[y]) this.map.addLayer(this.yearLayerGroups[y]);
+      }
+      this.currentMode.set('year');
+      this.enableClustering.set(false);
+    }
 
-        setTimeout(() => (this.isSwitching = false), 100);
-
-    this.setupMobileHeader(); // Refresh action icon
-    // TODO: Apply cluster layer toggle in Leaflet map instance
+    setTimeout(() => (this.isSwitching = false), 100);
+    this.setupMobileHeader();
   }
 
   onMapSearch(query: string): void {
@@ -583,6 +593,7 @@ yearColors: Record<string, string> = {}; // NOT readonly, we build it
     }).addTo(districtGroup);
 
     const bounds = boundaryLayer.getBounds();
+    this.districtBounds = bounds; // store for resetView()
     this.map.fitBounds(bounds, { padding: [20, 20] });
     this.map.setMaxBounds(bounds.pad(0.3));
 
@@ -725,9 +736,18 @@ yearColors: Record<string, string> = {}; // NOT readonly, we build it
   }
 openEditLocation(patient: any): void {
     this.selectedPatient.set(patient);
-    this.editLat.set(patient.latitude || null);
-    this.editLng.set(patient.longitude || null);
+    this.editLat.set(patient.latitude ?? 0);
+    this.editLng.set(patient.longitude ?? 0);
     this.isPickingLocation.set(false);
+
+    // Show existing location as a temp pin so user sees current position before picking
+    if (patient.latitude != null && patient.longitude != null) {
+      this.updateTempMarker(patient.latitude, patient.longitude);
+    } else if (this.tempMarker && this.map) {
+      this.map.removeLayer(this.tempMarker);
+      this.tempMarker = null;
+    }
+
     this.showEditDrawer.set(true);
   }
   pickLocationFromMap() {
@@ -757,8 +777,9 @@ openEditLocation(patient: any): void {
 
   cancelEdit() {
     this.showEditDialog.set(false);
+    this.showEditDrawer.set(false); // Fix: also close the drawer
     this.isPickingLocation.set(false);
-    if (this.tempMarker) {
+    if (this.tempMarker && this.map) {
       this.map.removeLayer(this.tempMarker);
       this.tempMarker = null;
     }
@@ -773,31 +794,69 @@ protected async exportMapImage(): Promise<void> {
   this.exporting.set(true);
   try {
     const html2canvas = (await import('html2canvas')).default;
-
     const mapElement = this.mapContainer.nativeElement;
 
     const canvas = await html2canvas(mapElement, {
       useCORS: true,
       allowTaint: false,
       logging: false,
-      // Fix for shifting SVG / Vector division boundaries
-      onclone: (clonedDoc) => {
-        const clonedMap = clonedDoc.querySelector('.leaflet-map-pane') as HTMLElement;
-        if (clonedMap) {
-          // Flatten CSS transform offsets on the map pane
-          const transform = window.getComputedStyle(clonedMap).transform;
-          if (transform && transform !== 'none') {
-            const matrix = new DOMMatrix(transform);
-            clonedMap.style.transform = 'none';
-            clonedMap.style.left = `${matrix.m41}px`;
-            clonedMap.style.top = `${matrix.m42}px`;
+      onclone: (clonedDoc: Document) => {
+        // Flatten CSS transforms on every Leaflet pane so nothing shifts in the screenshot.
+        // Leaflet positions panes with translate3d(); html2canvas does not handle that well.
+        const paneSelectors = [
+          '.leaflet-map-pane',
+          '.leaflet-tile-pane',
+          '.leaflet-overlay-pane',
+          '.leaflet-shadow-pane',
+          '.leaflet-marker-pane',
+          '.leaflet-tooltip-pane',
+          '.leaflet-popup-pane'
+        ];
+        clonedDoc.querySelectorAll(paneSelectors.join(', ')).forEach((pane) => {
+          const el = pane as HTMLElement;
+          const t = el.style.transform;
+          if (t && t !== 'none') {
+            try {
+              const m = new DOMMatrix(t);
+              el.style.transform = 'none';
+              el.style.left = `${(parseFloat(el.style.left) || 0) + m.m41}px`;
+              el.style.top  = `${(parseFloat(el.style.top)  || 0) + m.m42}px`;
+            } catch {
+              el.style.transform = 'none';
+            }
           }
-        }
+        });
 
-        // Ensure SVG overlay elements maintain zero relative shift
-        const svgPanes = clonedDoc.querySelectorAll('.leaflet-overlay-pane svg');
-        svgPanes.forEach((svg: any) => {
-          svg.style.transform = 'none';
+        // Fix the SVG inside the overlay pane: it carries its own transform
+        // attribute which positions boundary layers independently.
+        clonedDoc.querySelectorAll('.leaflet-overlay-pane svg').forEach((svgEl) => {
+          const svg = svgEl as SVGSVGElement;
+          // Handle CSS transform
+          if (svg.style.transform && svg.style.transform !== 'none') {
+            try {
+              const m = new DOMMatrix(svg.style.transform);
+              svg.style.transform = 'none';
+              // Shift viewBox to compensate
+              const vb = svg.getAttribute('viewBox');
+              if (vb) {
+                const [vx, vy, vw, vh] = vb.split(' ').map(Number);
+                svg.setAttribute('viewBox', `${vx - m.m41} ${vy - m.m42} ${vw} ${vh}`);
+              }
+            } catch { svg.style.transform = 'none'; }
+          }
+          // Handle SVG transform attribute (Leaflet 1.x)
+          const attr = svg.getAttribute('transform');
+          if (attr) {
+            try {
+              const m = new DOMMatrix(attr);
+              svg.removeAttribute('transform');
+              const vb = svg.getAttribute('viewBox');
+              if (vb) {
+                const [vx, vy, vw, vh] = vb.split(' ').map(Number);
+                svg.setAttribute('viewBox', `${vx - m.m41} ${vy - m.m42} ${vw} ${vh}`);
+              }
+            } catch { svg.removeAttribute('transform'); }
+          }
         });
       }
     });
@@ -808,20 +867,27 @@ protected async exportMapImage(): Promise<void> {
     link.click();
   } catch (err) {
     console.error('[PatientMapComponent] Map export failed:', err);
-    alert('Could not export the map image. See console for details.');
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Export Failed',
+      detail: 'Could not export the map image. See console for details.',
+      life: 4000
+    });
   } finally {
     this.exporting.set(false);
   }
 }
-  // Add this method to your component
   protected refreshMap(): void {
-    // Refresh patient data
-    this.mappable();
-
-    // Refresh map markers
     setTimeout(() => {
       this.updatePatientMarkers(this.mappable());
     }, 100);
+  }
+
+  /** Fit map back to the district boundary (reset pan/zoom). */
+  protected resetView(): void {
+    if (this.districtBounds && this.map) {
+      this.map.fitBounds(this.districtBounds, { padding: [20, 20] });
+    }
   }
 
   async saveLocation() {
@@ -952,8 +1018,8 @@ protected async exportMapImage(): Promise<void> {
         });
       }
 
-      // 3. Refresh the map
-      this.refreshCluster();
+      // 3. Refresh the map (year layers + cluster group)
+      this.updatePatientMarkers(this.mappable());
 
       // 4. Update the selected patient in the UI
       this.selected.set(updated);

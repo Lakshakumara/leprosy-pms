@@ -185,10 +185,10 @@ console.log('this not print',p.patientDistrict !== filter.district )
         catchError(err => {
           const message =
             err?.status === 0
-              ? 'Request blocked before reaching the server — likely CORS or network/DNS issue.'
+              ? 'Request blocked before reaching the server.'
               : err?.status
-                ? `DHIS2 returned ${err.status}: ${err?.error?.message ?? err.message}`
-                : 'Unknown error while contacting DHIS2. Check the browser console.';
+                ? `DHIS2 returned ${err.status}`
+                : 'Unknown error while contacting DHIS2.';
           this.lastPullError.set(message);
           this.isSyncing.set(false);
           console.error('[PatientService] pullFromServer failed:', err);

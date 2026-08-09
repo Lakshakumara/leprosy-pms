@@ -45,8 +45,14 @@
     </div>
   </div>
 
-  <p-message *ngIf="patientService.lastPullError()" severity="warn" [text]="patientService.lastPullError()!"
-    styleClass="cv-pull-error" />
+  <p-message *ngIf="patientService.lastPullError()" severity="warn" styleClass="cv-pull-error">
+  <span class="error-short">
+    <i class="pi pi-exclamation-triangle"></i>
+    Sync failed
+    <!--button pButton type="button" label="Retry" class="p-button-text p-button-sm" (click)="patientService.pull()"></button-->
+  </span>
+  <span class="error-full desktop-only">{{ patientService.lastPullError() }}</span>
+</p-message>
 
   <!-- ===== Search / filter bar ===== -->
   <div class="cv-filters">
