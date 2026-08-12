@@ -1,0 +1,538 @@
+{
+  "resources": [
+    {
+      "displayName": "Indicator Groups",
+      "singular": "indicatorGroup",
+      "plural": "indicatorGroups",
+      "href": "https://iphis.health.gov.lk/api/indicatorGroups"
+    },
+    {
+      "displayName": "Tracked Entity Instances",
+      "singular": "trackedEntityInstance",
+      "plural": "trackedEntityInstances",
+      "href": "https://iphis.health.gov.lk/api/trackedEntityInstances"
+    },
+    {
+      "displayName": "Api Token",
+      "singular": "apiToken",
+      "plural": "apiToken",
+      "href": "https://iphis.health.gov.lk/api/apiToken"
+    },
+    {
+      "displayName": "Maps",
+      "singular": "map",
+      "plural": "maps",
+      "href": "https://iphis.health.gov.lk/api/maps"
+    },
+    {
+      "displayName": "Option Groups",
+      "singular": "optionGroup",
+      "plural": "optionGroups",
+      "href": "https://iphis.health.gov.lk/api/optionGroups"
+    },
+    {
+      "displayName": "Push Analysis",
+      "singular": "pushAnalysis",
+      "plural": "pushAnalysis",
+      "href": "https://iphis.health.gov.lk/api/pushAnalysis"
+    },
+    {
+      "displayName": "Interpretations",
+      "singular": "interpretation",
+      "plural": "interpretations",
+      "href": "https://iphis.health.gov.lk/api/interpretations"
+    },
+    {
+      "displayName": "Attributes",
+      "singular": "attribute",
+      "plural": "attributes",
+      "href": "https://iphis.health.gov.lk/api/attributes"
+    },
+    {
+      "displayName": "Program Rule Actions",
+      "singular": "programRuleAction",
+      "plural": "programRuleActions",
+      "href": "https://iphis.health.gov.lk/api/programRuleActions"
+    },
+    {
+      "displayName": "Program Stages",
+      "singular": "programStage",
+      "plural": "programStages",
+      "href": "https://iphis.health.gov.lk/api/programStages"
+    },
+    {
+      "displayName": "Categories",
+      "singular": "category",
+      "plural": "categories",
+      "href": "https://iphis.health.gov.lk/api/categories"
+    },
+    {
+      "displayName": "Program Stage Sections",
+      "singular": "programStageSection",
+      "plural": "programStageSections",
+      "href": "https://iphis.health.gov.lk/api/programStageSections"
+    },
+    {
+      "displayName": "User Roles",
+      "singular": "userRole",
+      "plural": "userRoles",
+      "href": "https://iphis.health.gov.lk/api/userRoles"
+    },
+    {
+      "displayName": "Option Sets",
+      "singular": "optionSet",
+      "plural": "optionSets",
+      "href": "https://iphis.health.gov.lk/api/optionSets"
+    },
+    {
+      "displayName": "Validation Rule Groups",
+      "singular": "validationRuleGroup",
+      "plural": "validationRuleGroups",
+      "href": "https://iphis.health.gov.lk/api/validationRuleGroups"
+    },
+    {
+      "displayName": "File Resources",
+      "singular": "fileResource",
+      "plural": "fileResources",
+      "href": "https://iphis.health.gov.lk/api/fileResources"
+    },
+    {
+      "displayName": "Icons",
+      "singular": "icon",
+      "plural": "icons",
+      "href": "https://iphis.health.gov.lk/api/icons"
+    },
+    {
+      "displayName": "Tracked Entity Types",
+      "singular": "trackedEntityType",
+      "plural": "trackedEntityTypes",
+      "href": "https://iphis.health.gov.lk/api/trackedEntityTypes"
+    },
+    {
+      "displayName": "Program Stage Working Lists",
+      "singular": "programStageWorkingList",
+      "plural": "programStageWorkingLists",
+      "href": "https://iphis.health.gov.lk/api/programStageWorkingLists"
+    },
+    {
+      "displayName": "Data Sets",
+      "singular": "dataSet",
+      "plural": "dataSets",
+      "href": "https://iphis.health.gov.lk/api/dataSets"
+    },
+    {
+      "displayName": "Analytics Table Hooks",
+      "singular": "analyticsTableHook",
+      "plural": "analyticsTableHooks",
+      "href": "https://iphis.health.gov.lk/api/analyticsTableHooks"
+    },
+    {
+      "displayName": "Relationships",
+      "singular": "relationship",
+      "plural": "relationships",
+      "href": "https://iphis.health.gov.lk/api/relationships"
+    },
+    {
+      "displayName": "Visualizations",
+      "singular": "visualization",
+      "plural": "visualizations",
+      "href": "https://iphis.health.gov.lk/api/visualizations"
+    },
+    {
+      "displayName": "Dashboard Items",
+      "singular": "dashboardItem",
+      "plural": "dashboardItems",
+      "href": "https://iphis.health.gov.lk/api/dashboardItems"
+    },
+    {
+      "displayName": "Organisation Unit Levels",
+      "singular": "organisationUnitLevel",
+      "plural": "organisationUnitLevels",
+      "href": "https://iphis.health.gov.lk/api/organisationUnitLevels"
+    },
+    {
+      "displayName": "Constants",
+      "singular": "constant",
+      "plural": "constants",
+      "href": "https://iphis.health.gov.lk/api/constants"
+    },
+    {
+      "displayName": "Program Sections",
+      "singular": "programSection",
+      "plural": "programSections",
+      "href": "https://iphis.health.gov.lk/api/programSections"
+    },
+    {
+      "displayName": "Data Approval Workflows",
+      "singular": "dataApprovalWorkflow",
+      "plural": "dataApprovalWorkflows",
+      "href": "https://iphis.health.gov.lk/api/dataApprovalWorkflows"
+    },
+    {
+      "displayName": "Min Max Data Elements",
+      "singular": "minMaxDataElement",
+      "plural": "minMaxDataElements",
+      "href": "https://iphis.health.gov.lk/api/minMaxDataElements"
+    },
+    {
+      "displayName": "Relationship Types",
+      "singular": "relationshipType",
+      "plural": "relationshipTypes",
+      "href": "https://iphis.health.gov.lk/api/relationshipTypes"
+    },
+    {
+      "displayName": "Category Options",
+      "singular": "categoryOption",
+      "plural": "categoryOptions",
+      "href": "https://iphis.health.gov.lk/api/categoryOptions"
+    },
+    {
+      "displayName": "Data Entry Forms",
+      "singular": "dataEntryForm",
+      "plural": "dataEntryForms",
+      "href": "https://iphis.health.gov.lk/api/dataEntryForms"
+    },
+    {
+      "displayName": "Event Charts",
+      "singular": "eventChart",
+      "plural": "eventCharts",
+      "href": "https://iphis.health.gov.lk/api/eventCharts"
+    },
+    {
+      "displayName": "Aggregate Data Exchanges",
+      "singular": "aggregateDataExchange",
+      "plural": "aggregateDataExchanges",
+      "href": "https://iphis.health.gov.lk/api/aggregateDataExchanges"
+    },
+    {
+      "displayName": "Data Element Operands",
+      "singular": "dataElementOperand",
+      "plural": "dataElementOperands",
+      "href": "https://iphis.health.gov.lk/api/dataElementOperands"
+    },
+    {
+      "displayName": "Event Visualizations",
+      "singular": "eventVisualization",
+      "plural": "eventVisualizations",
+      "href": "https://iphis.health.gov.lk/api/eventVisualizations"
+    },
+    {
+      "displayName": "Program Data Elements",
+      "singular": "programDataElement",
+      "plural": "programDataElements",
+      "href": "https://iphis.health.gov.lk/api/programDataElements"
+    },
+    {
+      "displayName": "Users",
+      "singular": "user",
+      "plural": "users",
+      "href": "https://iphis.health.gov.lk/api/users"
+    },
+    {
+      "displayName": "Event Filters",
+      "singular": "eventFilter",
+      "plural": "eventFilters",
+      "href": "https://iphis.health.gov.lk/api/eventFilters"
+    },
+    {
+      "displayName": "Program Notification Templates",
+      "singular": "programNotificationTemplate",
+      "plural": "programNotificationTemplates",
+      "href": "https://iphis.health.gov.lk/api/programNotificationTemplates"
+    },
+    {
+      "displayName": "O Auth2 Clients",
+      "singular": "oAuth2Client",
+      "plural": "oAuth2Clients",
+      "href": "https://iphis.health.gov.lk/api/oAuth2Clients"
+    },
+    {
+      "displayName": "Data Stores",
+      "singular": "dataStore",
+      "plural": "dataStores",
+      "href": "https://iphis.health.gov.lk/api/dataStore"
+    },
+    {
+      "displayName": "Map Views",
+      "singular": "mapView",
+      "plural": "mapViews",
+      "href": "https://iphis.health.gov.lk/api/mapViews"
+    },
+    {
+      "displayName": "Tracked Entity Instance Filters",
+      "singular": "trackedEntityInstanceFilter",
+      "plural": "trackedEntityInstanceFilters",
+      "href": "https://iphis.health.gov.lk/api/trackedEntityInstanceFilters"
+    },
+    {
+      "displayName": "Sections",
+      "singular": "section",
+      "plural": "sections",
+      "href": "https://iphis.health.gov.lk/api/sections"
+    },
+    {
+      "displayName": "Data Set Notification Templates",
+      "singular": "dataSetNotificationTemplate",
+      "plural": "dataSetNotificationTemplates",
+      "href": "https://iphis.health.gov.lk/api/dataSetNotificationTemplates"
+    },
+    {
+      "displayName": "Documents",
+      "singular": "document",
+      "plural": "documents",
+      "href": "https://iphis.health.gov.lk/api/documents"
+    },
+    {
+      "displayName": "Data Elements",
+      "singular": "dataElement",
+      "plural": "dataElements",
+      "href": "https://iphis.health.gov.lk/api/dataElements"
+    },
+    {
+      "displayName": "Event Hooks",
+      "singular": "eventHook",
+      "plural": "eventHooks",
+      "href": "https://iphis.health.gov.lk/api/eventHooks"
+    },
+    {
+      "displayName": "External File Resources",
+      "singular": "externalFileResource",
+      "plural": "externalFileResources",
+      "href": "https://iphis.health.gov.lk/api/externalFileResources"
+    },
+    {
+      "displayName": "Data Approval Levels",
+      "singular": "dataApprovalLevel",
+      "plural": "dataApprovalLevels",
+      "href": "https://iphis.health.gov.lk/api/dataApprovalLevels"
+    },
+    {
+      "displayName": "Programs",
+      "singular": "program",
+      "plural": "programs",
+      "href": "https://iphis.health.gov.lk/api/programs"
+    },
+    {
+      "displayName": "User Groups",
+      "singular": "userGroup",
+      "plural": "userGroups",
+      "href": "https://iphis.health.gov.lk/api/userGroups"
+    },
+    {
+      "displayName": "Category Combos",
+      "singular": "categoryCombo",
+      "plural": "categoryCombos",
+      "href": "https://iphis.health.gov.lk/api/categoryCombos"
+    },
+    {
+      "displayName": "Predictors",
+      "singular": "predictor",
+      "plural": "predictors",
+      "href": "https://iphis.health.gov.lk/api/predictors"
+    },
+    {
+      "displayName": "Program Rules",
+      "singular": "programRule",
+      "plural": "programRules",
+      "href": "https://iphis.health.gov.lk/api/programRules"
+    },
+    {
+      "displayName": "Proposals",
+      "singular": "proposal",
+      "plural": "proposals",
+      "href": "https://iphis.health.gov.lk/api/metadata/proposals"
+    },
+    {
+      "displayName": "External Map Layers",
+      "singular": "externalMapLayer",
+      "plural": "externalMapLayers",
+      "href": "https://iphis.health.gov.lk/api/externalMapLayers"
+    },
+    {
+      "displayName": "Indicator Group Sets",
+      "singular": "indicatorGroupSet",
+      "plural": "indicatorGroupSets",
+      "href": "https://iphis.health.gov.lk/api/indicatorGroupSets"
+    },
+    {
+      "displayName": "Sql Views",
+      "singular": "sqlView",
+      "plural": "sqlViews",
+      "href": "https://iphis.health.gov.lk/api/sqlViews"
+    },
+    {
+      "displayName": "Category Option Group Sets",
+      "singular": "categoryOptionGroupSet",
+      "plural": "categoryOptionGroupSets",
+      "href": "https://iphis.health.gov.lk/api/categoryOptionGroupSets"
+    },
+    {
+      "displayName": "Legend Sets",
+      "singular": "legendSet",
+      "plural": "legendSets",
+      "href": "https://iphis.health.gov.lk/api/legendSets"
+    },
+    {
+      "displayName": "Option Group Sets",
+      "singular": "optionGroupSet",
+      "plural": "optionGroupSets",
+      "href": "https://iphis.health.gov.lk/api/optionGroupSets"
+    },
+    {
+      "displayName": "Validation Notification Templates",
+      "singular": "validationNotificationTemplate",
+      "plural": "validationNotificationTemplates",
+      "href": "https://iphis.health.gov.lk/api/validationNotificationTemplates"
+    },
+    {
+      "displayName": "Organisation Unit Group Sets",
+      "singular": "organisationUnitGroupSet",
+      "plural": "organisationUnitGroupSets",
+      "href": "https://iphis.health.gov.lk/api/organisationUnitGroupSets"
+    },
+    {
+      "displayName": "Indicators",
+      "singular": "indicator",
+      "plural": "indicators",
+      "href": "https://iphis.health.gov.lk/api/indicators"
+    },
+    {
+      "displayName": "Program Rule Variables",
+      "singular": "programRuleVariable",
+      "plural": "programRuleVariables",
+      "href": "https://iphis.health.gov.lk/api/programRuleVariables"
+    },
+    {
+      "displayName": "Program Indicator Groups",
+      "singular": "programIndicatorGroup",
+      "plural": "programIndicatorGroups",
+      "href": "https://iphis.health.gov.lk/api/programIndicatorGroups"
+    },
+    {
+      "displayName": "Validation Rules",
+      "singular": "validationRule",
+      "plural": "validationRules",
+      "href": "https://iphis.health.gov.lk/api/validationRules"
+    },
+    {
+      "displayName": "Category Option Combos",
+      "singular": "categoryOptionCombo",
+      "plural": "categoryOptionCombos",
+      "href": "https://iphis.health.gov.lk/api/categoryOptionCombos"
+    },
+    {
+      "displayName": "Message Conversations",
+      "singular": "messageConversation",
+      "plural": "messageConversations",
+      "href": "https://iphis.health.gov.lk/api/messageConversations"
+    },
+    {
+      "displayName": "Category Option Groups",
+      "singular": "categoryOptionGroup",
+      "plural": "categoryOptionGroups",
+      "href": "https://iphis.health.gov.lk/api/categoryOptionGroups"
+    },
+    {
+      "displayName": "Data Element Group Sets",
+      "singular": "dataElementGroupSet",
+      "plural": "dataElementGroupSets",
+      "href": "https://iphis.health.gov.lk/api/dataElementGroupSets"
+    },
+    {
+      "displayName": "Data Element Groups",
+      "singular": "dataElementGroup",
+      "plural": "dataElementGroups",
+      "href": "https://iphis.health.gov.lk/api/dataElementGroups"
+    },
+    {
+      "displayName": "Metadata Versions",
+      "singular": "metadataVersion",
+      "plural": "metadataVersions",
+      "href": "https://iphis.health.gov.lk/api/metadata/version"
+    },
+    {
+      "displayName": "Organisation Unit Groups",
+      "singular": "organisationUnitGroup",
+      "plural": "organisationUnitGroups",
+      "href": "https://iphis.health.gov.lk/api/organisationUnitGroups"
+    },
+    {
+      "displayName": "Tracked Entity Attributes",
+      "singular": "trackedEntityAttribute",
+      "plural": "trackedEntityAttributes",
+      "href": "https://iphis.health.gov.lk/api/trackedEntityAttributes"
+    },
+    {
+      "displayName": "Predictor Groups",
+      "singular": "predictorGroup",
+      "plural": "predictorGroups",
+      "href": "https://iphis.health.gov.lk/api/predictorGroups"
+    },
+    {
+      "displayName": "Job Configurations",
+      "singular": "jobConfiguration",
+      "plural": "jobConfigurations",
+      "href": "https://iphis.health.gov.lk/api/jobConfigurations"
+    },
+    {
+      "displayName": "Dashboards",
+      "singular": "dashboard",
+      "plural": "dashboards",
+      "href": "https://iphis.health.gov.lk/api/dashboards"
+    },
+    {
+      "displayName": "Routes",
+      "singular": "route",
+      "plural": "routes",
+      "href": "https://iphis.health.gov.lk/api/routes"
+    },
+    {
+      "displayName": "Indicator Types",
+      "singular": "indicatorType",
+      "plural": "indicatorTypes",
+      "href": "https://iphis.health.gov.lk/api/indicatorTypes"
+    },
+    {
+      "displayName": "Validation Results",
+      "singular": "validationResult",
+      "plural": "validationResults",
+      "href": "https://iphis.health.gov.lk/api/validationResults"
+    },
+    {
+      "displayName": "Program Indicators",
+      "singular": "programIndicator",
+      "plural": "programIndicators",
+      "href": "https://iphis.health.gov.lk/api/programIndicators"
+    },
+    {
+      "displayName": "Sms Commands",
+      "singular": "smsCommand",
+      "plural": "smsCommands",
+      "href": "https://iphis.health.gov.lk/api/smsCommands"
+    },
+    {
+      "displayName": "Organisation Units",
+      "singular": "organisationUnit",
+      "plural": "organisationUnits",
+      "href": "https://iphis.health.gov.lk/api/organisationUnits"
+    },
+    {
+      "displayName": "Options",
+      "singular": "option",
+      "plural": "options",
+      "href": "https://iphis.health.gov.lk/api/options"
+    },
+    {
+      "displayName": "Reports",
+      "singular": "report",
+      "plural": "reports",
+      "href": "https://iphis.health.gov.lk/api/reports"
+    },
+    {
+      "displayName": "Event Reports",
+      "singular": "eventReport",
+      "plural": "eventReports",
+      "href": "https://iphis.health.gov.lk/api/eventReports"
+    }
+  ]
+}

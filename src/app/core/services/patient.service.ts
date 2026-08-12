@@ -26,6 +26,7 @@ export class PatientService {
   readonly allPatients = this._patients.asReadonly();
   readonly isOnline = signal<boolean>(navigator.onLine);
   readonly isSyncing = signal(false);
+  readonly syncProgress = signal<{ loaded: number, total: number } | null>(null);
   readonly lastPullError = signal<string | null>(null);
 
   readonly lastSyncedAt = signal<string | null>(null);
@@ -39,6 +40,7 @@ export class PatientService {
   readonly outerDistrictPatients = computed(() => {
     return this.allPatients().filter(p => p.patientDistrict != this.userDistrict());
   });
+
   userDistrict() {
     return this.dhis2.userDistrict();
   }
@@ -46,18 +48,28 @@ export class PatientService {
     return this.dhis2.healthDistricts();
   }
   readonly user = this.storage.getJSON<any>(STORAGE_KEYS.USER_DATA);
+
   constructor() {
-    window.addEventListener('online', () => this.isOnline.set(true));
+    window.addEventListener('online', () => {
+      this.isOnline.set(true)
+      this.goOnline()
+    });
     window.addEventListener('offline', () => this.isOnline.set(false));
-    this.loadFromLocal();
+    setTimeout(() => this.loadFromLocal(), 0);
   }
+
   // ── Load from IndexedDB ────────────────────────────────────────────────────
   async loadFromLocal(): Promise<void> {
-    const all = await this.localStorage.getAllPatients();
+  this.isSyncing.set(true);
+  try {
+    const all = await this.localStorage.getAllPatients(); // your batched version
     this._patients.set(
       all.sort((a, b) => b.enrolledAt.localeCompare(a.enrolledAt))
     );
+  } finally {
+    this.isSyncing.set(false);
   }
+}
   // ── Filter ─────────────────────────────────────────────────────────────────
   /* if (p.patientDistrict === this.userDistrict()) return false;
         if (filter.district === this.userDistrict()) {
@@ -166,7 +178,57 @@ console.log('this not print',p.patientDistrict !== filter.district )
    * Existing local-only records are preserved; synced records are overwritten
    * with fresh DHIS2 data.
    */
-  async pullFromServer(year?: number): Promise<void> {
+
+  
+async pullFromServer(year?: number): Promise<void> {
+  if (!this.isOnline()) {
+    this.lastPullError.set('Device is offline — showing local data only.');
+    return;
+  }
+  if (this.isSyncing()) return;
+
+  this.lastPullError.set(null);
+  this.isSyncing.set(true);
+  this.syncProgress.set({ loaded: 0, total: 0 });
+
+  const source$ = year!= undefined
+   ? this.dhis2.fetchPatientsByLivingDistrictForYears([year])
+    : this.dhis2.fetchPatients();
+
+  source$.pipe(
+    catchError(err => {
+      this.lastPullError.set(err?.status? `DHIS2 returned ${err.status}` : 'Sync failed');
+      this.isSyncing.set(false);
+      this.syncProgress.set(null);
+      return of([] as Patient[]);
+    })
+  ).subscribe(async (remote) => {
+    if (remote.length === 0 && this._patients().length === 0) {
+      this.lastPullError.set('No patients found for your district');
+    }
+    if (remote.length > 0) {
+      // save in batches of 20 to avoid freeze - your fix
+      for (let i = 0; i < remote.length; i += 20) {
+        const batch = remote.slice(i, i+20);
+        for (const r of batch) {
+          const existing = await this.localStorage.getPatient(r.id);
+          if (!existing || existing.syncStatus === 'synced') {
+            await this.localStorage.savePatient(this.setAge(r));
+          }
+        }
+        this.syncProgress.set({ loaded: Math.min(i+20, remote.length), total: remote.length });
+        await new Promise(res => setTimeout(res, 0)); // yield
+      }
+      this.lastSyncedAt.set(new Date().toISOString());
+      await this.loadFromLocal();
+    }
+    this.isSyncing.set(false);
+    this.syncProgress.set(null);
+  });
+}
+
+
+  /*async pullFromServer(year?: number): Promise<void> {
     if (!this.isOnline()) {
       this.lastPullError.set('Device is offline — showing local data only.');
       return;
@@ -216,7 +278,7 @@ console.log('this not print',p.patientDistrict !== filter.district )
         this.isSyncing.set(false);
         await this.loadFromLocal();
       });
-  }
+  }*/
 
   setAge(p: Patient): Patient {
     const value = p.patientAge?.trim();
@@ -257,5 +319,20 @@ console.log('this not print',p.patientDistrict !== filter.district )
     await this.localStorage.savePatient(patient);
     await this.loadFromLocal();
   }
+
+  async goOnline() {
+  if (!navigator.onLine) return;
+
+  // 1. Push local pending first - clinic edits win
+  //await this.dhis2.pushPendingPatients();
+
+  // 2. Pull delta from server - new patients + visit updates from other clinics
+  const count = await this.dhis2.syncAllAccessiblePatients('','');
+
+  if (count > 0) {
+    await this.loadFromLocal(); // refresh your signals baseFiltered()
+    console.log(`[Sync] ${count} patients synced from DHIS2`);
+  }
+}
 
 }

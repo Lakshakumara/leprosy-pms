@@ -17,4 +17,15 @@ export const STORAGE_KEYS = {
  * A simple interface for select options used in dropdowns, etc.
  */
 export interface SelectOption { label: string; value: string; }
- 
+/**
+ * label Grade
+ * Values 1,2,3
+ */
+export const DISABILITY_CONVERSION = [
+  { label: 'Grade 2', value: '3' },
+  { label: 'Grade 1', value: '2' },
+  { label: 'Grade 0', value: '1' },
+];
+export const DISABILITY_MAP = new Map(
+  DISABILITY_CONVERSION.map(i => [String(i.value), i.label])
+);

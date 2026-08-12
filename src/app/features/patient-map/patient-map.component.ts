@@ -674,28 +674,40 @@ yearColors: Record<string, string> = {}; // NOT readonly, we build it
     return group;
   }
  
-  private popupHtml(p: Patient): string {
-    const alc = p.alcNum || '—';
-    const name = p.patientName || '(no name)';
-    const address = p.patientHomeAddress || 'No address on file';
-    const moh = p.patientMohArea || 'N/A';
-    const phone = p.mobileNum || p.telNum || '—';
-    return `
-    <div style="font-family: var(--font-body, sans-serif); font-size: 0.85rem; line-height: 1.5; min-width: 220px;">
-      <div style="font-weight: 600; font-size: 1rem; margin-bottom: 4px;">${this.escapeHtml(name)}</div>
-      <div style="color: #6b7280; margin-bottom: 2px;">${this.escapeHtml(alc)}</div>
-      <div style="color: #6b7280; margin-bottom: 2px;">${this.escapeHtml(address)}</div>
+private popupHtml(p: Patient): string {
+  const alc = this.escapeHtml(p.alcNum || '—');
+  const name = this.escapeHtml(p.patientName || '(no name)');
+  const address = this.escapeHtml(p.patientHomeAddress || 'No address on file');
+  const moh = this.escapeHtml(p.patientMohArea || 'N/A');
+  const phone = this.escapeHtml(p.mobileNum || p.telNum || '—');
+  const type = this.isMB(p.treatmentClassification);
+  const id = this.escapeHtml(p.id);
+  const badgeClass = type === 'MB' ? 'badge--mb' : type === 'PB' ? 'badge--pb' : '';
+
+  return `
+    <div style="font-family: var(--font-body, sans-serif); font-size: 0.85rem; line-height: 1.5; min-width: 220px; position: relative; padding-right: 40px;">
+      
+      <span class="badge ${badgeClass}" 
+        style="position: absolute; top: 0; right: 0; font-size: 0.65rem; font-weight: 700; padding: 2px 7px; border-radius: 99px; line-height: 1;">
+        ${this.escapeHtml(type)}
+      </span>
+
+      <div style="font-weight: 600; font-size: 1rem; margin-bottom: 4px;">${name}</div>
+      <div style="color: #6b7280; margin-bottom: 2px;">${alc}</div>
+      <div style="color: #6b7280; margin-bottom: 2px;">${address}</div>
       <div style="color: #6b7280; font-size: 0.75rem; margin-top: 4px; border-top: 1px solid #e5e7eb; padding-top: 4px; margin-bottom:10px;">
-        MOH: ${this.escapeHtml(moh)} | ${this.escapeHtml(phone)}
+        MOH: ${moh} | ${phone}
       </div>
-      <button data-edit="${this.escapeHtml(p.id)}" 
+      <button data-edit="${id}" 
         style="display:inline-flex; align-items:center; gap:6px; padding:6px 12px; font-size:0.8rem; font-weight:600; background:#0b4f4a; color:white; border:none; border-radius:6px; cursor:pointer; width:100%; justify-content:center;">
         <i class="pi pi-pencil" style="font-size:0.8rem"></i> Edit Location
       </button>
     </div>
-    `;
-  }
-
+  `;
+}
+private isMB(c:string):string{
+  return c.toUpperCase().startsWith('MB')?'MB':'PB'
+}
   private escapeHtml(s: string): string {
     const div = document.createElement('div');
     div.textContent = s;
@@ -750,6 +762,7 @@ openEditLocation(patient: any): void {
 
     this.showEditDrawer.set(true);
   }
+  
   pickLocationFromMap() {
     this.isPickingLocation.set(true);
     // Add a visual hint on the map
@@ -785,8 +798,6 @@ openEditLocation(patient: any): void {
     }
     this.cdr.detectChanges();
   }
-
- 
 
   protected readonly exporting = signal(false);
 
@@ -1047,9 +1058,9 @@ protected async exportMapImage(): Promise<void> {
     }
   }
 
-  /**
-   * Group patients by enrollment year
-   */
+  
+}
+ /*
   private groupPatientsByYear(patients: Patient[]): Record<string, Patient[]> {
     const groups: Record<string, Patient[]> = {};
 
@@ -1071,9 +1082,6 @@ protected async exportMapImage(): Promise<void> {
 
     return groups;
   }
-}
- /*
-
   private setupMapClickForEditing(): void {
     if (!this.map) return;
 

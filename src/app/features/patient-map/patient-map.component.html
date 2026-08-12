@@ -58,37 +58,7 @@
   <div #mapContainer class="map-container"></div>
 </div>
 
-@if (selected(); as p) {
-  <div class="card selected-info">
-    <div class="selected-content">
-      <div class="selected-main">
-        <strong>{{ p.patientName }}</strong>
-        @if (p.treatmentClassification) {
-          <span class="badge" [class.badge--mb]="p.treatmentClassification.toUpperCase().startsWith('MB')"
-                [class.badge--pb]="p.treatmentClassification.toUpperCase().startsWith('PB')">
-            {{ p.treatmentClassification }}
-          </span>
-        }
-      </div>
-      <div class="muted">{{ p.patientHomeAddress || 'No address on file' }}</div>
-    </div>
-    <div class="selected-actions">
-      <button 
-        pButton 
-        icon="pi pi-map-marker" 
-        (click)="openEditLocation(p)" 
-        class="p-button-rounded p-button-text p-button-sm"
-        title="Edit Location">
-      </button>
-      <button 
-        pButton 
-        icon="pi pi-times" 
-        (click)="selected.set(null)" 
-        class="p-button-rounded p-button-text p-button-sm close-selected">
-      </button>
-    </div>
-  </div>
-}
+
 
 
 <!-- Dialog remains the same 

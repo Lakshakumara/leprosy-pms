@@ -21,8 +21,7 @@
 </header>
 
 <!-- Mobile Filter Bottom Sheet / Side Drawer (PrimeNG) -->
-<p-drawer [(visible)]="showFilters" position="bottom" styleClass="mobile-filter-drawer" 
-[style]="{ height: 'auto' }"
+<p-drawer [(visible)]="showFilters" position="bottom" styleClass="mobile-filter-drawer" [style]="{ height: 'auto' }"
   [modal]="true" [closeOnEscape]="true">
 
   <ng-template #header>
@@ -80,69 +79,23 @@
   </div>
 </ng-template>
 
-<!--header class="dash-header">
-  <div class="dash-header__top">
-    <div class="dash-header__title">
-      <h1>Leprosy Control Dashboard</h1>
-      <p class="dash-header__subtitle">Decision support for Active Case Finding.</p>
-    </div>
-    <button type="button" class="btn-filter" (click)="showFilters.set(!showFilters())">
-      <i class="pi pi-filter"></i>
-      Filters
-      @if (activeFilterCount() > 0) {
-        <span class="count-pill">{{ activeFilterCount() }}</span>
-      }
-    </button>
-  </div>
-
-  @if (showFilters()) {
-    <div class="dash-header__filters">
-      <label class="filter-field">
-        <span>District</span>
-        <p-select
-          [options]="districtOptions"
-          [(ngModel)]="selectedDistrict"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="District"
-        ></p-select>
-      </label>
-      <label class="filter-field">
-        <span>Years</span>
-        <p-multiSelect
-          [options]="yearOptions"
-          [(ngModel)]="selectedYears"
-          display="chip"
-          placeholder="All years"
-          [showClear]="true"
-        ></p-multiSelect>
-      </label>
-      <label class="filter-field">
-        <span>Facility</span>
-        <p-select
-          [options]="facilityOptions()"
-          [(ngModel)]="selectedFacility"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="Facility"
-        ></p-select>
-      </label>
-      <div class="filter-field filter-field--actions">
-        <span>&nbsp;</span>
-        <div class="filter-actions">
-          <button type="button" class="link-btn" (click)="selectAllYears()">All years</button>
-          <button type="button" class="link-btn" (click)="clearYears()">Clear</button>
-        </div>
-      </div>
-    </div>
-  }
-</header-->
-
-@if (filteredPatients().length === 0) {
+@if (patientService.isSyncing()) {
+<div class="card loading-state">
+  <i class="pi pi-spin pi-spinner" style="font-size:2rem"></i>
+  <h3>Downloading patients from PHSMIS...</h3>
+  <p>This may take a minute for {{patientService.healthDistricts()[0].label}} district. Please stay online.</p>
+  <p class="muted">{{ patientService.allPatients().length }} loaded so far...</p>
+</div>
+} @else if (filteredPatients().length === 0) {
 <div class="card empty-state">
   <i class="pi pi-chart-bar"></i>
   <p>No patient data for the selected filters.</p>
-  <a routerLink="/patients">Open patient registry</a> or sync from DHIS2 using the sidebar.
+  @if (patientService.lastPullError()) {
+      <p class="error-text">{{ patientService.lastPullError() }}</p>
+      <button class="btn-apply" (click)="patientService.pullFromServer()">Retry Sync</button>
+    } @else {
+      <a routerLink="/patients">Open patient registry</a> or sync from DHIS2 using the sidebar.
+    }
 </div>
 } @else {
 
@@ -328,7 +281,7 @@
       <div class="h-bar-row">
         <span class="h-bar-label">{{ row.label }}</span>
         <div class="h-bar-track">
-          <div class="h-bar-fill" [style.width.%]="row.pct"></div>
+          <div class="h-bar-fill h-bar-fill--normal" [style.width.%]="row.pct"></div>
         </div>
         <span class="h-bar-count">{{ row.count }} ({{ row.pct }}%)</span>
       </div>
@@ -370,7 +323,7 @@
       <button type="button" class="h-bar-row h-bar-row--clickable" (click)="drillDownHospital(row)">
         <span class="h-bar-label" [title]="row.label">{{ row.label }}</span>
         <div class="h-bar-track">
-          <div class="h-bar-fill" [style.width.%]="(row.count / maxHospitalCount()) * 100"></div>
+          <div class="h-bar-fill h-bar-fill--normal" [style.width.%]="(row.count / maxHospitalCount()) * 100"></div>
         </div>
         <span class="h-bar-count">{{ row.count }}</span>
       </button>

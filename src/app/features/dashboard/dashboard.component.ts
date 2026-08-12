@@ -62,11 +62,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private readonly currentYear = '' + new Date().getFullYear();
 
   protected yearOptions: string[] = []
-  protected readonly disabilityText = [
-    { label: 'Grade 2', value: '3' },
-    { label: 'Grade 1', value: '2' },
-    { label: 'Grade 0', value: '1' },
-  ];
+ 
 
   protected readonly districtOptions: SelectOption[] = this.patientService.healthDistricts();
 

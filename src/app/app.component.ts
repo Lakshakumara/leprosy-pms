@@ -37,6 +37,7 @@ export class AppComponent {
 
   readonly showAbout = signal(false);
   showMobileMenu = signal(false)
+  
   closeMobileMenu() {
     this.showMobileMenu.set(false);
   }

@@ -150,7 +150,6 @@ export class PatientListComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private setupMobileHeader(): void {
-    console.log('filter code', this.filterTemplate)
     this.mobileHeader.set({
       title: 'Patient Register',
       subtitle: `${this.rows().length} patients`,

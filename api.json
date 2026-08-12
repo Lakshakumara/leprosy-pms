@@ -1,0 +1,539 @@
+how can I use this in my app
+{
+  "resources": [
+    {
+      "displayName": "Data Sets",
+      "singular": "dataSet",
+      "plural": "dataSets",
+      "href": "https://phsmis.health.gov.lk/api/dataSets"
+    },
+    {
+      "displayName": "Organisation Unit Groups",
+      "singular": "organisationUnitGroup",
+      "plural": "organisationUnitGroups",
+      "href": "https://phsmis.health.gov.lk/api/organisationUnitGroups"
+    },
+    {
+      "displayName": "Option Groups",
+      "singular": "optionGroup",
+      "plural": "optionGroups",
+      "href": "https://phsmis.health.gov.lk/api/optionGroups"
+    },
+    {
+      "displayName": "File Resources",
+      "singular": "fileResource",
+      "plural": "fileResources",
+      "href": "https://phsmis.health.gov.lk/api/fileResources"
+    },
+    {
+      "displayName": "Validation Rules",
+      "singular": "validationRule",
+      "plural": "validationRules",
+      "href": "https://phsmis.health.gov.lk/api/validationRules"
+    },
+    {
+      "displayName": "Predictor Groups",
+      "singular": "predictorGroup",
+      "plural": "predictorGroups",
+      "href": "https://phsmis.health.gov.lk/api/predictorGroups"
+    },
+    {
+      "displayName": "Icons",
+      "singular": "icon",
+      "plural": "icons",
+      "href": "https://phsmis.health.gov.lk/api/icons"
+    },
+    {
+      "displayName": "Program Indicators",
+      "singular": "programIndicator",
+      "plural": "programIndicators",
+      "href": "https://phsmis.health.gov.lk/api/programIndicators"
+    },
+    {
+      "displayName": "Program Stage Sections",
+      "singular": "programStageSection",
+      "plural": "programStageSections",
+      "href": "https://phsmis.health.gov.lk/api/programStageSections"
+    },
+    {
+      "displayName": "Constants",
+      "singular": "constant",
+      "plural": "constants",
+      "href": "https://phsmis.health.gov.lk/api/constants"
+    },
+    {
+      "displayName": "Tracked Entity Types",
+      "singular": "trackedEntityType",
+      "plural": "trackedEntityTypes",
+      "href": "https://phsmis.health.gov.lk/api/trackedEntityTypes"
+    },
+    {
+      "displayName": "Category Option Group Sets",
+      "singular": "categoryOptionGroupSet",
+      "plural": "categoryOptionGroupSets",
+      "href": "https://phsmis.health.gov.lk/api/categoryOptionGroupSets"
+    },
+    {
+      "displayName": "Attributes",
+      "singular": "attribute",
+      "plural": "attributes",
+      "href": "https://phsmis.health.gov.lk/api/attributes"
+    },
+    {
+      "displayName": "Aggregate Data Exchanges",
+      "singular": "aggregateDataExchange",
+      "plural": "aggregateDataExchanges",
+      "href": "https://phsmis.health.gov.lk/api/aggregateDataExchanges"
+    },
+    {
+      "displayName": "Analytics Table Hooks",
+      "singular": "analyticsTableHook",
+      "plural": "analyticsTableHooks",
+      "href": "https://phsmis.health.gov.lk/api/analyticsTableHooks"
+    },
+    {
+      "displayName": "Legend Sets",
+      "singular": "legendSet",
+      "plural": "legendSets",
+      "href": "https://phsmis.health.gov.lk/api/legendSets"
+    },
+    {
+      "displayName": "Metadata Versions",
+      "singular": "metadataVersion",
+      "plural": "metadataVersions",
+      "href": "https://phsmis.health.gov.lk/api/metadata/version"
+    },
+    {
+      "displayName": "Data Element Groups",
+      "singular": "dataElementGroup",
+      "plural": "dataElementGroups",
+      "href": "https://phsmis.health.gov.lk/api/dataElementGroups"
+    },
+    {
+      "displayName": "Program Indicator Groups",
+      "singular": "programIndicatorGroup",
+      "plural": "programIndicatorGroups",
+      "href": "https://phsmis.health.gov.lk/api/programIndicatorGroups"
+    },
+    {
+      "displayName": "Visualizations",
+      "singular": "visualization",
+      "plural": "visualizations",
+      "href": "https://phsmis.health.gov.lk/api/visualizations"
+    },
+    {
+      "displayName": "Data Set Notification Templates",
+      "singular": "dataSetNotificationTemplate",
+      "plural": "dataSetNotificationTemplates",
+      "href": "https://phsmis.health.gov.lk/api/dataSetNotificationTemplates"
+    },
+    {
+      "displayName": "Relationship Types",
+      "singular": "relationshipType",
+      "plural": "relationshipTypes",
+      "href": "https://phsmis.health.gov.lk/api/relationshipTypes"
+    },
+    {
+      "displayName": "Dashboard Items",
+      "singular": "dashboardItem",
+      "plural": "dashboardItems",
+      "href": "https://phsmis.health.gov.lk/api/dashboardItems"
+    },
+    {
+      "displayName": "Sms Commands",
+      "singular": "smsCommand",
+      "plural": "smsCommands",
+      "href": "https://phsmis.health.gov.lk/api/smsCommands"
+    },
+    {
+      "displayName": "Event Visualizations",
+      "singular": "eventVisualization",
+      "plural": "eventVisualizations",
+      "href": "https://phsmis.health.gov.lk/api/eventVisualizations"
+    },
+    {
+      "displayName": "Tracked Entity Instances",
+      "singular": "trackedEntityInstance",
+      "plural": "trackedEntityInstances",
+      "href": "https://phsmis.health.gov.lk/api/trackedEntityInstances"
+    },
+    {
+      "displayName": "Data Approval Levels",
+      "singular": "dataApprovalLevel",
+      "plural": "dataApprovalLevels",
+      "href": "https://phsmis.health.gov.lk/api/dataApprovalLevels"
+    },
+    {
+      "displayName": "Categories",
+      "singular": "category",
+      "plural": "categories",
+      "href": "https://phsmis.health.gov.lk/api/categories"
+    },
+    {
+      "displayName": "Reports",
+      "singular": "report",
+      "plural": "reports",
+      "href": "https://phsmis.health.gov.lk/api/reports"
+    },
+    {
+      "displayName": "Program Stage Working Lists",
+      "singular": "programStageWorkingList",
+      "plural": "programStageWorkingLists",
+      "href": "https://phsmis.health.gov.lk/api/programStageWorkingLists"
+    },
+    {
+      "displayName": "Organisation Unit Levels",
+      "singular": "organisationUnitLevel",
+      "plural": "organisationUnitLevels",
+      "href": "https://phsmis.health.gov.lk/api/organisationUnitLevels"
+    },
+    {
+      "displayName": "Program Sections",
+      "singular": "programSection",
+      "plural": "programSections",
+      "href": "https://phsmis.health.gov.lk/api/programSections"
+    },
+    {
+      "displayName": "Organisation Unit Group Sets",
+      "singular": "organisationUnitGroupSet",
+      "plural": "organisationUnitGroupSets",
+      "href": "https://phsmis.health.gov.lk/api/organisationUnitGroupSets"
+    },
+    {
+      "displayName": "Validation Notification Templates",
+      "singular": "validationNotificationTemplate",
+      "plural": "validationNotificationTemplates",
+      "href": "https://phsmis.health.gov.lk/api/validationNotificationTemplates"
+    },
+    {
+      "displayName": "Interpretations",
+      "singular": "interpretation",
+      "plural": "interpretations",
+      "href": "https://phsmis.health.gov.lk/api/interpretations"
+    },
+    {
+      "displayName": "Validation Results",
+      "singular": "validationResult",
+      "plural": "validationResults",
+      "href": "https://phsmis.health.gov.lk/api/validationResults"
+    },
+    {
+      "displayName": "Event Hooks",
+      "singular": "eventHook",
+      "plural": "eventHooks",
+      "href": "https://phsmis.health.gov.lk/api/eventHooks"
+    },
+    {
+      "displayName": "Validation Rule Groups",
+      "singular": "validationRuleGroup",
+      "plural": "validationRuleGroups",
+      "href": "https://phsmis.health.gov.lk/api/validationRuleGroups"
+    },
+    {
+      "displayName": "Data Entry Forms",
+      "singular": "dataEntryForm",
+      "plural": "dataEntryForms",
+      "href": "https://phsmis.health.gov.lk/api/dataEntryForms"
+    },
+    {
+      "displayName": "Program Notification Templates",
+      "singular": "programNotificationTemplate",
+      "plural": "programNotificationTemplates",
+      "href": "https://phsmis.health.gov.lk/api/programNotificationTemplates"
+    },
+    {
+      "displayName": "Data Elements",
+      "singular": "dataElement",
+      "plural": "dataElements",
+      "href": "https://phsmis.health.gov.lk/api/dataElements"
+    },
+    {
+      "displayName": "Event Reports",
+      "singular": "eventReport",
+      "plural": "eventReports",
+      "href": "https://phsmis.health.gov.lk/api/eventReports"
+    },
+    {
+      "displayName": "Tracked Entity Instance Filters",
+      "singular": "trackedEntityInstanceFilter",
+      "plural": "trackedEntityInstanceFilters",
+      "href": "https://phsmis.health.gov.lk/api/trackedEntityInstanceFilters"
+    },
+    {
+      "displayName": "Maps",
+      "singular": "map",
+      "plural": "maps",
+      "href": "https://phsmis.health.gov.lk/api/maps"
+    },
+    {
+      "displayName": "Routes",
+      "singular": "route",
+      "plural": "routes",
+      "href": "https://phsmis.health.gov.lk/api/routes"
+    },
+    {
+      "displayName": "Proposals",
+      "singular": "proposal",
+      "plural": "proposals",
+      "href": "https://phsmis.health.gov.lk/api/metadata/proposals"
+    },
+    {
+      "displayName": "O Auth2 Clients",
+      "singular": "oAuth2Client",
+      "plural": "oAuth2Clients",
+      "href": "https://phsmis.health.gov.lk/api/oAuth2Clients"
+    },
+    {
+      "displayName": "Data Element Operands",
+      "singular": "dataElementOperand",
+      "plural": "dataElementOperands",
+      "href": "https://phsmis.health.gov.lk/api/dataElementOperands"
+    },
+    {
+      "displayName": "Options",
+      "singular": "option",
+      "plural": "options",
+      "href": "https://phsmis.health.gov.lk/api/options"
+    },
+    {
+      "displayName": "Program Rules",
+      "singular": "programRule",
+      "plural": "programRules",
+      "href": "https://phsmis.health.gov.lk/api/programRules"
+    },
+    {
+      "displayName": "Data Element Group Sets",
+      "singular": "dataElementGroupSet",
+      "plural": "dataElementGroupSets",
+      "href": "https://phsmis.health.gov.lk/api/dataElementGroupSets"
+    },
+    {
+      "displayName": "External File Resources",
+      "singular": "externalFileResource",
+      "plural": "externalFileResources",
+      "href": "https://phsmis.health.gov.lk/api/externalFileResources"
+    },
+    {
+      "displayName": "Sections",
+      "singular": "section",
+      "plural": "sections",
+      "href": "https://phsmis.health.gov.lk/api/sections"
+    },
+    {
+      "displayName": "Option Sets",
+      "singular": "optionSet",
+      "plural": "optionSets",
+      "href": "https://phsmis.health.gov.lk/api/optionSets"
+    },
+    {
+      "displayName": "Program Rule Actions",
+      "singular": "programRuleAction",
+      "plural": "programRuleActions",
+      "href": "https://phsmis.health.gov.lk/api/programRuleActions"
+    },
+    {
+      "displayName": "User Roles",
+      "singular": "userRole",
+      "plural": "userRoles",
+      "href": "https://phsmis.health.gov.lk/api/userRoles"
+    },
+    {
+      "displayName": "Category Option Combos",
+      "singular": "categoryOptionCombo",
+      "plural": "categoryOptionCombos",
+      "href": "https://phsmis.health.gov.lk/api/categoryOptionCombos"
+    },
+    {
+      "displayName": "Program Rule Variables",
+      "singular": "programRuleVariable",
+      "plural": "programRuleVariables",
+      "href": "https://phsmis.health.gov.lk/api/programRuleVariables"
+    },
+    {
+      "displayName": "Min Max Data Elements",
+      "singular": "minMaxDataElement",
+      "plural": "minMaxDataElements",
+      "href": "https://phsmis.health.gov.lk/api/minMaxDataElements"
+    },
+    {
+      "displayName": "Documents",
+      "singular": "document",
+      "plural": "documents",
+      "href": "https://phsmis.health.gov.lk/api/documents"
+    },
+    {
+      "displayName": "Sql Views",
+      "singular": "sqlView",
+      "plural": "sqlViews",
+      "href": "https://phsmis.health.gov.lk/api/sqlViews"
+    },
+    {
+      "displayName": "Message Conversations",
+      "singular": "messageConversation",
+      "plural": "messageConversations",
+      "href": "https://phsmis.health.gov.lk/api/messageConversations"
+    },
+    {
+      "displayName": "Indicator Types",
+      "singular": "indicatorType",
+      "plural": "indicatorTypes",
+      "href": "https://phsmis.health.gov.lk/api/indicatorTypes"
+    },
+    {
+      "displayName": "User Groups",
+      "singular": "userGroup",
+      "plural": "userGroups",
+      "href": "https://phsmis.health.gov.lk/api/userGroups"
+    },
+    {
+      "displayName": "Category Options",
+      "singular": "categoryOption",
+      "plural": "categoryOptions",
+      "href": "https://phsmis.health.gov.lk/api/categoryOptions"
+    },
+    {
+      "displayName": "Push Analysis",
+      "singular": "pushAnalysis",
+      "plural": "pushAnalysis",
+      "href": "https://phsmis.health.gov.lk/api/pushAnalysis"
+    },
+    {
+      "displayName": "Option Group Sets",
+      "singular": "optionGroupSet",
+      "plural": "optionGroupSets",
+      "href": "https://phsmis.health.gov.lk/api/optionGroupSets"
+    },
+    {
+      "displayName": "Event Charts",
+      "singular": "eventChart",
+      "plural": "eventCharts",
+      "href": "https://phsmis.health.gov.lk/api/eventCharts"
+    },
+    {
+      "displayName": "Job Configurations",
+      "singular": "jobConfiguration",
+      "plural": "jobConfigurations",
+      "href": "https://phsmis.health.gov.lk/api/jobConfigurations"
+    },
+    {
+      "displayName": "Event Filters",
+      "singular": "eventFilter",
+      "plural": "eventFilters",
+      "href": "https://phsmis.health.gov.lk/api/eventFilters"
+    },
+    {
+      "displayName": "Relationships",
+      "singular": "relationship",
+      "plural": "relationships",
+      "href": "https://phsmis.health.gov.lk/api/relationships"
+    },
+    {
+      "displayName": "Program Data Elements",
+      "singular": "programDataElement",
+      "plural": "programDataElements",
+      "href": "https://phsmis.health.gov.lk/api/programDataElements"
+    },
+    {
+      "displayName": "Predictors",
+      "singular": "predictor",
+      "plural": "predictors",
+      "href": "https://phsmis.health.gov.lk/api/predictors"
+    },
+    {
+      "displayName": "Program Stages",
+      "singular": "programStage",
+      "plural": "programStages",
+      "href": "https://phsmis.health.gov.lk/api/programStages"
+    },
+    {
+      "displayName": "Data Approval Workflows",
+      "singular": "dataApprovalWorkflow",
+      "plural": "dataApprovalWorkflows",
+      "href": "https://phsmis.health.gov.lk/api/dataApprovalWorkflows"
+    },
+    {
+      "displayName": "External Map Layers",
+      "singular": "externalMapLayer",
+      "plural": "externalMapLayers",
+      "href": "https://phsmis.health.gov.lk/api/externalMapLayers"
+    },
+    {
+      "displayName": "Indicator Group Sets",
+      "singular": "indicatorGroupSet",
+      "plural": "indicatorGroupSets",
+      "href": "https://phsmis.health.gov.lk/api/indicatorGroupSets"
+    },
+    {
+      "displayName": "Indicators",
+      "singular": "indicator",
+      "plural": "indicators",
+      "href": "https://phsmis.health.gov.lk/api/indicators"
+    },
+    {
+      "displayName": "Organisation Units",
+      "singular": "organisationUnit",
+      "plural": "organisationUnits",
+      "href": "https://phsmis.health.gov.lk/api/organisationUnits"
+    },
+    {
+      "displayName": "Dashboards",
+      "singular": "dashboard",
+      "plural": "dashboards",
+      "href": "https://phsmis.health.gov.lk/api/dashboards"
+    },
+    {
+      "displayName": "Indicator Groups",
+      "singular": "indicatorGroup",
+      "plural": "indicatorGroups",
+      "href": "https://phsmis.health.gov.lk/api/indicatorGroups"
+    },
+    {
+      "displayName": "Data Stores",
+      "singular": "dataStore",
+      "plural": "dataStores",
+      "href": "https://phsmis.health.gov.lk/api/dataStore"
+    },
+    {
+      "displayName": "Category Combos",
+      "singular": "categoryCombo",
+      "plural": "categoryCombos",
+      "href": "https://phsmis.health.gov.lk/api/categoryCombos"
+    },
+    {
+      "displayName": "Tracked Entity Attributes",
+      "singular": "trackedEntityAttribute",
+      "plural": "trackedEntityAttributes",
+      "href": "https://phsmis.health.gov.lk/api/trackedEntityAttributes"
+    },
+    {
+      "displayName": "Category Option Groups",
+      "singular": "categoryOptionGroup",
+      "plural": "categoryOptionGroups",
+      "href": "https://phsmis.health.gov.lk/api/categoryOptionGroups"
+    },
+    {
+      "displayName": "Users",
+      "singular": "user",
+      "plural": "users",
+      "href": "https://phsmis.health.gov.lk/api/users"
+    },
+    {
+      "displayName": "Programs",
+      "singular": "program",
+      "plural": "programs",
+      "href": "https://phsmis.health.gov.lk/api/programs"
+    },
+    {
+      "displayName": "Map Views",
+      "singular": "mapView",
+      "plural": "mapViews",
+      "href": "https://phsmis.health.gov.lk/api/mapViews"
+    },
+    {
+      "displayName": "Api Token",
+      "singular": "apiToken",
+      "plural": "apiToken",
+      "href": "https://phsmis.health.gov.lk/api/apiToken"
+    }
+  ]
+}

@@ -3,9 +3,9 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { PatientService } from '../../core/services/patient.service';
 import { Patient } from '../../core/services/patient.model';
-import { environment } from '../../../environments/environment';
 import { DeviceStorageService } from '../../core/services/device-storage.service';
 import { MobileHeaderService } from '../../core/services/mobile-header.service';
+import { DISABILITY_CONVERSION, DISABILITY_MAP } from '../../core/util/util';
 
 @Component({
   selector: 'app-patient-detail',
@@ -85,4 +85,8 @@ export class PatientDetailComponent implements OnInit, OnDestroy {
   editPatient(): void {
     // Edit logic...
   }
+  getDisabilityText(value: string | number | null | undefined): string {
+  if (value === null || value === undefined || value === '') return '';
+  return DISABILITY_MAP.get(String(value).trim()) ?? '';
+}
 }

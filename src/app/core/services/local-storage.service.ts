@@ -37,7 +37,7 @@ export class LocalStorageService {
           // migration: old plain data
           patients.push(encValue as any as Patient);
         }
-      } catch {}
+      } catch { }
     }
     return patients;
   }
@@ -46,7 +46,7 @@ export class LocalStorageService {
     await this.crypto.ensureReady();
     const enc = await get(id, this.store) as string | undefined;
     if (!enc) return undefined;
-    if (typeof enc!== 'string') return enc as any as Patient; // old plain
+    if (typeof enc !== 'string') return enc as any as Patient; // old plain
     try { return await this.crypto.decrypt<Patient>(enc); }
     catch { return undefined; }
   }
@@ -60,7 +60,9 @@ export class LocalStorageService {
   async savePatients(patients: Patient[]): Promise<void> {
     await this.crypto.ensureReady();
     // parallel faster for 255 patients
-    await Promise.all(patients.map(p => this.savePatient(p)));
+    for (let i = 0; i < patients.length; i += 20) {
+      await Promise.all(patients.slice(i, i + 20).map(p => this.savePatient(p)));
+    }
   }
 
   async deletePatient(id: string): Promise<void> { await del(id, this.store); }
@@ -69,13 +71,35 @@ export class LocalStorageService {
 
   async getDistinctValues(field: keyof Patient): Promise<string[]> {
     const all = await this.getAllPatients();
-    return [...new Set(all.map(p => p[field]).filter(v => typeof v === 'string' && v.trim()!== '') as string[])].sort();
+    return [...new Set(all.map(p => p[field]).filter(v => typeof v === 'string' && v.trim() !== '') as string[])].sort();
   }
 
   async getYears(top: number): Promise<string[]> {
     const all = await this.getAllPatients();
     const set_ = new Set<string>();
-    for (const p of all) if (p.enrolledAt?.slice(0,4)) set_.add(p.enrolledAt.slice(0,4));
-    return [...set_].sort((a,b) => b.localeCompare(a)).slice(0, top);
+    for (const p of all) if (p.enrolledAt?.slice(0, 4)) set_.add(p.enrolledAt.slice(0, 4));
+    return [...set_].sort((a, b) => b.localeCompare(a)).slice(0, top);
   }
+  /*
+    // Add this method to LocalStorageService
+    async patchPatientDataValues(trackedEntityId: string, dataValues: { dataElement: string, value: any }[]) {
+      await this.crypto.ensureReady();
+      const patient = await this.getPatient(trackedEntityId);
+      if (!patient) {
+        console.warn('Patient not in local DB yet, skip:', trackedEntityId);
+        return;
+      }
+  
+      // Merge only changed dataElements
+      if (!patient.dataValues) patient.dataValues = {} as any;
+  
+      for (const dv of dataValues) {
+        (patient.dataValues as any)[dv.dataElement] = dv.value;
+      }
+  
+      // Also update updatedAt if you have it
+      (patient as any).lastUpdatedFromServer = new Date().toISOString();
+  
+      await this.savePatient(patient);
+    }*/
 }

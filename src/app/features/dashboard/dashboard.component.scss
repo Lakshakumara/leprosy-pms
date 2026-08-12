@@ -1,3 +1,13 @@
+.loading-state {
+  padding: 48px 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  i { color: var(--color-teal-700); }
+  h3 { margin: 0; color: var(--color-teal-900); }
+}
 /* ==========================================================================
    1. Header & Filters Section
    ========================================================================== */
@@ -641,6 +651,9 @@
   min-width: 2px;
   transition: width 0.3s ease;
 
+  &--normal{
+    background: var(--color-fill);
+  }
   &--warn {
     background: var(--color-mb);
   }

@@ -132,7 +132,7 @@ export class ClinicVisitTrackerService {
   }
 
   /** First non-empty of treatmentStartDate / enrolledAt, normalized to yyyy-MM-dd (or '' if neither is usable). */
-  private courseStartDate(patient: Patient): string {
+  public courseStartDate(patient: Patient): string {
     return this.normalizeDate(patient.treatmentStartDate) || this.normalizeDate(patient.enrolledAt);
   }
 
@@ -312,20 +312,49 @@ export class ClinicVisitTrackerService {
     return Math.round((dl.getTime() - now.getTime()) / 86_400_000);
   }
 
-  /**
-   * A manually-confirmed default (`treatmentStatus === 'defaulted'`, set by
-   * clinic staff via a deliberate "confirm outcome" action) always wins.
-   * Otherwise: defaulter iff today is past the WHO-window deadline and the
-   * course still isn't complete. This is an objective date comparison, not
-   * a missed-dose heuristic — a single late visit does NOT make someone a
-   * defaulter; only actually running out the full 1.5x window does.
-   */
+  private diffMonths(from: string, to: string): number {
+    const a = new Date(from);
+    const b = new Date(to);
+    return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth()) + (b.getDate() >= a.getDate() ? 0 : -1);
+    // If today is 2026-07-05 and enroll 2026-06-07, counts as 0 months used, not 1
+  }
+
   isDefaulter(patient: Patient, today: string = this.todayIso()): boolean {
     if (!this.isEligibleForTracking(patient)) return false;
-    if (patient.treatmentStatus === 'defaulted') return true;
+    if (this.isNeedsReview(patient, today)) return false;
     if (this.isCompleted(patient)) return false;
-    const deadline = this.defaulterDeadline(patient);
-    return !!deadline && today > deadline;
+
+    const enrollDate = this.courseStartDate(patient);
+    if (!enrollDate) return false;
+
+    const totalDoses = patient.treatmentType.includes('PB') ? 6 : 12;
+    const maxMonths = patient.treatmentType.includes('PB') ? 9 : 18; // Basic idea 3
+
+    // 1. y = how many visits already done (last completed)
+    const completedVisits = (patient.visits ?? [])
+      .filter(v => this.normalizeDate(v.visitDate))
+      .sort((a, b) => a.visitNumber - b.visitNumber);
+
+    const y = completedVisits.length; // Basic idea 4.1
+    const lastVisit = completedVisits[completedVisits.length - 1];
+
+    // If no visit yet, not defaulter
+    if (y === 0) return false;
+
+    // 2. z = remaining to complete
+    const z = totalDoses - y; // Basic idea 4.2
+    if (z <= 0) return false; // completed
+
+    // 3. yUsedMonths = months spent to complete y doses (from enroll to TODAY, not last visit)
+    // This includes the gap when patient was absent
+    const yUsedMonths = this.diffMonths(enrollDate, today);
+
+    // 4. zRemainingMonths
+    const zRemainingMonths = maxMonths - yUsedMonths;
+
+    // 5 & 6. Can patient still complete?
+    // Needs at least 1 month per remaining dose
+    return zRemainingMonths < z;
   }
 
   isAtRisk(patient: Patient, today: string = this.todayIso()): boolean {
@@ -334,19 +363,55 @@ export class ClinicVisitTrackerService {
     if (this.isCompleted(patient)) return false;
     if (this.isDefaulter(patient, today)) return false;
 
-    const next = this.nextActionableDose(patient);
-    if (!next || !next.expectedDate) return false;
+    const enrollDate = this.courseStartDate(patient);
+    if (!enrollDate) return false;
 
-    const overdue = this.overdueDays(next, today);
+    const totalDoses = patient.treatmentType.includes('PB') ? 6 : 12;
+    const maxMonths = patient.treatmentType.includes('PB') ? 9 : 18;
 
-    // Not yet due or within grace period (0-7 days) = still ACTIVE
-    if (overdue <= 7) return false;
+    const y = (patient.visits ?? []).filter(v => this.normalizeDate(v.visitDate)).length;
+    const x = totalDoses - y; // remain doses
+    if (x <= 0) return false;
 
-    // Overdue but still inside WHO window = AT_RISK
-    const daysToDeadline = this.daysToDefaulterDeadline(patient, today);
-    if (daysToDeadline !== null && daysToDeadline <= 0) return false; // already defaulter
+    const yUsedMonths = this.diffMonths(enrollDate, today);
+    const xRemainingMonths = maxMonths - yUsedMonths; // remaining months to complete
 
-    return overdue >= 8; // 8+ days overdue = AT_RISK
+    // No risk: has more than 1.5 months per remaining dose = active
+    if (xRemainingMonths > x * 1.5) return false;
+
+    // If remaining time is <= 1.5 per dose, patient is at risk (LOW/MEDIUM/HIGH)
+    // Defaulter already handled: if xRemainingMonths < x
+    return xRemainingMonths <= x * 1.5;
+  }
+
+  getAtRiskLevel(patient: Patient, today: string = this.todayIso()): 'LOW' | 'MEDIUM' | 'HIGH' | null {
+    const enrollDate = this.courseStartDate(patient);
+    if (!enrollDate) return null;
+    if (!this.isAtRisk(patient, today)) return null;
+    const totalDoses = patient.treatmentType.includes('PB') ? 6 : 12;
+    const maxMonths = patient.treatmentType.includes('PB') ? 9 : 18;
+
+    const y = (patient.visits ?? []).filter(v => this.normalizeDate(v.visitDate)).length;
+    const x = totalDoses - y;
+    const yUsedMonths = this.diffMonths(enrollDate, today);
+    const xRemainingMonths = maxMonths - yUsedMonths;
+
+    // Your exact rules:
+    if (xRemainingMonths === x * 1.5 || xRemainingMonths > x * 1.5 - 0.5) {
+      // e.g. x=2, xRemaining=3 => 3 = 2*1.5 => LOW
+      return 'LOW';
+    }
+    if (xRemainingMonths === x) {
+      // e.g. x=2, xRemaining=2 => exactly enough months = HIGH
+      return 'HIGH';
+    }
+    // x < xRemaining < x*1.5 => MEDIUM
+    // e.g. x=4, xRemaining=5 => 4 < 5 < 6 => MEDIUM
+    if (xRemainingMonths > x && xRemainingMonths < x * 1.5) {
+      return 'MEDIUM';
+    }
+
+    return 'HIGH'; // fallback: closest to deadline
   }
 
   // Helper you already have, but fix to use normalizeDate
@@ -363,15 +428,6 @@ export class ClinicVisitTrackerService {
     const now = new Date(today);
     const diff = now.getTime() - due.getTime();
     return Math.max(0, Math.floor(diff / 86400000));
-  }
-
-  // For UI badge - how critical
-  getAtRiskLevel(patient: Patient, today: string = this.todayIso()): 'EARLY' | 'LATE' | null {
-    if (!this.isAtRisk(patient, today)) return null;
-    const next = this.nextActionableDose(patient);
-    if (!next) return null;
-    const overdue = this.overdueDays(next, today);
-    return overdue <= 21 ? 'EARLY' : 'LATE'; // 8-21 = early, 22-60 = late
   }
 
   /**
@@ -484,10 +540,14 @@ export class ClinicVisitTrackerService {
    */
   filterByStatus(
     patients: Patient[],
-    status: 'ALL' | ClinicVisitStatus,
+    status: 'ALL' | 'ONGOING' | ClinicVisitStatus,
     today: string = this.todayIso()
   ): Patient[] {
     if (status === 'ALL') return patients;
+    if (status === 'ONGOING') return patients.filter((p) => {
+      const s = this.getVisitStatus(p, today);
+      return s === 'ACTIVE' || s === 'AT_RISK';
+    });
     return patients.filter((p) => this.getVisitStatus(p, today) === status);
   }
 

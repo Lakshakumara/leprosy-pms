@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, computed, effect, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import { AfterViewInit, Component, computed, effect, inject, OnDestroy, OnInit, signal, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -36,6 +36,9 @@ import { SelectOption, STORAGE_KEYS } from '../../core/util/util';
 interface PatientCardViewModel {
   patient: Patient;
   status: ClinicVisitStatus;
+  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | null; // <-- ADD
+  remainDoses: number;
+  remainMonths: number;
   doseSchedule: DoseSlot[];
   completedCount: number;
   nextDose: DoseSlot | null;
@@ -112,17 +115,18 @@ export class ClinicVisitComponent implements AfterViewInit, OnDestroy {
 
   readonly statusOptions: SelectOption[] = [
     { label: 'All statuses', value: 'ALL' },
+    { label: 'On going', value: 'ONGOING' },
     { label: 'Active', value: 'ACTIVE' },
-    { label: 'Completed', value: 'COMPLETED' },
     { label: 'At risk', value: 'AT_RISK' },
-    { label: 'Defaulter', value: 'DEFAULTER' },
     { label: 'Needs review', value: 'NEEDS_REVIEW' },
+    { label: 'Defaulter', value: 'DEFAULTER' },
+    { label: 'Completed', value: 'COMPLETED' },
   ];
 
   // ── Filter state ──────────────────────────────────────────────────────────
   searchTerm = signal('');
   classificationFilter = signal<string>('ALL');
-  statusFilter = signal<'ALL' | ClinicVisitStatus>('ALL');
+  statusFilter = signal<'ALL' | 'ONGOING' | ClinicVisitStatus>('ONGOING');
   hospitalFilter = signal<'All' | string>('ALL');
   private patientFilter = computed<PatientFilter>(() => ({
     search: this.searchTerm().trim() || undefined,
@@ -138,28 +142,86 @@ export class ClinicVisitComponent implements AfterViewInit, OnDestroy {
     this.trackerService.filterByStatus(this.baseFiltered(), this.statusFilter())
   );
 
-  /** The one place per-patient derived data gets computed — everything downstream reads this, not the service directly. */
   cardViewModels = computed<PatientCardViewModel[]>(() => {
     const today = this.trackerService.todayIso();
     return this.statusFiltered()
-      .map((patient) => ({
-        patient,
-        status: this.trackerService.getVisitStatus(patient, today),
-        doseSchedule: this.trackerService.getDoseSchedule(patient),
-        completedCount: this.trackerService.completedDoseCount(patient),
-        nextDose: this.trackerService.nextActionableDose(patient),
-        defaulterDeadline: this.trackerService.defaulterDeadline(patient),
-        daysToDeadline: this.trackerService.daysToDefaulterDeadline(patient, today),
-        priority: this.trackerService.priorityIndex(patient, today),
-      }))
+      .map((patient) => {
+        const status = this.trackerService.getVisitStatus(patient, today);
+        const y = (patient.visits ?? []).filter(v => this.trackerService['normalizeDate'](v.visitDate)).length;
+        const total = this.trackerService.courseLength(patient);
+        const remainDoses = total - y;
+        const enroll = this.trackerService.courseStartDate(patient);
+        const yUsed = enroll ? this.trackerService['diffMonths'](enroll, today) : 0;
+        const maxMonths = patient.treatmentType?.includes('PB') ? 9 : 18;
+        const remainMonths = maxMonths - yUsed;
+
+        return {
+          patient,
+          status,
+          riskLevel: status === 'AT_RISK' ? this.trackerService.getAtRiskLevel(patient, today) : null,
+          remainDoses,
+          remainMonths,
+          doseSchedule: this.trackerService.getDoseSchedule(patient),
+          completedCount: this.trackerService.completedDoseCount(patient),
+          nextDose: this.trackerService.nextActionableDose(patient),
+          defaulterDeadline: this.trackerService.defaulterDeadline(patient),
+          daysToDeadline: this.trackerService.daysToDefaulterDeadline(patient, today),
+          priority: this.trackerService.priorityIndex(patient, today),
+        };
+      })
       .sort((a, b) => a.priority - b.priority);
+  });
+
+  atRiskLowCount = computed(() => this.cardViewModels().filter(vm => vm.riskLevel === 'LOW').length);
+  atRiskMediumCount = computed(() => this.cardViewModels().filter(vm => vm.riskLevel === 'MEDIUM').length);
+  atRiskHighCount = computed(() => this.cardViewModels().filter(vm => vm.riskLevel === 'HIGH').length);
+
+  riskSeverity(level: string) {
+    if (level === 'LOW') return 'success';
+    if (level === 'MEDIUM') return 'warn';
+    return 'danger';
+  }
+
+  activeStats = computed(() => {
+    const filtered = this.baseFiltered();
+    let total = 0;
+    const byHospitalMap = new Map<string, number>();
+
+    for (const p of filtered) {
+      if (this.trackerService.getVisitStatus(p) !== 'ACTIVE') continue;
+      total++;
+      const hospital = p.orgUnitName || p.orgUnitId || 'Unknown';
+      byHospitalMap.set(hospital, (byHospitalMap.get(hospital) || 0) + 1);
+    }
+
+    const byHospital = [...byHospitalMap.entries()]
+      .sort((a, b) => b[1] - a[1]) // highest count first
+      .map(([hospital, count]) => ({ hospital, count }));
+
+    return { total, byHospital };
   });
 
   defaulterCount = computed(() => this.baseFiltered().filter((p) => this.trackerService.isDefaulter(p)).length);
   atRiskCount = computed(() => this.baseFiltered().filter((p) => this.trackerService.isAtRisk(p)).length);
-  needsReviewCount = computed(
-    () => this.baseFiltered().filter((p) => this.trackerService.isNeedsReview(p)).length
-  );
+  needsReviewStats = computed(() => {
+    const filtered = this.baseFiltered();
+    let total = 0;
+    const byYearMap = new Map<string, number>();
+
+    for (const p of filtered) {
+      if (!this.trackerService.isNeedsReview(p)) continue;
+      total++;
+      const year = p.enrolledAt?.slice(0, 4) || 'Unknown';
+      byYearMap.set(year, (byYearMap.get(year) || 0) + 1);
+    }
+
+    const byYear = [...byYearMap.entries()]
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .map(([year, count]) => ({ year, count }));
+
+    return { total, byYear };
+  });
+
 
   // ── Progressive reveal (renders large lists in batches instead of all at once) ──
   private readonly revealBatchSize = 20;
@@ -201,18 +263,16 @@ export class ClinicVisitComponent implements AfterViewInit, OnDestroy {
     private readonly trackerService: ClinicVisitTrackerService,
     readonly visitSync: VisitSyncService
   ) {
-    // Whenever the filtered set changes size (new filter, or the initial
-    // big historical load completing), restart the progressive reveal from
-    // the first batch rather than dumping everything into the DOM at once.
-    effect(
-      () => {
-        const total = this.cardViewModels().length;
+    effect(() => {
+      const total = this.cardViewModels().length; // track
+
+      // don't track writes
+      untracked(() => {
         clearTimeout(this.revealTimer);
         this.revealedCount.set(Math.min(this.revealBatchSize, total || this.revealBatchSize));
         this.scheduleNextBatch();
-      },
-      { allowSignalWrites: true }
-    );
+      });
+    });
   }
   ngAfterViewInit() {
     queueMicrotask(() => {
@@ -335,8 +395,8 @@ export class ClinicVisitComponent implements AfterViewInit, OnDestroy {
     const nextLength = currentLength + 12;
     const confirmed = window.confirm(
       `Extend this patient's course from ${currentLength} to ${nextLength} months? ` +
-        `The formal default deadline moves out to match (${nextLength} × 1.5 months from start). ` +
-        `Note: DHIS2 has no field for this — it's tracked locally only.`
+      `The formal default deadline moves out to match (${nextLength} × 1.5 months from start). ` +
+      `Note: DHIS2 has no field for this — it's tracked locally only.`
     );
     if (!confirmed) return;
 

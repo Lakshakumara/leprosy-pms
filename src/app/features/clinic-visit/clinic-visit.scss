@@ -142,7 +142,10 @@
   background: var(--cv-neutral-bg);
   color: var(--cv-neutral);
 }
-
+.summary-chip--success {
+  background: var(--cv-bg);
+  color: var(--cv-active);
+}
 .summary-chip.is-zero {
   opacity: 0.45;
 }
@@ -493,3 +496,19 @@
     font-size: 0.72rem;
   }
 }
+.header-tags {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+.risk-tag {
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+.summary-chip--low { border: 1px solid #16a34a; }
+.summary-chip--med { border: 1px solid #d97706; }
+.summary-chip--high { border: 1px solid #dc2626; }
+
+.footer-note--low { color: #16a34a; font-weight: 600; }
+.footer-note--medium { color: #d97706; font-weight: 600; }
+.footer-note--high { color: #dc2626; font-weight: 700; }

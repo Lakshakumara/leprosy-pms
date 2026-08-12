@@ -74,6 +74,33 @@
       </dl>
     </section>
 
+<!-- Location -->
+    <section class="detail-card detail-card--location">
+      <h2 class="section-title"><i class="pi pi-map-marker"></i> Location</h2>
+      <dl class="detail-dl">
+        <dt>District</dt>
+        <dd>{{ p.patientDistrict || '—' }}</dd>
+        <dt>MOH Area</dt>
+        <dd>{{ p.patientMohArea || '—' }}</dd>
+        <dt>PHI Area</dt>
+        <dd>{{ p.patientPhiArea || '—' }}</dd>
+        <dt>GN Division</dt>
+        <dd>{{ p.patientGnDivision || '—' }}</dd>
+        <dt>Home Address</dt>
+        <dd>{{ p.patientHomeAddress || '—' }}</dd>
+        @if (p.latitude && p.longitude) {
+        <dt>GPS</dt>
+        <dd>{{ p.latitude | number:'1.5-5' }}, {{ p.longitude | number:'1.5-5' }}</dd>
+        }
+      </dl>
+      @if (p.latitude && p.longitude) {
+      <a class="map-link" [href]="'https://maps.google.com/?q=' + p.latitude + ',' + p.longitude" target="_blank"
+        rel="noopener">
+        <i class="pi pi-external-link"></i> View on Google Maps
+      </a>
+      }
+    </section>
+
     <!-- Enrollment -->
     <section class="detail-card">
       <h2 class="section-title"><i class="pi pi-building"></i> Enrollment</h2>
@@ -98,7 +125,7 @@
           @if (p.treatmentClassification) {
           <span class="badge" [class.badge--mb]="p.treatmentClassification === 'MB'"
             [class.badge--pb]="p.treatmentClassification === 'PB'">
-            {{ p.treatmentClassification }}
+            {{ getDisabilityText(p.disabilityAtDiagnosis)  }}
           </span>
           } @else { — }
         </dd>
@@ -112,7 +139,7 @@
           </span>
         </dd>
         <dt>Disability at Diagnosis</dt>
-        <dd>{{ p.disabilityAtDiagnosis || '—' }}</dd>
+        <dd>{{ getDisabilityText(p.disabilityAtDiagnosis) || '—' }}</dd>
         <dt>Time Since Onset</dt>
         <dd>{{ p.timeSinceOnsetMonths ? p.timeSinceOnsetMonths + ' months' : '—' }}</dd>
         <dt>Contact History</dt>
@@ -165,35 +192,8 @@
       </div>
       @if (p.disabilityAtDiagnosis) {
       <div class="disability-note">
-        <i class="pi pi-info-circle"></i> {{ p.disabilityAtDiagnosis }}
+        <i class="pi pi-info-circle"></i> {{ getDisabilityText(p.disabilityAtDiagnosis) }}
       </div>
-      }
-    </section>
-
-    <!-- Location -->
-    <section class="detail-card detail-card--location">
-      <h2 class="section-title"><i class="pi pi-map-marker"></i> Location</h2>
-      <dl class="detail-dl">
-        <dt>District</dt>
-        <dd>{{ p.patientDistrict || '—' }}</dd>
-        <dt>MOH Area</dt>
-        <dd>{{ p.patientMohArea || '—' }}</dd>
-        <dt>PHI Area</dt>
-        <dd>{{ p.patientPhiArea || '—' }}</dd>
-        <dt>GN Division</dt>
-        <dd>{{ p.patientGnDivision || '—' }}</dd>
-        <dt>Home Address</dt>
-        <dd>{{ p.patientHomeAddress || '—' }}</dd>
-        @if (p.latitude && p.longitude) {
-        <dt>GPS</dt>
-        <dd>{{ p.latitude | number:'1.5-5' }}, {{ p.longitude | number:'1.5-5' }}</dd>
-        }
-      </dl>
-      @if (p.latitude && p.longitude) {
-      <a class="map-link" [href]="'https://maps.google.com/?q=' + p.latitude + ',' + p.longitude" target="_blank"
-        rel="noopener">
-        <i class="pi pi-external-link"></i> View on Google Maps
-      </a>
       }
     </section>
 

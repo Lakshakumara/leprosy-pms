@@ -8,11 +8,6 @@
     </div>
 
     <div class="cv-summary">
-      <span class="connection-chip" [class.online]="patientService.isOnline()"
-        [class.offline]="!patientService.isOnline()">
-        <i class="pi" [ngClass]="patientService.isOnline() ? 'pi-wifi' : 'pi-ban'"></i>
-        {{ patientService.isOnline() ? 'Online' : 'Offline' }}
-      </span>
 
       <span class="sync-chip" *ngIf="patientService.isSyncing()">
         <p-progressSpinner styleClass="sync-spinner" strokeWidth="6" />
@@ -29,7 +24,7 @@
           Sync now
         </button>
       </span>
-
+      @if(statusFilter()==='ALL'){
       <div class="summary-chip summary-chip--danger" [class.is-zero]="defaulterCount() === 0">
         <span class="summary-count">{{ defaulterCount() }}</span>
         <span class="summary-label">Defaulters</span>
@@ -38,21 +33,64 @@
         <span class="summary-count">{{ atRiskCount() }}</span>
         <span class="summary-label">At risk</span>
       </div>
-      <div class="summary-chip summary-chip--neutral" [class.is-zero]="needsReviewCount() === 0">
-        <span class="summary-count">{{ needsReviewCount() }}</span>
+      <div class="summary-chip summary-chip--neutral" [class.is-zero]="needsReviewStats().total === 0">
+        <span class="summary-count">{{ needsReviewStats().total }}</span>
         <span class="summary-label">Needs review</span>
       </div>
+      }
+
+      @if(statusFilter()==='NEEDS_REVIEW'){
+      @for (row of needsReviewStats().byYear; track row.year) {
+      <div class="summary-chip summary-chip--warn summary-chip--low" [class.is-zero]="row.count === 0">
+        <span class="summary-count">{{ row.count }}</span>
+        <span class="summary-label">{{ row.year }}</span>
+      </div>
+      }
+      }
+
+      @if(statusFilter()==='ACTIVE'){
+      @for (row of activeStats().byHospital; track row.hospital) {
+      <div class="summary-chip summary-chip--warn summary-chip--low" [class.is-zero]="row.count === 0">
+        <span class="summary-count">{{ row.count }}</span>
+        <span class="summary-label">{{ row.hospital.slice(0,5) }}</span>
+      </div>
+      }
+      }
+
+      @if(statusFilter() === 'AT_RISK' || statusFilter() === 'ONGOING') {
+
+      @if(statusFilter() === 'ONGOING'){
+      <div class="summary-chip summary-chip-- summary-chip--success" [class.is-zero]="activeStats().total === 0">
+        <span class="summary-count">{{ activeStats().total }}</span>
+        <span class="summary-label">Active</span>
+      </div>
+      }
+
+      <!-- shared risk block -->
+      <div class="summary-chip summary-chip--warn summary-chip--low" [class.is-zero]="atRiskLowCount() === 0">
+        <span class="summary-count">{{ atRiskLowCount() }}</span>
+        <span class="summary-label">Low risk</span>
+      </div>
+      <div class="summary-chip summary-chip--warn summary-chip--med" [class.is-zero]="atRiskMediumCount() === 0">
+        <span class="summary-count">{{ atRiskMediumCount() }}</span>
+        <span class="summary-label">Medium</span>
+      </div>
+      <div class="summary-chip summary-chip--warn summary-chip--high" [class.is-zero]="atRiskHighCount() === 0">
+        <span class="summary-count">{{ atRiskHighCount() }}</span>
+        <span class="summary-label">High risk</span>
+      </div>
+      }
     </div>
   </div>
 
   <p-message *ngIf="patientService.lastPullError()" severity="warn" styleClass="cv-pull-error">
-  <span class="error-short">
-    <i class="pi pi-exclamation-triangle"></i>
-    Sync failed
-    <!--button pButton type="button" label="Retry" class="p-button-text p-button-sm" (click)="patientService.pull()"></button-->
-  </span>
-  <span class="error-full desktop-only">{{ patientService.lastPullError() }}</span>
-</p-message>
+    <span class="error-short">
+      <i class="pi pi-exclamation-triangle"></i>
+      Sync failed
+      <!--button pButton type="button" label="Retry" class="p-button-text p-button-sm" (click)="patientService.pull()"></button-->
+    </span>
+    <span class="error-full desktop-only">{{ patientService.lastPullError() }}</span>
+  </p-message>
 
   <!-- ===== Search / filter bar ===== -->
   <div class="cv-filters">
@@ -99,7 +137,11 @@
             {{ vm.patient.orgUnitName || '—' }}
           </span>
         </div>
-        <p-tag [severity]="statusSeverity(vm.status)" [value]="statusLabel[vm.status]" />
+        <div class="header-tags">
+          <p-tag *ngIf="vm.riskLevel" [severity]="riskSeverity(vm.riskLevel)" [value]="vm.riskLevel + ' RISK'"
+            styleClass="risk-tag" />
+          <p-tag [severity]="statusSeverity(vm.status)" [value]="statusLabel[vm.status]" />
+        </div>
       </div>
 
       <div class="patient-meta">
@@ -144,22 +186,28 @@
         <ng-container [ngSwitch]="vm.status">
           <span *ngSwitchCase="'DEFAULTER'" class="footer-note footer-note--danger">
             <i class="pi pi-times-circle"></i>
-            Defaulted — passed {{ displayDate(vm.defaulterDeadline) }} ({{ -1 * (vm.daysToDeadline ?? 0) }} days ago)
+            Defaulted — {{ vm.remainDoses }} doses left, {{ vm.remainMonths }} months left (need {{ vm.remainDoses }})
           </span>
-          <span *ngSwitchCase="'AT_RISK'" class="footer-note footer-note--warn">
+          <span *ngSwitchCase="'AT_RISK'" class="footer-note" [ngClass]="'footer-note--' + vm.riskLevel?.toLowerCase()">
             <i class="pi pi-exclamation-triangle"></i>
-            Dose {{ next.doseNumber }} overdue — {{ vm.daysToDeadline }} days left before formal default ({{
-            displayDate(vm.defaulterDeadline) }})
+            <ng-container *ngIf="vm.riskLevel === 'LOW'">LOW: {{ vm.remainDoses }} doses, {{ vm.remainMonths }} months left</ng-container>
+            <ng-container *ngIf="vm.riskLevel === 'MEDIUM'">{{ vm.remainMonths }} months left for {{ vm.remainDoses }} doses —
+              MEDIUM risk</ng-container>
+            <ng-container *ngIf="vm.riskLevel === 'HIGH'">HIGH: only {{ vm.remainMonths }} months left for {{ vm.remainDoses
+              }} doses</ng-container>
           </span>
           <span *ngSwitchDefault class="footer-note">
             <i class="pi pi-clock"></i>
-            Dose {{ next.doseNumber }} due {{ displayDate(next.expectedDate) }}
+            Dose {{ next.doseNumber }} due {{ displayDate(next.expectedDate) }} — {{ vm.remainMonths }} months
+            remain
           </span>
         </ng-container>
+        @if(vm.remainDoses <=2){
         <div class="extend-action">
           <p-button label="Extend course +12mo" size="small" severity="secondary" [text]="true"
             [loading]="isExtendingCourse()" (onClick)="extendCourse(vm.patient)" />
         </div>
+      }
       </div>
       <ng-template #complete>
         <div class="patient-footer" *ngIf="vm.status !== 'NEEDS_REVIEW'">
